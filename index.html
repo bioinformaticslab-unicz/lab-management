@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>UniScan Lab Manager Pro v3.2</title>
+    <title>UniScan Lab Manager Pro v3.3</title>
     
     <!-- Stili: Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -36,14 +36,14 @@
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans min-h-screen pb-24">
 
-    <!-- HEADER & NAV -->
-    <header class="bg-indigo-900 text-white p-6 rounded-b-[2rem] shadow-xl sticky top-0 z-50">
+    <!-- HEADER & NAV (Nascosto in modalità Totem) -->
+    <header id="main-header" class="bg-indigo-900 text-white p-6 rounded-b-[2rem] shadow-xl sticky top-0 z-50">
         <div class="flex justify-between items-center">
             <div onclick="resetApp()" class="cursor-pointer">
                 <h1 class="text-xl font-black italic tracking-tighter flex items-center gap-2">
                     <i data-lucide="scan-line" class="w-5 h-5"></i> UNISCAN
                 </h1>
-                <p class="text-indigo-200 text-[10px] font-medium uppercase tracking-widest">Lab Management v3.2</p>
+                <p class="text-indigo-200 text-[10px] font-medium uppercase tracking-widest">Lab Management v3.3</p>
             </div>
             <div class="flex gap-3">
                 <button onclick="showAdminLogin()" class="p-2 bg-indigo-800 rounded-full hover:bg-indigo-700 transition" title="Admin">
@@ -55,7 +55,7 @@
     </header>
 
     <!-- MAIN CONTENT -->
-    <main class="p-5 max-w-md mx-auto relative">
+    <main id="main-container" class="p-5 max-w-md mx-auto relative">
         
         <!-- MENU PRINCIPALE -->
         <div id="main-menu" class="flex justify-center gap-4 mb-6 fade-in">
@@ -150,7 +150,7 @@
             </div>
         </div>
 
-        <!-- VISTA 3: ADMIN PANEL (Con nuove Tabs) -->
+        <!-- VISTA 3: ADMIN PANEL -->
         <div id="view-admin" class="hidden fade-in space-y-4">
             <h2 class="text-lg font-black text-slate-800 flex items-center gap-2 border-b pb-2">
                 <i data-lucide="layout-dashboard" class="w-5 h-5 text-indigo-600"></i> Dashboard
@@ -197,7 +197,7 @@
                 <div id="instruments-list" class="space-y-2"></div>
             </div>
 
-            <!-- Tab: Analytics (NUOVO) -->
+            <!-- Tab: Analytics -->
             <div id="admin-content-analytics" class="hidden space-y-4">
                 <div class="grid grid-cols-2 gap-3">
                     <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm text-center">
@@ -209,21 +209,20 @@
                         <p id="stat-total-instruments" class="text-2xl font-black text-emerald-600">0</p>
                     </div>
                 </div>
-                
                 <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
                     <h4 class="text-xs font-bold text-slate-700 mb-2">Utilizzo Strumenti (Top 5)</h4>
                     <canvas id="chart-instruments" height="200"></canvas>
                 </div>
             </div>
 
-            <!-- Tab: Audit Log (NUOVO) -->
+            <!-- Tab: Audit Log -->
             <div id="admin-content-audit" class="hidden space-y-3">
                 <div id="audit-list" class="space-y-2 text-xs">
                     <p class="text-center text-slate-400">Caricamento log...</p>
                 </div>
             </div>
 
-            <!-- Tab: Impostazioni -->
+            <!-- Tab: Impostazioni (CON LINK TOTEM) -->
             <div id="admin-content-settings" class="hidden space-y-4">
                 <div class="bg-amber-50 p-4 rounded-xl border border-amber-200 shadow-sm">
                     <h3 class="text-sm font-bold text-amber-800 mb-2 flex items-center gap-2"><i data-lucide="cone" class="w-4 h-4"></i> Manutenzione</h3>
@@ -234,6 +233,15 @@
                     <input type="text" id="inp-maint-name" class="w-full mb-2 px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs" placeholder="Nome Referente">
                     <input type="email" id="inp-maint-email" class="w-full mb-2 px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs" placeholder="Email Referente">
                     <button onclick="saveGlobalSettings()" class="w-full py-2 bg-slate-800 text-white rounded-lg font-bold text-xs">AGGIORNA</button>
+                </div>
+
+                <!-- SEZIONE TOTEM -->
+                <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-200 shadow-sm">
+                    <h3 class="text-sm font-bold text-indigo-800 mb-2 flex items-center gap-2"><i data-lucide="monitor" class="w-4 h-4"></i> Modalità Totem</h3>
+                    <p class="text-[10px] text-indigo-700 mb-3">Dashboard automatica per display a parete e tablet fissi. Mostra lo stato del lab in tempo reale.</p>
+                    <a href="?mode=totem" target="_blank" class="block w-full py-3 bg-indigo-600 text-white rounded-lg font-bold text-xs text-center shadow hover:bg-indigo-700 transition">
+                        APRI DASHBOARD TOTEM
+                    </a>
                 </div>
             </div>
         </div>
@@ -248,7 +256,43 @@
 
     </main>
 
-    <!-- AREA STAMPA NASCOSTA (Aggiornata per Fix) -->
+    <!-- VISTA 5: TOTEM (Nuova) -->
+    <div id="view-totem" class="hidden fixed inset-0 bg-slate-900 text-white z-[100] overflow-hidden flex flex-col p-6">
+        <!-- Header Totem -->
+        <div class="flex justify-between items-center mb-6 border-b border-slate-700 pb-4">
+            <h1 class="text-3xl font-black italic tracking-tighter flex items-center gap-3">
+                <i data-lucide="monitor" class="w-8 h-8 text-emerald-400"></i> UNISCAN LIVE
+            </h1>
+            <div class="text-right">
+                <div id="totem-clock" class="text-4xl font-mono font-bold text-slate-200">00:00</div>
+                <div id="totem-date" class="text-sm text-slate-400 font-medium uppercase tracking-widest">---</div>
+            </div>
+        </div>
+    
+        <div class="flex gap-8 flex-1 overflow-hidden">
+            <!-- Colonna: In Corso -->
+            <div class="w-1/2 flex flex-col gap-4">
+                <h2 class="text-xl font-bold text-emerald-400 uppercase tracking-widest mb-2 flex items-center gap-2">
+                    <span class="w-3 h-3 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_10px_#10b981]"></span> In Corso Ora
+                </h2>
+                <div id="totem-active-list" class="space-y-3 overflow-y-auto no-scrollbar pr-2">
+                    <p class="text-slate-500 italic text-sm">Nessuna attività in corso.</p>
+                </div>
+            </div>
+    
+            <!-- Colonna: Prossime -->
+            <div class="w-1/2 flex flex-col gap-4 border-l border-slate-700 pl-8">
+                <h2 class="text-xl font-bold text-indigo-400 uppercase tracking-widest mb-2 flex items-center gap-2">
+                    <i data-lucide="clock" class="w-5 h-5"></i> Prossime
+                </h2>
+                <div id="totem-upcoming-list" class="space-y-3 overflow-y-auto no-scrollbar pr-2">
+                    <p class="text-slate-500 italic text-sm">Nessuna prenotazione futura.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AREA STAMPA NASCOSTA -->
     <div id="print-area" class="hidden bg-white p-5">
         <h1 class="text-2xl font-bold mb-2 text-center">Etichette Strumenti UniScan</h1>
         <p class="text-center text-sm mb-5">Generato il: <span id="print-date"></span></p>
@@ -347,27 +391,124 @@
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 currentUser = user;
-                document.getElementById('user-status').classList.remove('bg-red-500', 'animate-pulse');
-                document.getElementById('user-status').classList.add('bg-green-500');
+                const userStatus = document.getElementById('user-status');
+                if(userStatus) {
+                    userStatus.classList.remove('bg-red-500', 'animate-pulse');
+                    userStatus.classList.add('bg-green-500');
+                }
                 
-                loadGlobalSettings();
-                checkUrlParams(); 
+                checkUrlParams(); // Check TOTEM or Deep Link
                 initNotifications(); 
             } else {
                 signInAnonymously(auth).catch(console.error);
             }
         });
 
-        // --- HELPER FUNCTIONS ---
+        // --- URL & TOTEM LOGIC ---
         function checkUrlParams() {
             const urlParams = new URLSearchParams(window.location.search);
+            const mode = urlParams.get('mode');
             const resourceId = urlParams.get('r');
-            if (resourceId) {
-                currentItem = resourceId;
-                showDetails(resourceId);
+
+            if (mode === 'totem') {
+                initTotemMode();
+            } else {
+                loadGlobalSettings(); // Load normal settings only if not totem (or load inside)
+                if (resourceId) {
+                    currentItem = resourceId;
+                    showDetails(resourceId);
+                }
             }
         }
 
+        // --- TOTEM MODE FUNCTIONS ---
+        function initTotemMode() {
+            // Nascondi tutto tranne view-totem
+            document.getElementById('main-header').classList.add('hidden');
+            document.getElementById('main-container').classList.add('hidden');
+            document.getElementById('view-totem').classList.remove('hidden');
+            
+            // Orologio
+            setInterval(updateTotemClock, 1000);
+            updateTotemClock();
+
+            // Data Listener
+            loadTotemData();
+        }
+
+        function updateTotemClock() {
+            const now = new Date();
+            document.getElementById('totem-clock').innerText = now.toLocaleTimeString('it-IT', {hour:'2-digit', minute:'2-digit'});
+            document.getElementById('totem-date').innerText = now.toLocaleDateString('it-IT', {weekday:'long', day:'numeric', month:'long'});
+        }
+
+        function loadTotemData() {
+            // Query per prendere prenotazioni recenti/future (es. ultime 2h e future)
+            // Limitiamo la query per performance in un app reale, qui prendiamo tutto e filtriamo
+            const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'bookings'));
+            
+            onSnapshot(q, (snapshot) => {
+                const bookings = [];
+                snapshot.forEach(doc => bookings.push({ id: doc.id, ...doc.data() }));
+                
+                const now = new Date();
+                
+                // Filtro Attivi
+                const active = bookings.filter(b => {
+                    const start = new Date(b.startDate);
+                    const end = new Date(b.endDate);
+                    return now >= start && now <= end;
+                });
+
+                // Filtro Prossimi (prossime 24h)
+                const upcoming = bookings.filter(b => {
+                    const start = new Date(b.startDate);
+                    return start > now && start < new Date(now.getTime() + 86400000);
+                }).sort((a,b) => new Date(a.startDate) - new Date(b.startDate));
+
+                renderTotemLists(active, upcoming);
+            });
+        }
+
+        function renderTotemLists(active, upcoming) {
+            const activeContainer = document.getElementById('totem-active-list');
+            const upcomingContainer = document.getElementById('totem-upcoming-list');
+
+            if (active.length === 0) {
+                activeContainer.innerHTML = `<p class="text-slate-500 italic text-lg mt-4">Nessuno strumento in uso al momento.</p>`;
+            } else {
+                activeContainer.innerHTML = active.map(b => `
+                    <div class="bg-slate-800 p-4 rounded-xl border-l-4 border-emerald-500 shadow-lg">
+                        <h3 class="text-xl font-bold text-white mb-1">${b.resourceName || b.resourceId}</h3>
+                        <p class="text-emerald-400 font-bold text-lg uppercase mb-1">${b.userName}</p>
+                        <p class="text-slate-400 text-sm flex items-center gap-2">
+                            <i data-lucide="clock" class="w-4 h-4"></i>
+                            Termina alle: <span class="text-white font-mono">${new Date(b.endDate).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
+                        </p>
+                    </div>
+                `).join('');
+            }
+
+            if (upcoming.length === 0) {
+                upcomingContainer.innerHTML = `<p class="text-slate-500 italic text-sm">Nessuna prenotazione in programma oggi.</p>`;
+            } else {
+                upcomingContainer.innerHTML = upcoming.map(b => `
+                    <div class="bg-slate-800/50 p-3 rounded-lg border border-slate-700 flex justify-between items-center">
+                        <div>
+                            <p class="text-white font-bold text-sm">${b.resourceName || b.resourceId}</p>
+                            <p class="text-indigo-300 text-xs uppercase">${b.userName}</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-white font-mono font-bold text-lg">${new Date(b.startDate).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</p>
+                            <p class="text-slate-500 text-[10px]">INIZIO</p>
+                        </div>
+                    </div>
+                `).join('');
+            }
+            lucide.createIcons();
+        }
+
+        // --- ALTRE FUNZIONI ESISTENTI (Export, Audit, etc) ---
         window.exportBookingsCSV = () => {
             const bookings = window.adminBookingsCache;
             if (!bookings || bookings.length === 0) return alert("Nessun dato.");
@@ -417,7 +558,7 @@
                     </div>
                 `).join('');
             }, (error) => {
-                console.log("Indice Audit mancante, carico senza ordine e ordino client side.");
+                // Fallback sort
                 const qFallback = query(collection(db, 'artifacts', appId, 'public', 'data', 'audit_logs'));
                 onSnapshot(qFallback, (snapshot) => {
                     const logs = [];
@@ -476,24 +617,21 @@
             });
         };
 
-        // --- IDEA 7: LABEL GENERATOR (FIXED) ---
+        // --- IDEA 7: LABEL GENERATOR ---
         window.printLabels = () => {
             if(window.allInstrumentsCache.length === 0) return alert("Nessuno strumento da stampare.");
             
             const container = document.getElementById('print-grid');
             const printArea = document.getElementById('print-area');
             container.innerHTML = '';
-            
             document.getElementById('print-date').innerText = new Date().toLocaleDateString();
             
             let loadedCount = 0;
             const total = window.allInstrumentsCache.length;
-            
             printArea.classList.remove('hidden');
 
             window.allInstrumentsCache.forEach(inst => {
                 const url = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(inst.id)}`;
-                
                 const item = document.createElement('div');
                 item.className = 'label-item';
                 
@@ -506,17 +644,12 @@
                 
                 img.onload = () => {
                     loadedCount++;
-                    if(loadedCount === total) {
-                        setTimeout(() => window.print(), 500); // Wait for render
-                    }
+                    if(loadedCount === total) setTimeout(() => window.print(), 500);
                 };
                 
-                item.innerHTML = `
-                    <h3 style="font-size:14px; font-weight:bold; margin-bottom:5px;">${inst.description}</h3>
-                `;
+                item.innerHTML = `<h3 style="font-size:14px; font-weight:bold; margin-bottom:5px;">${inst.description}</h3>`;
                 item.appendChild(img);
                 item.innerHTML += `<p style="font-family:monospace; font-size:10px; margin-top:5px;">${inst.id}</p>`;
-                
                 container.appendChild(item);
             });
         };
@@ -529,13 +662,12 @@
 
         window.requestNotificationPermission = () => {
             Notification.requestPermission().then(permission => {
-                if(permission === "granted") alert("Notifiche attivate! Riceverai un avviso 15 minuti prima della prenotazione.");
+                if(permission === "granted") alert("Notifiche attivate!");
             });
         };
 
         function checkUpcomingBookings() {
             if (Notification.permission !== "granted") return;
-            // In un'app reale qui si farebbe un controllo locale o server worker
         }
 
         // --- CORE FUNCTIONS ---
@@ -553,7 +685,7 @@
                 });
                 logAudit("UPDATE_INSTRUMENT", `Updated instrument: ${desc} (${id})`);
                 alert("Salvato!");
-                clearInstrumentForm(); // Reset form after save
+                clearInstrumentForm(); 
             } catch(e) { alert(e.message); }
         };
         
@@ -561,22 +693,17 @@
             document.getElementById('inp-inst-id').value = '';
             document.getElementById('inp-inst-desc').value = '';
             document.getElementById('inp-inst-bookable').checked = true;
-            document.getElementById('inp-inst-id').readOnly = false; // Rendi editabile ID
+            document.getElementById('inp-inst-id').readOnly = false; 
             document.getElementById('inp-inst-id').classList.remove('bg-slate-100', 'text-slate-500');
         };
         
         window.editInstrument = (id) => {
             const inst = window.allInstrumentsCache.find(i => i.id === id);
             if(!inst) return;
-            
             document.getElementById('inp-inst-id').value = inst.id;
             document.getElementById('inp-inst-desc').value = inst.description;
             document.getElementById('inp-inst-bookable').checked = inst.isBookable !== false;
-            
-            // UX: Scroll to top form
             document.getElementById('admin-content-instruments').scrollIntoView({ behavior: 'smooth' });
-            
-            // Make ID readonly to prevent accidental dupe creation, force user to use "Clear" for new
             const idField = document.getElementById('inp-inst-id');
             idField.readOnly = true;
             idField.classList.add('bg-slate-100', 'text-slate-500');
