@@ -18,7 +18,6 @@
         .fade-in { animation: fadeIn 0.3s ease-in-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         body { -webkit-tap-highlight-color: transparent; }
-        /* Nascondi scrollbar per estetica mobile */
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
@@ -32,7 +31,7 @@
                 <h1 class="text-xl font-black italic tracking-tighter flex items-center gap-2">
                     <i data-lucide="scan-line" class="w-5 h-5"></i> UNISCAN
                 </h1>
-                <p class="text-indigo-200 text-[10px] font-medium uppercase tracking-widest">Lab Management v2.2</p>
+                <p class="text-indigo-200 text-[10px] font-medium uppercase tracking-widest">Lab Management v2.3</p>
             </div>
             <div class="flex gap-3">
                 <button onclick="showAdminLogin()" class="p-2 bg-indigo-700 rounded-full hover:bg-indigo-600 transition" title="Admin">
@@ -46,7 +45,7 @@
     <!-- MAIN CONTENT -->
     <main class="p-5 max-w-md mx-auto relative">
         
-        <!-- MENU PRINCIPALE (Sotto Header) -->
+        <!-- MENU PRINCIPALE -->
         <div id="main-menu" class="flex justify-center gap-4 mb-6 fade-in">
             <button onclick="resetApp()" class="flex-1 py-3 bg-white border border-slate-200 shadow-sm rounded-xl flex flex-col items-center gap-1 active:scale-95 transition">
                 <i data-lucide="qr-code" class="w-5 h-5 text-indigo-600"></i>
@@ -62,8 +61,6 @@
         <div id="view-scanner" class="fade-in space-y-6">
             <div class="relative bg-black rounded-3xl overflow-hidden shadow-2xl aspect-square border-4 border-indigo-500/30">
                 <div id="reader" class="w-full h-full object-cover"></div>
-                
-                <!-- Overlay "In Attesa" -->
                 <div id="camera-overlay" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-900 text-white z-10">
                     <i data-lucide="camera" class="w-12 h-12 mb-4 text-indigo-400"></i>
                     <p class="font-bold">Scannerizza Strumento</p>
@@ -71,12 +68,9 @@
                         AVVIA CAMERA
                     </button>
                 </div>
-
-                <!-- Overlay Laser -->
                 <div id="laser-line" class="hidden absolute top-1/2 left-0 w-full h-0.5 bg-red-500 shadow-[0_0_15px_red] animate-pulse z-20"></div>
                 <button id="btn-stop" onclick="stopScanner()" class="hidden absolute bottom-4 left-1/2 -translate-x-1/2 bg-white/20 backdrop-blur-md border border-white/30 text-white px-4 py-1 rounded-full text-xs font-bold z-30">Chiudi</button>
             </div>
-            
             <div class="bg-indigo-50 border border-indigo-100 p-4 rounded-xl text-center">
                 <p class="text-xs text-indigo-800 font-medium">Inquadra un codice o usa un link diretto.</p>
             </div>
@@ -89,26 +83,26 @@
                     <i data-lucide="microscope" class="w-24 h-24"></i>
                 </div>
                 <div class="flex justify-between items-start">
-                    <div>
-                        <p class="text-xs font-bold text-indigo-600 uppercase mb-1">Oggetto Rilevato</p>
-                        <!-- Titolo principale (es. Nome descrittivo) -->
+                    <div class="relative z-10">
+                        <div class="flex items-center gap-2 mb-1">
+                            <p class="text-xs font-bold text-indigo-600 uppercase">Oggetto Rilevato</p>
+                            <span id="badge-status" class="hidden text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-black uppercase">NON PRENOTABILE</span>
+                        </div>
                         <h2 id="item-title" class="text-2xl font-black text-slate-800 break-all leading-tight">---</h2>
-                        <!-- Sottotitolo (es. Codice IP/ID) -->
                         <p id="item-subtitle" class="text-sm font-mono text-slate-400 mt-1">ID: ---</p>
                     </div>
-                    <button onclick="reportIssue()" class="text-amber-500 p-2 hover:bg-amber-50 rounded-full" title="Segnala Guasto">
+                    <button onclick="reportIssue()" class="text-amber-500 p-2 hover:bg-amber-50 rounded-full relative z-10" title="Segnala Guasto">
                         <i data-lucide="alert-triangle" class="w-5 h-5"></i>
                     </button>
                 </div>
                 
-                <div id="ip-actions" class="hidden mt-3 pt-3 border-t border-slate-100 flex flex-wrap gap-2">
+                <div id="ip-actions" class="hidden mt-3 pt-3 border-t border-slate-100 flex flex-wrap gap-2 relative z-10">
                     <a id="btn-open-ip" href="#" target="_blank" class="inline-flex items-center gap-2 px-3 py-2 bg-blue-100 text-blue-700 rounded-lg text-xs font-bold hover:bg-blue-200 transition">
                         <i data-lucide="globe" class="w-4 h-4"></i> APRI IP
                     </a>
                 </div>
                 
-                <!-- Link per condivisione -->
-                <div class="mt-4 pt-2 border-t border-slate-50">
+                <div class="mt-4 pt-2 border-t border-slate-50 relative z-10">
                      <button onclick="copyDirectLink()" class="flex items-center gap-1 text-[10px] text-slate-400 hover:text-indigo-600">
                         <i data-lucide="link" class="w-3 h-3"></i> Copia Link Prenotazione
                      </button>
@@ -118,12 +112,20 @@
             <div class="space-y-3">
                 <div class="flex justify-between items-center px-2">
                     <h3 class="text-sm font-bold text-slate-700 flex items-center gap-2">
-                        <i data-lucide="calendar-days" class="w-4 h-4"></i> Calendario
+                        <i data-lucide="calendar-days" class="w-4 h-4"></i> Stato e Prenotazioni
                     </h3>
-                    <button onclick="showBookingForm()" class="px-4 py-2 bg-emerald-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-emerald-200 hover:bg-emerald-600 transition flex items-center gap-2">
+                </div>
+                
+                <!-- Bottoni Azione -->
+                <div class="flex gap-2">
+                    <button onclick="openCalendarModal()" class="flex-1 py-3 bg-white border border-slate-200 text-slate-700 rounded-xl text-xs font-bold shadow-sm hover:bg-slate-50 transition flex items-center justify-center gap-2">
+                        <i data-lucide="calendar" class="w-4 h-4"></i> Disponibilità
+                    </button>
+                    <button id="btn-main-book" onclick="showBookingForm()" class="flex-1 py-3 bg-emerald-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-emerald-200 hover:bg-emerald-600 transition flex items-center justify-center gap-2">
                         <i data-lucide="plus"></i> PRENOTA
                     </button>
                 </div>
+
                 <div id="bookings-list" class="space-y-2 pb-10"></div>
             </div>
         </div>
@@ -150,7 +152,9 @@
             <!-- Tab Content: Strumenti -->
             <div id="admin-content-instruments" class="hidden space-y-4">
                 <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-                    <h3 class="text-sm font-bold text-slate-700 mb-3">Aggiungi/Modifica Strumento</h3>
+                    <h3 class="text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
+                        <i data-lucide="settings-2" class="w-4 h-4"></i> Configura Strumento
+                    </h3>
                     <form onsubmit="saveInstrument(event)" class="space-y-3">
                         <div>
                             <label class="block text-[10px] font-bold text-slate-500 uppercase">Codice (ID/IP scansionato)</label>
@@ -160,11 +164,23 @@
                             <label class="block text-[10px] font-bold text-slate-500 uppercase">Descrizione / Nome</label>
                             <input type="text" id="inp-inst-desc" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs" placeholder="Es: Sequenziatore DNA Lab 3">
                         </div>
-                        <button type="submit" class="w-full py-2 bg-indigo-600 text-white rounded-lg font-bold text-xs">SALVA DESCRIZIONE</button>
+                        
+                        <!-- Nuova Checkbox: Prenotabile -->
+                        <div class="flex items-center gap-3 bg-slate-50 p-2 rounded-lg border border-slate-100">
+                            <div class="relative flex items-center">
+                                <input type="checkbox" id="inp-inst-bookable" class="peer h-4 w-4 cursor-pointer appearance-none rounded border border-slate-300 shadow transition-all checked:border-indigo-600 checked:bg-indigo-600 hover:shadow-md" checked>
+                                <span class="absolute text-white opacity-0 peer-checked:opacity-100 top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none">
+                                    <i data-lucide="check" class="w-3 h-3"></i>
+                                </span>
+                            </div>
+                            <label for="inp-inst-bookable" class="text-xs font-bold text-slate-700 cursor-pointer select-none">Strumento Prenotabile dagli Utenti</label>
+                        </div>
+
+                        <button type="submit" class="w-full py-2 bg-indigo-600 text-white rounded-lg font-bold text-xs shadow-md hover:bg-indigo-700 transition">SALVA CONFIGURAZIONE</button>
                     </form>
                 </div>
                 
-                <h3 class="text-xs font-bold text-slate-500 uppercase mt-4 px-1">Strumenti Configurati</h3>
+                <h3 class="text-xs font-bold text-slate-500 uppercase mt-4 px-1">Dashboard Strumenti</h3>
                 <div id="instruments-list" class="space-y-2">
                     <!-- Lista strumenti -->
                 </div>
@@ -178,11 +194,8 @@
             </div>
             <h2 class="text-lg font-bold text-slate-800 text-center">Gestione Prenotazione</h2>
             <p class="text-xs text-slate-500 text-center max-w-[200px]">Inserisci il Codice Univoco (PNR) ricevuto al momento della prenotazione.</p>
-            
             <input type="text" id="inp-pnr-search" placeholder="Es: X7K9P2" class="w-full max-w-xs text-center text-2xl font-mono uppercase tracking-widest px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-indigo-500 focus:outline-none bg-white">
-            
             <button onclick="searchBookingByPNR()" class="w-full max-w-xs py-3 bg-emerald-600 text-white rounded-xl font-bold shadow-lg">CERCA</button>
-            
             <div id="pnr-result" class="w-full max-w-xs mt-6"></div>
         </div>
 
@@ -208,7 +221,6 @@
                         <option value="Ricerca / Tesi">Ricerca / Tesi</option>
                         <option value="Altro">Altro (specificare)</option>
                     </select>
-                    <!-- Campo personalizzato "Altro" -->
                     <input type="text" id="inp-reason-custom" class="hidden w-full mt-2 px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm font-bold placeholder-slate-400" placeholder="Specificare motivo...">
                 </div>
                 <div class="grid grid-cols-2 gap-3">
@@ -223,6 +235,31 @@
                 </div>
                 <button id="btn-submit-booking" type="submit" class="w-full py-3 bg-indigo-600 text-white rounded-xl font-bold text-sm shadow-lg hover:bg-indigo-700 active:scale-95 transition mt-4">CONFERMA PRENOTAZIONE</button>
             </form>
+        </div>
+    </div>
+
+    <!-- MODAL CALENDARIO (Nuovo) -->
+    <div id="modal-calendar" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-end sm:items-center justify-center p-4">
+        <div class="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl animate-in slide-in-from-bottom-10 h-[80vh] flex flex-col">
+            <div class="flex justify-between items-center mb-4">
+                <div>
+                    <h3 class="text-lg font-bold text-slate-800">Disponibilità</h3>
+                    <p class="text-xs text-slate-400">Prossimi 7 giorni</p>
+                </div>
+                <button onclick="document.getElementById('modal-calendar').classList.add('hidden')" class="p-2 bg-slate-100 rounded-full hover:bg-slate-200"><i data-lucide="x" class="w-4 h-4"></i></button>
+            </div>
+            
+            <div class="flex-1 overflow-y-auto no-scrollbar space-y-4" id="calendar-container">
+                <!-- Il calendario verrà generato qui via JS -->
+                <p class="text-center text-slate-400 mt-10">Caricamento...</p>
+            </div>
+            
+            <div class="mt-4 pt-4 border-t border-slate-100">
+                <div class="flex items-center gap-4 text-[10px] justify-center text-slate-500">
+                    <span class="flex items-center gap-1"><span class="w-3 h-3 bg-slate-100 rounded border border-slate-300"></span> Libero</span>
+                    <span class="flex items-center gap-1"><span class="w-3 h-3 bg-indigo-600 rounded"></span> Occupato</span>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -248,14 +285,15 @@
         const db = getFirestore(app);
 
         let currentUser = null;
-        let currentItem = null; // Codice tecnico (es. IP)
-        let currentItemName = null; // Nome descrittivo (es. Sequenziatore)
+        let currentItem = null; 
+        let currentItemName = null;
         let html5QrCode = null;
         let adminMode = false;
-        
-        // Variabili per la modifica
         let editingBookingId = null;
         window.currentFoundBooking = null;
+        
+        // Cache per calendario
+        window.calendarBookingsCache = [];
 
         // AUTH
         onAuthStateChanged(auth, (user) => {
@@ -263,18 +301,16 @@
                 currentUser = user;
                 const st = document.getElementById('user-status');
                 if(st) { st.classList.remove('bg-red-500', 'animate-pulse'); st.classList.add('bg-green-500'); }
-                checkUrlParams(); // Controlla link diretti dopo login
+                checkUrlParams(); 
             } else {
                 signInAnonymously(auth).catch(console.error);
             }
         });
 
-        // --- DEEP LINKING CHECK ---
         function checkUrlParams() {
             const urlParams = new URLSearchParams(window.location.search);
-            const resourceId = urlParams.get('r'); // Parametro ?r=CODICE
+            const resourceId = urlParams.get('r');
             if (resourceId) {
-                console.log("Link diretto rilevato:", resourceId);
                 currentItem = resourceId;
                 showDetails(resourceId);
             }
@@ -289,12 +325,10 @@
         };
 
         window.resetApp = () => {
-            // Rimuovi parametri URL puliti
             if(window.history.pushState) {
                 const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
                 window.history.pushState({path:newUrl},'',newUrl);
             }
-            
             window.switchView('view-scanner');
             document.getElementById('camera-overlay').classList.remove('hidden');
             document.getElementById('laser-line').classList.add('hidden');
@@ -308,7 +342,6 @@
             document.getElementById('camera-overlay').classList.add('hidden');
             document.getElementById('laser-line').classList.remove('hidden');
             document.getElementById('btn-stop').classList.remove('hidden');
-            
             html5QrCode = new Html5Qrcode("reader");
             try {
                 await html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: {width:250, height:250} }, onScanSuccess, () => {});
@@ -336,30 +369,41 @@
         async function showDetails(text) {
             window.switchView('view-details');
             
-            // 1. Reset UI
             document.getElementById('item-title').innerText = "Caricamento...";
             document.getElementById('item-subtitle').innerText = "ID: " + text;
+            document.getElementById('badge-status').classList.add('hidden');
+            const btnBook = document.getElementById('btn-main-book');
             
-            // 2. Cerca descrizione nel DB (Nuova Feature)
+            // Default prenotabile
+            let isBookable = true;
             let displayName = text;
+            
             try {
-                // Sostituiamo caratteri non validi per ID documento se necessario, 
-                // ma per semplicità assumiamo codici alfanumerici/IP standard.
-                // Se il codice contiene '/', usiamo encodeURIComponent o un hash.
-                // Per ora usiamo il testo raw (se è un IP è sicuro).
                 const safeId = text.replace(/\//g, '_'); 
                 const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'resources', safeId);
                 const docSnap = await getDoc(docRef);
                 
-                if (docSnap.exists() && docSnap.data().description) {
-                    displayName = docSnap.data().description;
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    if (data.description) displayName = data.description;
+                    if (data.isBookable === false) isBookable = false;
                 }
-            } catch (e) { console.log("Errore fetch descrizione", e); }
+            } catch (e) { console.log("Errore fetch resource", e); }
             
             currentItemName = displayName;
             document.getElementById('item-title').innerText = displayName;
             
-            // 3. Gestione IP
+            // Gestione UI Prenotabile/Non
+            if(isBookable) {
+                btnBook.classList.remove('hidden');
+                document.getElementById('badge-status').classList.add('hidden');
+            } else {
+                btnBook.classList.add('hidden');
+                const badge = document.getElementById('badge-status');
+                badge.innerText = "SOLO CONSULTAZIONE";
+                badge.classList.remove('hidden');
+            }
+
             const ipMatch = text.match(/(\d{1,3}\.){3}\d{1,3}/);
             const btnIp = document.getElementById('ip-actions');
             const linkIp = document.getElementById('btn-open-ip');
@@ -380,7 +424,98 @@
             navigator.clipboard.writeText(link).then(() => alert("Link copiato negli appunti!"));
         };
 
-        // --- UTILS ---
+        // --- CALENDARIO VISUALE ---
+        window.openCalendarModal = () => {
+            document.getElementById('modal-calendar').classList.remove('hidden');
+            renderCalendarTimeline();
+        };
+        
+        // Funzione per Admin per aprire calendario di uno strumento specifico
+        window.openCalendarForInstrument = (id, name) => {
+            currentItem = id;
+            currentItemName = name;
+            // Carica prenotazioni in background se non già caricate
+            const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'bookings'), where("resourceId", "==", id));
+            onSnapshot(q, (snapshot) => {
+                const bookings = [];
+                snapshot.forEach(doc => bookings.push({ id: doc.id, ...doc.data() }));
+                window.calendarBookingsCache = bookings; // Salva in cache
+                // Apri modal
+                document.getElementById('modal-calendar').classList.remove('hidden');
+                renderCalendarTimeline(name);
+            });
+        };
+
+        function renderCalendarTimeline(titleOverride = null) {
+            const container = document.getElementById('calendar-container');
+            const bookings = window.calendarBookingsCache; // Usiamo i dati già caricati da loadBookings
+            
+            const title = titleOverride || currentItemName || currentItem;
+            let html = `<h4 class="font-bold text-slate-700 mb-4 sticky top-0 bg-white pb-2 border-b">${title}</h4>`;
+            
+            const today = new Date();
+            today.setHours(0,0,0,0);
+
+            // Genera prossimi 7 giorni
+            for(let i=0; i<7; i++) {
+                const day = new Date(today);
+                day.setDate(today.getDate() + i);
+                
+                // Filtra prenotazioni per questo giorno
+                const dayBookings = bookings.filter(b => {
+                    const start = new Date(b.startDate);
+                    const end = new Date(b.endDate);
+                    return start.getDate() === day.getDate() && start.getMonth() === day.getMonth() || 
+                           (start < day && end > day); // Gestione multi-giorno semplificata
+                });
+
+                // Crea la barra temporale (8:00 - 20:00)
+                // Usiamo CSS Grid per semplicità: 12 colonne
+                let timelineHTML = '';
+                if(dayBookings.length === 0) {
+                     timelineHTML = `<div class="h-2 w-full bg-slate-100 rounded-full mt-2"></div>`;
+                } else {
+                    // Costruiamo una visualizzazione relativa
+                    timelineHTML = `<div class="relative h-4 w-full bg-slate-100 rounded-full mt-2 overflow-hidden">`;
+                    dayBookings.forEach(b => {
+                        const s = new Date(b.startDate);
+                        const e = new Date(b.endDate);
+                        
+                        // Normalizza ore su scala 0-24 per semplicità visuale (o 8-20)
+                        // Usiamo 0-24h per coprire tutto
+                        let startH = s.getHours() + s.getMinutes()/60;
+                        let endH = e.getHours() + e.getMinutes()/60;
+                        
+                        // Clip su giorno corrente
+                        if(s.getDate() !== day.getDate()) startH = 0;
+                        if(e.getDate() !== day.getDate()) endH = 24;
+
+                        const left = (startH / 24) * 100;
+                        const width = ((endH - startH) / 24) * 100;
+                        
+                        timelineHTML += `<div class="absolute top-0 bottom-0 bg-indigo-600 border-r border-white" style="left:${left}%; width:${width}%;" title="${b.userName}"></div>`;
+                    });
+                    timelineHTML += `</div>`;
+                }
+
+                const dayName = day.toLocaleDateString('it-IT', {weekday:'short', day:'numeric', month:'short'});
+                const isToday = i === 0;
+
+                html += `
+                    <div class="mb-4">
+                        <div class="flex justify-between items-end">
+                            <span class="text-xs font-bold ${isToday ? 'text-indigo-600' : 'text-slate-600'} uppercase">${isToday ? 'OGGI' : dayName}</span>
+                            <span class="text-[10px] text-slate-400">00:00 - 24:00</span>
+                        </div>
+                        ${timelineHTML}
+                    </div>
+                `;
+            }
+            
+            container.innerHTML = html;
+        }
+
+        // --- UTILS & FORM ---
         const generatePNR = () => Math.random().toString(36).substring(2, 8).toUpperCase();
         const formatDate = (d) => new Date(d).toLocaleDateString('it-IT', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'});
         const toLocalISO = (d) => {
@@ -389,7 +524,6 @@
             return (new Date(date - offset)).toISOString().slice(0, 16);
         };
 
-        // --- PRENOTAZIONE FORM & LOGIC ---
         window.toggleCustomReason = () => {
             const select = document.getElementById('inp-reason');
             const customInput = document.getElementById('inp-reason-custom');
@@ -403,46 +537,33 @@
         };
 
         window.showBookingForm = () => {
-            editingBookingId = null; // Modalità Creazione
+            editingBookingId = null;
             document.getElementById('modal-title').innerText = "Nuova Prenotazione";
             document.getElementById('btn-submit-booking').innerText = "CONFERMA PRENOTAZIONE";
             document.getElementById('booking-form').reset();
             toggleCustomReason(); 
-
             const now = new Date();
             document.getElementById('inp-start').value = toLocalISO(now);
             document.getElementById('inp-end').value = toLocalISO(new Date(now.getTime()+3600000));
             document.getElementById('modal-booking').classList.remove('hidden');
         };
 
-        // Funzione usata sia da Utente che da Admin per modificare
         window.openEditModal = (bookingObj = null) => {
-            // Se bookingObj è passato (da admin), usalo. Altrimenti usa currentFoundBooking (da ricerca user)
             const booking = bookingObj || window.currentFoundBooking;
             if(!booking) return;
-
             editingBookingId = booking.id; 
             document.getElementById('modal-title').innerText = adminMode ? "Modifica (Admin)" : "Modifica Prenotazione";
             document.getElementById('btn-submit-booking').innerText = "SALVA MODIFICHE";
-
             document.getElementById('inp-name').value = booking.userName;
-            
             const select = document.getElementById('inp-reason');
             const customInput = document.getElementById('inp-reason-custom');
             let isStandard = false;
             for(let i=0; i<select.options.length; i++) {
                 if(select.options[i].value === booking.reason) { isStandard = true; break; }
             }
-
-            if(isStandard) {
-                select.value = booking.reason;
-                customInput.value = "";
-            } else {
-                select.value = "Altro";
-                customInput.value = booking.reason;
-            }
+            if(isStandard) { select.value = booking.reason; customInput.value = ""; } 
+            else { select.value = "Altro"; customInput.value = booking.reason; }
             toggleCustomReason();
-
             document.getElementById('inp-start').value = booking.startDate;
             document.getElementById('inp-end').value = booking.endDate;
             document.getElementById('modal-booking').classList.remove('hidden');
@@ -453,68 +574,38 @@
         window.handleBooking = async (e) => {
             e.preventDefault();
             if (!currentUser) return alert("Connessione assente.");
-
             const name = document.getElementById('inp-name').value;
             let reason = document.getElementById('inp-reason').value;
             if(reason === 'Altro') {
                 reason = document.getElementById('inp-reason-custom').value.trim();
                 if(!reason) return alert("Specificare il motivo.");
             }
-
             const start = document.getElementById('inp-start').value;
             const end = document.getElementById('inp-end').value;
 
             try {
                 if(editingBookingId) {
-                    // MODIFICA
                     await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'bookings', editingBookingId), {
-                        userName: name,
-                        reason: reason,
-                        startDate: start,
-                        endDate: end,
-                        updatedAt: serverTimestamp()
+                        userName: name, reason: reason, startDate: start, endDate: end, updatedAt: serverTimestamp()
                     });
-                    
-                    alert("Prenotazione modificata con successo!");
+                    alert("Prenotazione modificata!");
                     hideBookingForm();
-                    // Refresh view
-                    if(adminMode) loadAdminBookings();
-                    else searchBookingByPNR(); 
-
+                    if(adminMode) loadAdminBookings(); else searchBookingByPNR(); 
                 } else {
-                    // NUOVA
                     const pnr = generatePNR();
-                    // Se stiamo prenotando via link diretto o scan, currentItem è settato
                     const resId = currentItem || "Sconosciuto"; 
-                    
                     await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'bookings'), {
-                        resourceId: resId,
-                        resourceName: currentItemName || resId, // Salviamo anche il nome descrittivo
-                        userName: name,
-                        reason: reason,
-                        startDate: start,
-                        endDate: end,
-                        pnr: pnr,
-                        bookedBy: currentUser.uid,
-                        createdAt: serverTimestamp()
+                        resourceId: resId, resourceName: currentItemName || resId,
+                        userName: name, reason: reason, startDate: start, endDate: end,
+                        pnr: pnr, bookedBy: currentUser.uid, createdAt: serverTimestamp()
                     });
-
                     hideBookingForm();
-                    
-                    const msg = `Prenotazione Confermata!\n\nIl tuo CODICE UNIVOCO è: ${pnr}`;
-                    alert(msg);
-
-                    const subject = `Prenotazione Lab: ${currentItemName || resId}`;
-                    const body = `Codice PNR: ${pnr}\nStrumento: ${currentItemName || resId} (${resId})\nOrario: ${start} - ${end}`;
-                    window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+                    alert(`Prenotazione Confermata!\nCODICE PNR: ${pnr}`);
+                    window.location.href = `mailto:?subject=Prenotazione ${resId}&body=PNR:${pnr} Orario:${start}-${end}`;
                 }
-
-            } catch (err) {
-                alert("Errore salvataggio: " + err.message);
-            }
+            } catch (err) { alert("Errore salvataggio: " + err.message); }
         };
 
-        // --- LOAD PRENOTAZIONI USER ---
         function loadBookings(itemId) {
             const listEl = document.getElementById('bookings-list');
             listEl.innerHTML = '<p class="text-center text-xs text-slate-400">Caricamento...</p>';
@@ -522,9 +613,13 @@
             onSnapshot(q, (snapshot) => {
                 const bookings = [];
                 snapshot.forEach(doc => bookings.push({ id: doc.id, ...doc.data() }));
+                // Aggiorna cache globale per il calendario
+                window.calendarBookingsCache = bookings;
+                
                 bookings.sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
                 const now = new Date();
                 const relevant = bookings.filter(b => new Date(b.endDate) > new Date(now.getTime() - 86400000));
+                
                 if (relevant.length === 0) {
                     listEl.innerHTML = '<div class="bg-emerald-50 p-4 rounded-xl text-center text-emerald-600 font-bold text-xs">Libero per le prossime 24h</div>';
                     return;
@@ -569,7 +664,7 @@
             if (pin === "1234") {
                 adminMode = true;
                 window.switchView('view-admin');
-                switchAdminTab('bookings'); // Default tab
+                switchAdminTab('bookings'); 
             } else if (pin !== null) {
                 alert("PIN Errato");
             }
@@ -583,16 +678,8 @@
                 const bookings = [];
                 snapshot.forEach(doc => bookings.push({ id: doc.id, ...doc.data() }));
                 bookings.sort((a, b) => new Date(b.startDate) - new Date(a.startDate));
-                
-                // Salviamo le prenotazioni in memoria globale per facilitare l'edit da admin
-                // (usiamo un approccio semplice passandole via funzione, ma window per debug aiuta)
                 window.adminBookingsCache = bookings;
-
                 listEl.innerHTML = bookings.map((b, index) => {
-                    // Stringify per passare oggetto alla funzione
-                    // Attenzione: escape delle virgolette
-                    const bStr = JSON.stringify(b).replace(/"/g, '&quot;');
-                    
                     return `
                     <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm flex flex-col gap-2">
                         <div class="flex justify-between items-start">
@@ -606,7 +693,6 @@
                                 PNR: <span class="font-mono bg-slate-100 px-1 rounded">${b.pnr || 'N/A'}</span>
                             </div>
                         </div>
-                        
                         <div class="flex gap-2 mt-1 pt-2 border-t border-slate-50">
                             <button onclick="editBookingFromAdmin('${b.id}')" class="flex-1 py-1.5 bg-amber-100 text-amber-700 rounded-lg text-[10px] font-bold hover:bg-amber-200 flex items-center justify-center gap-1">
                                 <i data-lucide="edit" class="w-3 h-3"></i> MODIFICA
@@ -621,34 +707,30 @@
             });
         };
         
-        // Helper per recuperare l'oggetto prenotazione dalla cache admin e aprire il modal
         window.editBookingFromAdmin = (id) => {
             const booking = window.adminBookingsCache.find(b => b.id === id);
-            if(booking) {
-                openEditModal(booking);
-            }
+            if(booking) openEditModal(booking);
         };
 
-        // --- GESTIONE STRUMENTI (NUOVA) ---
         window.saveInstrument = async (e) => {
             e.preventDefault();
             const id = document.getElementById('inp-inst-id').value.trim();
             const desc = document.getElementById('inp-inst-desc').value.trim();
-            if(!id || !desc) return alert("Compila tutti i campi");
+            const bookable = document.getElementById('inp-inst-bookable').checked;
             
+            if(!id || !desc) return alert("Compila tutti i campi");
             try {
                 const safeId = id.replace(/\//g, '_');
                 await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'resources', safeId), {
                     id: id,
                     description: desc,
+                    isBookable: bookable,
                     updatedAt: serverTimestamp()
                 });
-                alert("Strumento salvato!");
+                alert("Configurazione strumento salvata!");
                 document.getElementById('inp-inst-id').value = '';
                 document.getElementById('inp-inst-desc').value = '';
-            } catch(err) {
-                alert("Errore salvataggio strumento: " + err.message);
-            }
+            } catch(err) { alert("Errore salvataggio: " + err.message); }
         };
         
         window.loadInstruments = () => {
@@ -658,7 +740,6 @@
             onSnapshot(q, (snapshot) => {
                 const items = [];
                 snapshot.forEach(doc => items.push(doc.data()));
-                // Ordina alfabetico
                 items.sort((a,b) => (a.description > b.description) ? 1 : -1);
                 
                 if(items.length === 0) {
@@ -666,22 +747,33 @@
                     return;
                 }
                 
-                listEl.innerHTML = items.map(item => `
-                    <div class="bg-white p-2 rounded-lg border border-slate-100 flex justify-between items-center">
+                listEl.innerHTML = items.map(item => {
+                    const statusDot = item.isBookable !== false ? 'bg-emerald-500' : 'bg-red-500';
+                    const statusText = item.isBookable !== false ? 'Prenotabile' : 'Non Prenotabile';
+                    
+                    return `
+                    <div class="bg-white p-3 rounded-lg border border-slate-100 flex justify-between items-center shadow-sm">
                         <div>
-                            <div class="text-xs font-bold text-slate-700">${item.description}</div>
-                            <div class="text-[10px] text-slate-400 font-mono">${item.id}</div>
+                            <div class="flex items-center gap-2">
+                                <span class="w-2 h-2 rounded-full ${statusDot}" title="${statusText}"></span>
+                                <div class="text-xs font-bold text-slate-700">${item.description}</div>
+                            </div>
+                            <div class="text-[10px] text-slate-400 font-mono pl-4">${item.id}</div>
                         </div>
-                        <a href="?r=${item.id}" target="_blank" class="text-indigo-500 hover:text-indigo-700 p-1">
-                            <i data-lucide="external-link" class="w-4 h-4"></i>
-                        </a>
+                        <div class="flex gap-2">
+                            <button onclick="openCalendarForInstrument('${item.id}', '${item.description}')" class="text-slate-500 hover:text-indigo-600 bg-slate-50 p-2 rounded-lg" title="Vedi Calendario">
+                                <i data-lucide="calendar" class="w-4 h-4"></i>
+                            </button>
+                            <a href="?r=${item.id}" target="_blank" class="text-slate-500 hover:text-indigo-600 bg-slate-50 p-2 rounded-lg" title="Link Diretto">
+                                <i data-lucide="external-link" class="w-4 h-4"></i>
+                            </a>
+                        </div>
                     </div>
-                `).join('');
+                `}).join('');
                 lucide.createIcons();
             });
         };
 
-        // --- COMMON DELETE ---
         window.deleteBooking = async (id) => {
             if(confirm("Sei sicuro di voler eliminare questa prenotazione?")) {
                 try {
@@ -693,7 +785,6 @@
             }
         };
 
-        // --- MY BOOKING SEARCH ---
         window.showMyBookingSearch = () => {
             window.switchView('view-my-booking');
             document.getElementById('pnr-result').innerHTML = '';
@@ -708,7 +799,7 @@
             const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'bookings'), where("pnr", "==", pnr));
             onSnapshot(q, (snapshot) => {
                 if(snapshot.empty) {
-                    resDiv.innerHTML = '<p class="text-center text-red-500 font-bold text-sm">Nessuna prenotazione trovata con questo codice.</p>';
+                    resDiv.innerHTML = '<p class="text-center text-red-500 font-bold text-sm">Nessuna prenotazione trovata.</p>';
                     window.currentFoundBooking = null;
                     return;
                 }
@@ -716,7 +807,6 @@
                 snapshot.forEach(d => docs.push({id: d.id, ...d.data()}));
                 const b = docs[0]; 
                 window.currentFoundBooking = b; 
-
                 resDiv.innerHTML = `
                     <div class="bg-white p-4 rounded-xl border-2 border-emerald-500 shadow-xl animate-in fade-in slide-in-from-bottom-5">
                         <h3 class="text-sm font-bold text-emerald-700 uppercase mb-2">Prenotazione Trovata</h3>
