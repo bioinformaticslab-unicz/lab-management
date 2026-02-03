@@ -32,7 +32,7 @@
                 <h1 class="text-xl font-black italic tracking-tighter flex items-center gap-2">
                     <i data-lucide="scan-line" class="w-5 h-5"></i> UNISCAN
                 </h1>
-                <p class="text-indigo-200 text-[10px] font-medium uppercase tracking-widest">Lab Management v2.1</p>
+                <p class="text-indigo-200 text-[10px] font-medium uppercase tracking-widest">Lab Management v2.2</p>
             </div>
             <div class="flex gap-3">
                 <button onclick="showAdminLogin()" class="p-2 bg-indigo-700 rounded-full hover:bg-indigo-600 transition" title="Admin">
@@ -78,7 +78,7 @@
             </div>
             
             <div class="bg-indigo-50 border border-indigo-100 p-4 rounded-xl text-center">
-                <p class="text-xs text-indigo-800 font-medium">Inquadra un codice per gestire lo strumento.</p>
+                <p class="text-xs text-indigo-800 font-medium">Inquadra un codice o usa un link diretto.</p>
             </div>
         </div>
 
@@ -91,7 +91,10 @@
                 <div class="flex justify-between items-start">
                     <div>
                         <p class="text-xs font-bold text-indigo-600 uppercase mb-1">Oggetto Rilevato</p>
-                        <h2 id="item-title" class="text-2xl font-black text-slate-800 break-all mb-2">---</h2>
+                        <!-- Titolo principale (es. Nome descrittivo) -->
+                        <h2 id="item-title" class="text-2xl font-black text-slate-800 break-all leading-tight">---</h2>
+                        <!-- Sottotitolo (es. Codice IP/ID) -->
+                        <p id="item-subtitle" class="text-sm font-mono text-slate-400 mt-1">ID: ---</p>
                     </div>
                     <button onclick="reportIssue()" class="text-amber-500 p-2 hover:bg-amber-50 rounded-full" title="Segnala Guasto">
                         <i data-lucide="alert-triangle" class="w-5 h-5"></i>
@@ -102,6 +105,13 @@
                     <a id="btn-open-ip" href="#" target="_blank" class="inline-flex items-center gap-2 px-3 py-2 bg-blue-100 text-blue-700 rounded-lg text-xs font-bold hover:bg-blue-200 transition">
                         <i data-lucide="globe" class="w-4 h-4"></i> APRI IP
                     </a>
+                </div>
+                
+                <!-- Link per condivisione -->
+                <div class="mt-4 pt-2 border-t border-slate-50">
+                     <button onclick="copyDirectLink()" class="flex items-center gap-1 text-[10px] text-slate-400 hover:text-indigo-600">
+                        <i data-lucide="link" class="w-3 h-3"></i> Copia Link Prenotazione
+                     </button>
                 </div>
             </div>
 
@@ -124,12 +134,40 @@
                 <i data-lucide="layout-dashboard" class="w-5 h-5 text-indigo-600"></i> Pannello Amministratore
             </h2>
             
-            <div class="flex gap-2 text-xs font-bold">
-                <button onclick="loadAdminBookings()" class="px-3 py-1.5 bg-indigo-100 text-indigo-700 rounded-lg">Prenotazioni</button>
+            <!-- Admin Tabs -->
+            <div class="flex gap-2 text-xs font-bold bg-slate-200 p-1 rounded-lg">
+                <button onclick="switchAdminTab('bookings')" id="tab-btn-bookings" class="flex-1 py-2 bg-white text-indigo-700 rounded-md shadow-sm transition">Prenotazioni</button>
+                <button onclick="switchAdminTab('instruments')" id="tab-btn-instruments" class="flex-1 py-2 text-slate-500 hover:bg-white/50 rounded-md transition">Strumenti</button>
             </div>
 
-            <div id="admin-list" class="space-y-3">
-                <p class="text-center text-slate-400 py-10">Caricamento dati...</p>
+            <!-- Tab Content: Prenotazioni -->
+            <div id="admin-content-bookings" class="space-y-3">
+                <div id="admin-list" class="space-y-3">
+                    <p class="text-center text-slate-400 py-10">Caricamento dati...</p>
+                </div>
+            </div>
+
+            <!-- Tab Content: Strumenti -->
+            <div id="admin-content-instruments" class="hidden space-y-4">
+                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                    <h3 class="text-sm font-bold text-slate-700 mb-3">Aggiungi/Modifica Strumento</h3>
+                    <form onsubmit="saveInstrument(event)" class="space-y-3">
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase">Codice (ID/IP scansionato)</label>
+                            <input type="text" id="inp-inst-id" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-mono" placeholder="Es: 1.1.1.1">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase">Descrizione / Nome</label>
+                            <input type="text" id="inp-inst-desc" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs" placeholder="Es: Sequenziatore DNA Lab 3">
+                        </div>
+                        <button type="submit" class="w-full py-2 bg-indigo-600 text-white rounded-lg font-bold text-xs">SALVA DESCRIZIONE</button>
+                    </form>
+                </div>
+                
+                <h3 class="text-xs font-bold text-slate-500 uppercase mt-4 px-1">Strumenti Configurati</h3>
+                <div id="instruments-list" class="space-y-2">
+                    <!-- Lista strumenti -->
+                </div>
             </div>
         </div>
 
@@ -192,7 +230,7 @@
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
         import { getAuth, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
-        import { getFirestore, collection, addDoc, query, where, orderBy, onSnapshot, serverTimestamp, deleteDoc, doc, updateDoc } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+        import { getFirestore, collection, addDoc, query, where, orderBy, onSnapshot, serverTimestamp, deleteDoc, doc, updateDoc, setDoc, getDoc } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 
         const firebaseConfig = {
           apiKey: "AIzaSyAWbSxLJcDbB0bvd4HoMii3Z5CavR8vR-I",
@@ -210,13 +248,14 @@
         const db = getFirestore(app);
 
         let currentUser = null;
-        let currentItem = null;
+        let currentItem = null; // Codice tecnico (es. IP)
+        let currentItemName = null; // Nome descrittivo (es. Sequenziatore)
         let html5QrCode = null;
         let adminMode = false;
         
         // Variabili per la modifica
         let editingBookingId = null;
-        window.currentFoundBooking = null; // Per salvare la prenotazione trovata col PNR
+        window.currentFoundBooking = null;
 
         // AUTH
         onAuthStateChanged(auth, (user) => {
@@ -224,10 +263,22 @@
                 currentUser = user;
                 const st = document.getElementById('user-status');
                 if(st) { st.classList.remove('bg-red-500', 'animate-pulse'); st.classList.add('bg-green-500'); }
+                checkUrlParams(); // Controlla link diretti dopo login
             } else {
                 signInAnonymously(auth).catch(console.error);
             }
         });
+
+        // --- DEEP LINKING CHECK ---
+        function checkUrlParams() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const resourceId = urlParams.get('r'); // Parametro ?r=CODICE
+            if (resourceId) {
+                console.log("Link diretto rilevato:", resourceId);
+                currentItem = resourceId;
+                showDetails(resourceId);
+            }
+        }
 
         // --- NAVIGAZIONE ---
         window.switchView = (viewId) => {
@@ -238,11 +289,18 @@
         };
 
         window.resetApp = () => {
+            // Rimuovi parametri URL puliti
+            if(window.history.pushState) {
+                const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+                window.history.pushState({path:newUrl},'',newUrl);
+            }
+            
             window.switchView('view-scanner');
             document.getElementById('camera-overlay').classList.remove('hidden');
             document.getElementById('laser-line').classList.add('hidden');
             document.getElementById('btn-stop').classList.add('hidden');
             editingBookingId = null;
+            adminMode = false;
         };
 
         // --- SCANNER ---
@@ -275,9 +333,33 @@
         };
 
         // --- DETTAGLI ---
-        function showDetails(text) {
+        async function showDetails(text) {
             window.switchView('view-details');
-            document.getElementById('item-title').innerText = text;
+            
+            // 1. Reset UI
+            document.getElementById('item-title').innerText = "Caricamento...";
+            document.getElementById('item-subtitle').innerText = "ID: " + text;
+            
+            // 2. Cerca descrizione nel DB (Nuova Feature)
+            let displayName = text;
+            try {
+                // Sostituiamo caratteri non validi per ID documento se necessario, 
+                // ma per semplicità assumiamo codici alfanumerici/IP standard.
+                // Se il codice contiene '/', usiamo encodeURIComponent o un hash.
+                // Per ora usiamo il testo raw (se è un IP è sicuro).
+                const safeId = text.replace(/\//g, '_'); 
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'resources', safeId);
+                const docSnap = await getDoc(docRef);
+                
+                if (docSnap.exists() && docSnap.data().description) {
+                    displayName = docSnap.data().description;
+                }
+            } catch (e) { console.log("Errore fetch descrizione", e); }
+            
+            currentItemName = displayName;
+            document.getElementById('item-title').innerText = displayName;
+            
+            // 3. Gestione IP
             const ipMatch = text.match(/(\d{1,3}\.){3}\d{1,3}/);
             const btnIp = document.getElementById('ip-actions');
             const linkIp = document.getElementById('btn-open-ip');
@@ -289,21 +371,25 @@
             } else {
                 btnIp.classList.add('hidden');
             }
+            
             loadBookings(text);
         }
+        
+        window.copyDirectLink = () => {
+            const link = window.location.protocol + "//" + window.location.host + window.location.pathname + "?r=" + encodeURIComponent(currentItem);
+            navigator.clipboard.writeText(link).then(() => alert("Link copiato negli appunti!"));
+        };
 
         // --- UTILS ---
         const generatePNR = () => Math.random().toString(36).substring(2, 8).toUpperCase();
         const formatDate = (d) => new Date(d).toLocaleDateString('it-IT', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'});
-        
-        // Helper per input datetime-local
         const toLocalISO = (d) => {
             const date = new Date(d);
             const offset = date.getTimezoneOffset() * 60000;
             return (new Date(date - offset)).toISOString().slice(0, 16);
         };
 
-        // --- PRENOTAZIONE ---
+        // --- PRENOTAZIONE FORM & LOGIC ---
         window.toggleCustomReason = () => {
             const select = document.getElementById('inp-reason');
             const customInput = document.getElementById('inp-reason-custom');
@@ -320,10 +406,8 @@
             editingBookingId = null; // Modalità Creazione
             document.getElementById('modal-title').innerText = "Nuova Prenotazione";
             document.getElementById('btn-submit-booking').innerText = "CONFERMA PRENOTAZIONE";
-            
-            // Reset campi
             document.getElementById('booking-form').reset();
-            toggleCustomReason(); // Nasconde custom input
+            toggleCustomReason(); 
 
             const now = new Date();
             document.getElementById('inp-start').value = toLocalISO(now);
@@ -331,28 +415,23 @@
             document.getElementById('modal-booking').classList.remove('hidden');
         };
 
-        window.openEditModal = () => {
-            const booking = window.currentFoundBooking;
+        // Funzione usata sia da Utente che da Admin per modificare
+        window.openEditModal = (bookingObj = null) => {
+            // Se bookingObj è passato (da admin), usalo. Altrimenti usa currentFoundBooking (da ricerca user)
+            const booking = bookingObj || window.currentFoundBooking;
             if(!booking) return;
 
-            editingBookingId = booking.id; // Modalità Modifica
-            document.getElementById('modal-title').innerText = "Modifica Prenotazione";
+            editingBookingId = booking.id; 
+            document.getElementById('modal-title').innerText = adminMode ? "Modifica (Admin)" : "Modifica Prenotazione";
             document.getElementById('btn-submit-booking').innerText = "SALVA MODIFICHE";
 
-            // Popola campi
             document.getElementById('inp-name').value = booking.userName;
             
-            // Logica per il motivo "Altro" o Standard
             const select = document.getElementById('inp-reason');
             const customInput = document.getElementById('inp-reason-custom');
-            
-            // Controlla se il motivo salvato è tra le opzioni standard
             let isStandard = false;
             for(let i=0; i<select.options.length; i++) {
-                if(select.options[i].value === booking.reason) {
-                    isStandard = true;
-                    break;
-                }
+                if(select.options[i].value === booking.reason) { isStandard = true; break; }
             }
 
             if(isStandard) {
@@ -366,7 +445,6 @@
 
             document.getElementById('inp-start').value = booking.startDate;
             document.getElementById('inp-end').value = booking.endDate;
-            
             document.getElementById('modal-booking').classList.remove('hidden');
         };
 
@@ -378,8 +456,6 @@
 
             const name = document.getElementById('inp-name').value;
             let reason = document.getElementById('inp-reason').value;
-            
-            // Se "Altro", prendi dal campo custom
             if(reason === 'Altro') {
                 reason = document.getElementById('inp-reason-custom').value.trim();
                 if(!reason) return alert("Specificare il motivo.");
@@ -390,7 +466,7 @@
 
             try {
                 if(editingBookingId) {
-                    // MODIFICA ESISTENTE
+                    // MODIFICA
                     await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'bookings', editingBookingId), {
                         userName: name,
                         reason: reason,
@@ -401,14 +477,19 @@
                     
                     alert("Prenotazione modificata con successo!");
                     hideBookingForm();
-                    // Aggiorna la vista di ricerca
-                    searchBookingByPNR(); 
+                    // Refresh view
+                    if(adminMode) loadAdminBookings();
+                    else searchBookingByPNR(); 
 
                 } else {
-                    // NUOVA PRENOTAZIONE
+                    // NUOVA
                     const pnr = generatePNR();
+                    // Se stiamo prenotando via link diretto o scan, currentItem è settato
+                    const resId = currentItem || "Sconosciuto"; 
+                    
                     await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'bookings'), {
-                        resourceId: currentItem,
+                        resourceId: resId,
+                        resourceName: currentItemName || resId, // Salviamo anche il nome descrittivo
                         userName: name,
                         reason: reason,
                         startDate: start,
@@ -420,11 +501,11 @@
 
                     hideBookingForm();
                     
-                    const msg = `Prenotazione Confermata!\n\nIl tuo CODICE UNIVOCO è: ${pnr}\n\nSalva questo codice: ti servirà per modificare o cancellare la prenotazione.`;
+                    const msg = `Prenotazione Confermata!\n\nIl tuo CODICE UNIVOCO è: ${pnr}`;
                     alert(msg);
 
-                    const subject = `Prenotazione Lab: ${currentItem} [${pnr}]`;
-                    const body = `Prenotazione confermata.\nCodice PNR: ${pnr}\nStrumento: ${currentItem}\nOrario: ${start} - ${end}`;
+                    const subject = `Prenotazione Lab: ${currentItemName || resId}`;
+                    const body = `Codice PNR: ${pnr}\nStrumento: ${currentItemName || resId} (${resId})\nOrario: ${start} - ${end}`;
                     window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
                 }
 
@@ -433,7 +514,7 @@
             }
         };
 
-        // --- LOAD LISTA PRENOTAZIONI (User View) ---
+        // --- LOAD PRENOTAZIONI USER ---
         function loadBookings(itemId) {
             const listEl = document.getElementById('bookings-list');
             listEl.innerHTML = '<p class="text-center text-xs text-slate-400">Caricamento...</p>';
@@ -463,12 +544,32 @@
         }
 
         // --- ADMIN SIDE ---
+        window.switchAdminTab = (tab) => {
+            if(tab === 'bookings') {
+                document.getElementById('admin-content-bookings').classList.remove('hidden');
+                document.getElementById('admin-content-instruments').classList.add('hidden');
+                document.getElementById('tab-btn-bookings').classList.add('bg-white', 'text-indigo-700', 'shadow-sm');
+                document.getElementById('tab-btn-bookings').classList.remove('text-slate-500');
+                document.getElementById('tab-btn-instruments').classList.remove('bg-white', 'text-indigo-700', 'shadow-sm');
+                document.getElementById('tab-btn-instruments').classList.add('text-slate-500');
+                loadAdminBookings();
+            } else {
+                document.getElementById('admin-content-bookings').classList.add('hidden');
+                document.getElementById('admin-content-instruments').classList.remove('hidden');
+                document.getElementById('tab-btn-instruments').classList.add('bg-white', 'text-indigo-700', 'shadow-sm');
+                document.getElementById('tab-btn-instruments').classList.remove('text-slate-500');
+                document.getElementById('tab-btn-bookings').classList.remove('bg-white', 'text-indigo-700', 'shadow-sm');
+                document.getElementById('tab-btn-bookings').classList.add('text-slate-500');
+                loadInstruments();
+            }
+        };
+
         window.showAdminLogin = () => {
             const pin = prompt("Inserisci PIN Amministratore:", "");
             if (pin === "1234") {
                 adminMode = true;
                 window.switchView('view-admin');
-                loadAdminBookings();
+                switchAdminTab('bookings'); // Default tab
             } else if (pin !== null) {
                 alert("PIN Errato");
             }
@@ -482,23 +583,105 @@
                 const bookings = [];
                 snapshot.forEach(doc => bookings.push({ id: doc.id, ...doc.data() }));
                 bookings.sort((a, b) => new Date(b.startDate) - new Date(a.startDate));
-                listEl.innerHTML = bookings.map(b => `
-                    <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm flex justify-between items-center">
-                        <div>
-                            <div class="text-xs font-black text-indigo-700 uppercase">${b.resourceId}</div>
-                            <div class="text-xs font-bold text-slate-700">${b.userName}</div>
-                            <div class="text-[10px] text-slate-400 font-mono">PNR: ${b.pnr || 'N/A'}</div>
-                            <div class="text-[10px] text-slate-500">${formatDate(b.startDate)}</div>
+                
+                // Salviamo le prenotazioni in memoria globale per facilitare l'edit da admin
+                // (usiamo un approccio semplice passandole via funzione, ma window per debug aiuta)
+                window.adminBookingsCache = bookings;
+
+                listEl.innerHTML = bookings.map((b, index) => {
+                    // Stringify per passare oggetto alla funzione
+                    // Attenzione: escape delle virgolette
+                    const bStr = JSON.stringify(b).replace(/"/g, '&quot;');
+                    
+                    return `
+                    <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm flex flex-col gap-2">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <div class="text-xs font-black text-indigo-700 uppercase">${b.resourceName || b.resourceId}</div>
+                                <div class="text-[10px] text-slate-400 font-mono mb-1">ID: ${b.resourceId}</div>
+                                <div class="text-xs font-bold text-slate-700">${b.userName}</div>
+                            </div>
+                            <div class="text-[10px] text-slate-500 text-right">
+                                ${formatDate(b.startDate)}<br>
+                                PNR: <span class="font-mono bg-slate-100 px-1 rounded">${b.pnr || 'N/A'}</span>
+                            </div>
                         </div>
-                        <button onclick="deleteBooking('${b.id}')" class="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200">
-                            <i data-lucide="trash-2" class="w-4 h-4"></i>
-                        </button>
+                        
+                        <div class="flex gap-2 mt-1 pt-2 border-t border-slate-50">
+                            <button onclick="editBookingFromAdmin('${b.id}')" class="flex-1 py-1.5 bg-amber-100 text-amber-700 rounded-lg text-[10px] font-bold hover:bg-amber-200 flex items-center justify-center gap-1">
+                                <i data-lucide="edit" class="w-3 h-3"></i> MODIFICA
+                            </button>
+                            <button onclick="deleteBooking('${b.id}')" class="flex-1 py-1.5 bg-red-100 text-red-600 rounded-lg text-[10px] font-bold hover:bg-red-200 flex items-center justify-center gap-1">
+                                <i data-lucide="trash-2" class="w-3 h-3"></i> ELIMINA
+                            </button>
+                        </div>
+                    </div>
+                `}).join('');
+                lucide.createIcons();
+            });
+        };
+        
+        // Helper per recuperare l'oggetto prenotazione dalla cache admin e aprire il modal
+        window.editBookingFromAdmin = (id) => {
+            const booking = window.adminBookingsCache.find(b => b.id === id);
+            if(booking) {
+                openEditModal(booking);
+            }
+        };
+
+        // --- GESTIONE STRUMENTI (NUOVA) ---
+        window.saveInstrument = async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('inp-inst-id').value.trim();
+            const desc = document.getElementById('inp-inst-desc').value.trim();
+            if(!id || !desc) return alert("Compila tutti i campi");
+            
+            try {
+                const safeId = id.replace(/\//g, '_');
+                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'resources', safeId), {
+                    id: id,
+                    description: desc,
+                    updatedAt: serverTimestamp()
+                });
+                alert("Strumento salvato!");
+                document.getElementById('inp-inst-id').value = '';
+                document.getElementById('inp-inst-desc').value = '';
+            } catch(err) {
+                alert("Errore salvataggio strumento: " + err.message);
+            }
+        };
+        
+        window.loadInstruments = () => {
+            const listEl = document.getElementById('instruments-list');
+            listEl.innerHTML = '<p class="text-center text-xs">Caricamento strumenti...</p>';
+            const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'resources'));
+            onSnapshot(q, (snapshot) => {
+                const items = [];
+                snapshot.forEach(doc => items.push(doc.data()));
+                // Ordina alfabetico
+                items.sort((a,b) => (a.description > b.description) ? 1 : -1);
+                
+                if(items.length === 0) {
+                    listEl.innerHTML = '<p class="text-center text-xs italic text-slate-400">Nessuno strumento configurato.</p>';
+                    return;
+                }
+                
+                listEl.innerHTML = items.map(item => `
+                    <div class="bg-white p-2 rounded-lg border border-slate-100 flex justify-between items-center">
+                        <div>
+                            <div class="text-xs font-bold text-slate-700">${item.description}</div>
+                            <div class="text-[10px] text-slate-400 font-mono">${item.id}</div>
+                        </div>
+                        <a href="?r=${item.id}" target="_blank" class="text-indigo-500 hover:text-indigo-700 p-1">
+                            <i data-lucide="external-link" class="w-4 h-4"></i>
+                        </a>
                     </div>
                 `).join('');
                 lucide.createIcons();
             });
         };
 
+        // --- COMMON DELETE ---
         window.deleteBooking = async (id) => {
             if(confirm("Sei sicuro di voler eliminare questa prenotazione?")) {
                 try {
@@ -510,7 +693,7 @@
             }
         };
 
-        // --- MY BOOKING SEARCH & EDIT ---
+        // --- MY BOOKING SEARCH ---
         window.showMyBookingSearch = () => {
             window.switchView('view-my-booking');
             document.getElementById('pnr-result').innerHTML = '';
@@ -520,41 +703,32 @@
         window.searchBookingByPNR = async () => {
             const pnr = document.getElementById('inp-pnr-search').value.trim().toUpperCase();
             const resDiv = document.getElementById('pnr-result');
-            
             if(pnr.length < 3) return alert("Inserisci un codice valido");
-            
             resDiv.innerHTML = '<p class="text-center text-xs">Ricerca...</p>';
             const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'bookings'), where("pnr", "==", pnr));
-            
             onSnapshot(q, (snapshot) => {
                 if(snapshot.empty) {
                     resDiv.innerHTML = '<p class="text-center text-red-500 font-bold text-sm">Nessuna prenotazione trovata con questo codice.</p>';
                     window.currentFoundBooking = null;
                     return;
                 }
-                
                 const docs = [];
                 snapshot.forEach(d => docs.push({id: d.id, ...d.data()}));
                 const b = docs[0]; 
-                window.currentFoundBooking = b; // Salva globalmente per l'editing
+                window.currentFoundBooking = b; 
 
                 resDiv.innerHTML = `
                     <div class="bg-white p-4 rounded-xl border-2 border-emerald-500 shadow-xl animate-in fade-in slide-in-from-bottom-5">
                         <h3 class="text-sm font-bold text-emerald-700 uppercase mb-2">Prenotazione Trovata</h3>
                         <p class="text-xs text-slate-500">Strumento:</p>
-                        <p class="font-bold text-slate-800 mb-2">${b.resourceId}</p>
+                        <p class="font-bold text-slate-800 mb-2">${b.resourceName || b.resourceId}</p>
                         <p class="text-xs text-slate-500">Motivo:</p>
                         <p class="font-bold text-slate-700 text-xs mb-2 italic">"${b.reason}"</p>
                         <p class="text-xs text-slate-500">Orario:</p>
                         <p class="font-mono text-xs text-slate-700 mb-4 bg-slate-100 p-2 rounded">${formatDate(b.startDate)}<br>al ${formatDate(b.endDate)}</p>
-                        
                         <div class="flex gap-2">
-                            <button onclick="openEditModal()" class="flex-1 py-2 bg-amber-400 text-amber-900 rounded-lg font-bold text-xs shadow hover:bg-amber-500 transition">
-                                MODIFICA
-                            </button>
-                            <button onclick="deleteBooking('${b.id}')" class="flex-1 py-2 bg-red-500 text-white rounded-lg font-bold text-xs shadow hover:bg-red-600 transition">
-                                CANCELLA
-                            </button>
+                            <button onclick="openEditModal()" class="flex-1 py-2 bg-amber-400 text-amber-900 rounded-lg font-bold text-xs shadow hover:bg-amber-500 transition">MODIFICA</button>
+                            <button onclick="deleteBooking('${b.id}')" class="flex-1 py-2 bg-red-500 text-white rounded-lg font-bold text-xs shadow hover:bg-red-600 transition">CANCELLA</button>
                         </div>
                     </div>
                 `;
