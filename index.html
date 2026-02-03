@@ -31,7 +31,7 @@
                 <h1 class="text-xl font-black italic tracking-tighter flex items-center gap-2">
                     <i data-lucide="scan-line" class="w-5 h-5"></i> UNISCAN
                 </h1>
-                <p class="text-indigo-200 text-[10px] font-medium uppercase tracking-widest">Lab Management v2.3</p>
+                <p class="text-indigo-200 text-[10px] font-medium uppercase tracking-widest">Lab Management v2.4</p>
             </div>
             <div class="flex gap-3">
                 <button onclick="showAdminLogin()" class="p-2 bg-indigo-700 rounded-full hover:bg-indigo-600 transition" title="Admin">
@@ -71,8 +71,17 @@
                 <div id="laser-line" class="hidden absolute top-1/2 left-0 w-full h-0.5 bg-red-500 shadow-[0_0_15px_red] animate-pulse z-20"></div>
                 <button id="btn-stop" onclick="stopScanner()" class="hidden absolute bottom-4 left-1/2 -translate-x-1/2 bg-white/20 backdrop-blur-md border border-white/30 text-white px-4 py-1 rounded-full text-xs font-bold z-30">Chiudi</button>
             </div>
+            
+            <!-- Input Manuale -->
+            <div class="flex gap-2">
+                <input type="text" id="inp-manual-code" placeholder="Inserisci codice manuale (es. 1.1.1.1)" class="flex-1 px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-mono shadow-sm">
+                <button onclick="manualSearch()" class="px-4 py-3 bg-slate-800 text-white rounded-xl font-bold shadow-lg hover:bg-slate-700 transition flex items-center justify-center">
+                    <i data-lucide="arrow-right" class="w-5 h-5"></i>
+                </button>
+            </div>
+
             <div class="bg-indigo-50 border border-indigo-100 p-4 rounded-xl text-center">
-                <p class="text-xs text-indigo-800 font-medium">Inquadra un codice o usa un link diretto.</p>
+                <p class="text-xs text-indigo-800 font-medium">Inquadra un codice, usa un link diretto o inserisci l'ID manualmente.</p>
             </div>
         </div>
 
@@ -333,6 +342,8 @@
             document.getElementById('camera-overlay').classList.remove('hidden');
             document.getElementById('laser-line').classList.add('hidden');
             document.getElementById('btn-stop').classList.add('hidden');
+            // Pulisci input manuale
+            document.getElementById('inp-manual-code').value = '';
             editingBookingId = null;
             adminMode = false;
         };
@@ -363,6 +374,18 @@
             currentItem = decodedText;
             showDetails(decodedText);
             lucide.createIcons();
+        };
+
+        // --- MANUAL SEARCH ---
+        window.manualSearch = () => {
+            const code = document.getElementById('inp-manual-code').value.trim();
+            if(code.length > 0) {
+                stopScanner();
+                currentItem = code;
+                showDetails(code);
+            } else {
+                alert("Inserisci un codice valido");
+            }
         };
 
         // --- DETTAGLI ---
