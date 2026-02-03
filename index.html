@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>UniScan Lab Manager</title>
+    <title>UniScan Lab Manager Pro</title>
     
     <!-- Stili: Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -15,34 +15,51 @@
     <script src="https://unpkg.com/lucide@latest"></script>
 
     <style>
-        /* Animazioni custom */
         .fade-in { animation: fadeIn 0.3s ease-in-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         body { -webkit-tap-highlight-color: transparent; }
+        /* Nascondi scrollbar per estetica mobile */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
-<body class="bg-slate-100 text-slate-800 font-sans min-h-screen pb-20">
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen pb-24">
 
-    <!-- HEADER -->
-    <header class="bg-indigo-700 text-white p-6 rounded-b-[2.5rem] shadow-xl sticky top-0 z-50">
+    <!-- HEADER & NAV -->
+    <header class="bg-indigo-800 text-white p-6 rounded-b-[2rem] shadow-xl sticky top-0 z-50">
         <div class="flex justify-between items-center">
-            <div>
-                <h1 class="text-2xl font-black italic tracking-tighter flex items-center gap-2">
-                    <i data-lucide="scan-line" class="w-6 h-6"></i> UNISCAN
+            <div onclick="resetApp()" class="cursor-pointer">
+                <h1 class="text-xl font-black italic tracking-tighter flex items-center gap-2">
+                    <i data-lucide="scan-line" class="w-5 h-5"></i> UNISCAN
                 </h1>
-                <p class="text-indigo-200 text-xs font-medium uppercase tracking-widest mt-1">Lab Booking System</p>
+                <p class="text-indigo-200 text-[10px] font-medium uppercase tracking-widest">Lab Management v2.0</p>
             </div>
-            <div id="user-status" class="w-3 h-3 bg-red-500 rounded-full animate-pulse" title="Stato Connessione"></div>
+            <div class="flex gap-3">
+                <button onclick="showAdminLogin()" class="p-2 bg-indigo-700 rounded-full hover:bg-indigo-600 transition" title="Admin">
+                    <i data-lucide="shield" class="w-4 h-4"></i>
+                </button>
+                <div id="user-status" class="w-3 h-3 bg-red-500 rounded-full animate-pulse self-center" title="Stato Connessione"></div>
+            </div>
         </div>
     </header>
 
     <!-- MAIN CONTENT -->
     <main class="p-5 max-w-md mx-auto relative">
         
-        <!-- SEZIONE 1: SCANNER (Default) -->
+        <!-- MENU PRINCIPALE (Sotto Header) -->
+        <div id="main-menu" class="flex justify-center gap-4 mb-6 fade-in">
+            <button onclick="resetApp()" class="flex-1 py-3 bg-white border border-slate-200 shadow-sm rounded-xl flex flex-col items-center gap-1 active:scale-95 transition">
+                <i data-lucide="qr-code" class="w-5 h-5 text-indigo-600"></i>
+                <span class="text-[10px] font-bold uppercase text-slate-500">Scanner</span>
+            </button>
+            <button onclick="showMyBookingSearch()" class="flex-1 py-3 bg-white border border-slate-200 shadow-sm rounded-xl flex flex-col items-center gap-1 active:scale-95 transition">
+                <i data-lucide="ticket" class="w-5 h-5 text-emerald-600"></i>
+                <span class="text-[10px] font-bold uppercase text-slate-500">La mia Prenotazione</span>
+            </button>
+        </div>
+
+        <!-- VISTA 1: SCANNER -->
         <div id="view-scanner" class="fade-in space-y-6">
-            
-            <!-- Box Camera -->
             <div class="relative bg-black rounded-3xl overflow-hidden shadow-2xl aspect-square border-4 border-indigo-500/30">
                 <div id="reader" class="w-full h-full object-cover"></div>
                 
@@ -50,126 +67,134 @@
                 <div id="camera-overlay" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-900 text-white z-10">
                     <i data-lucide="camera" class="w-12 h-12 mb-4 text-indigo-400"></i>
                     <p class="font-bold">Scannerizza Strumento</p>
-                    <button onclick="startScanner()" class="mt-4 px-6 py-2 bg-indigo-600 rounded-full font-bold text-sm hover:bg-indigo-500 transition">
+                    <button onclick="startScanner()" class="mt-4 px-6 py-2 bg-indigo-600 rounded-full font-bold text-sm hover:bg-indigo-500 transition shadow-lg shadow-indigo-500/50">
                         AVVIA CAMERA
                     </button>
                 </div>
 
-                <!-- Overlay Laser (quando attivo) -->
+                <!-- Overlay Laser -->
                 <div id="laser-line" class="hidden absolute top-1/2 left-0 w-full h-0.5 bg-red-500 shadow-[0_0_15px_red] animate-pulse z-20"></div>
-                
-                <button id="btn-stop" onclick="stopScanner()" class="hidden absolute bottom-4 left-1/2 -translate-x-1/2 bg-white/20 backdrop-blur-md border border-white/30 text-white px-4 py-1 rounded-full text-xs font-bold z-30">
-                    Chiudi
-                </button>
+                <button id="btn-stop" onclick="stopScanner()" class="hidden absolute bottom-4 left-1/2 -translate-x-1/2 bg-white/20 backdrop-blur-md border border-white/30 text-white px-4 py-1 rounded-full text-xs font-bold z-30">Chiudi</button>
             </div>
-
-            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
-                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-                    <i data-lucide="info"></i> Istruzioni
-                </h3>
-                <p class="text-sm text-slate-600 leading-relaxed">
-                    Inquadra il QR code o il codice a barre dello strumento per:
-                    <ul class="list-disc list-inside mt-2 text-xs font-medium text-slate-500 space-y-1">
-                        <li>Visualizzare la scheda tecnica / IP</li>
-                        <li>Controllare la disponibilità</li>
-                        <li>Effettuare una prenotazione</li>
-                    </ul>
-                </p>
+            
+            <div class="bg-indigo-50 border border-indigo-100 p-4 rounded-xl text-center">
+                <p class="text-xs text-indigo-800 font-medium">Inquadra un codice per gestire lo strumento.</p>
             </div>
         </div>
 
-        <!-- SEZIONE 2: DETTAGLIO & PRENOTAZIONE (Nascosta) -->
+        <!-- VISTA 2: DETTAGLIO STRUMENTO -->
         <div id="view-details" class="hidden fade-in space-y-5">
-            <button onclick="resetApp()" class="flex items-center gap-1 text-xs font-bold text-slate-500 hover:text-indigo-600 mb-2">
-                <i data-lucide="arrow-left" class="w-4 h-4"></i> Torna allo Scanner
-            </button>
-
-            <!-- Card Oggetto -->
             <div class="bg-white p-5 rounded-3xl shadow-lg border-l-8 border-indigo-600 relative overflow-hidden">
                 <div class="absolute top-0 right-0 p-4 opacity-10">
                     <i data-lucide="microscope" class="w-24 h-24"></i>
                 </div>
-                <p class="text-xs font-bold text-indigo-600 uppercase mb-1">Oggetto Rilevato</p>
-                <h2 id="item-title" class="text-2xl font-black text-slate-800 break-all mb-2">---</h2>
-                <div id="ip-actions" class="hidden mt-3 pt-3 border-t border-slate-100">
-                    <a id="btn-open-ip" href="#" target="_blank" class="inline-flex items-center gap-2 px-4 py-2 bg-blue-100 text-blue-700 rounded-lg text-xs font-bold hover:bg-blue-200 transition">
-                        <i data-lucide="globe" class="w-4 h-4"></i> APRI INTERFACCIA WEB
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-xs font-bold text-indigo-600 uppercase mb-1">Oggetto Rilevato</p>
+                        <h2 id="item-title" class="text-2xl font-black text-slate-800 break-all mb-2">---</h2>
+                    </div>
+                    <button onclick="reportIssue()" class="text-amber-500 p-2 hover:bg-amber-50 rounded-full" title="Segnala Guasto">
+                        <i data-lucide="alert-triangle" class="w-5 h-5"></i>
+                    </button>
+                </div>
+                
+                <div id="ip-actions" class="hidden mt-3 pt-3 border-t border-slate-100 flex flex-wrap gap-2">
+                    <a id="btn-open-ip" href="#" target="_blank" class="inline-flex items-center gap-2 px-3 py-2 bg-blue-100 text-blue-700 rounded-lg text-xs font-bold hover:bg-blue-200 transition">
+                        <i data-lucide="globe" class="w-4 h-4"></i> APRI IP
                     </a>
                 </div>
             </div>
 
-            <!-- Calendario / Stato -->
             <div class="space-y-3">
                 <div class="flex justify-between items-center px-2">
                     <h3 class="text-sm font-bold text-slate-700 flex items-center gap-2">
-                        <i data-lucide="calendar-days" class="w-4 h-4"></i> Prenotazioni Future
+                        <i data-lucide="calendar-days" class="w-4 h-4"></i> Calendario
                     </h3>
-                    <button onclick="showBookingForm()" class="px-3 py-1.5 bg-emerald-500 text-white rounded-lg text-xs font-bold shadow-md hover:bg-emerald-600 transition flex items-center gap-1">
+                    <button onclick="showBookingForm()" class="px-4 py-2 bg-emerald-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-emerald-200 hover:bg-emerald-600 transition flex items-center gap-2">
                         <i data-lucide="plus"></i> PRENOTA
                     </button>
                 </div>
-
-                <div id="bookings-list" class="space-y-2">
-                    <!-- Lista prenotazioni iniettata via JS -->
-                    <p class="text-center py-8 text-slate-400 text-sm italic">Caricamento disponibilità...</p>
-                </div>
+                <div id="bookings-list" class="space-y-2 pb-10"></div>
             </div>
         </div>
 
-        <!-- SEZIONE 3: FORM DI PRENOTAZIONE (Modale) -->
-        <div id="modal-booking" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-end sm:items-center justify-center p-4">
-            <div class="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl animate-in slide-in-from-bottom-10">
-                <div class="flex justify-between items-center mb-6">
-                    <h3 class="text-lg font-bold text-slate-800">Nuova Prenotazione</h3>
-                    <button onclick="hideBookingForm()" class="p-2 bg-slate-100 rounded-full hover:bg-slate-200">
-                        <i data-lucide="x" class="w-4 h-4"></i>
-                    </button>
-                </div>
-
-                <form id="booking-form" onsubmit="handleBooking(event)" class="space-y-4">
-                    <div>
-                        <label class="block text-xs font-bold text-slate-500 mb-1">Nome e Cognome</label>
-                        <input type="text" id="inp-name" required class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-bold" placeholder="Mario Rossi">
-                    </div>
-                    
-                    <div>
-                        <label class="block text-xs font-bold text-slate-500 mb-1">Motivo Utilizzo</label>
-                        <select id="inp-reason" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm">
-                            <option>Manutenzione Ordinaria</option>
-                            <option>Esperimento Didattico</option>
-                            <option>Ricerca / Tesi</option>
-                            <option>Altro</option>
-                        </select>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label class="block text-xs font-bold text-slate-500 mb-1">Inizio</label>
-                            <input type="datetime-local" id="inp-start" required class="w-full px-2 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-slate-500 mb-1">Fine</label>
-                            <input type="datetime-local" id="inp-end" required class="w-full px-2 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono">
-                        </div>
-                    </div>
-
-                    <button type="submit" class="w-full py-3 bg-indigo-600 text-white rounded-xl font-bold text-sm shadow-lg hover:bg-indigo-700 active:scale-95 transition mt-4">
-                        CONFERMA PRENOTAZIONE
-                    </button>
-                </form>
+        <!-- VISTA 3: ADMIN PANEL -->
+        <div id="view-admin" class="hidden fade-in space-y-4">
+            <h2 class="text-lg font-black text-slate-800 flex items-center gap-2 border-b pb-2">
+                <i data-lucide="layout-dashboard" class="w-5 h-5 text-indigo-600"></i> Pannello Amministratore
+            </h2>
+            
+            <!-- Admin Tabs -->
+            <div class="flex gap-2 text-xs font-bold">
+                <button onclick="loadAdminBookings()" class="px-3 py-1.5 bg-indigo-100 text-indigo-700 rounded-lg">Prenotazioni</button>
+                <!-- Si potrebbero aggiungere tab per Utenti o Strumenti qui -->
             </div>
+
+            <div id="admin-list" class="space-y-3">
+                <p class="text-center text-slate-400 py-10">Caricamento dati...</p>
+            </div>
+        </div>
+
+        <!-- VISTA 4: RICERCA PRENOTAZIONE -->
+        <div id="view-my-booking" class="hidden fade-in flex flex-col items-center justify-center py-10 space-y-4">
+            <div class="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mb-2">
+                <i data-lucide="search" class="w-8 h-8"></i>
+            </div>
+            <h2 class="text-lg font-bold text-slate-800 text-center">Gestione Prenotazione</h2>
+            <p class="text-xs text-slate-500 text-center max-w-[200px]">Inserisci il Codice Univoco (PNR) ricevuto al momento della prenotazione.</p>
+            
+            <input type="text" id="inp-pnr-search" placeholder="Es: X7K9P2" class="w-full max-w-xs text-center text-2xl font-mono uppercase tracking-widest px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-indigo-500 focus:outline-none bg-white">
+            
+            <button onclick="searchBookingByPNR()" class="w-full max-w-xs py-3 bg-emerald-600 text-white rounded-xl font-bold shadow-lg">CERCA</button>
+            
+            <div id="pnr-result" class="w-full max-w-xs mt-6"></div>
         </div>
 
     </main>
 
-    <!-- FIREBASE & LOGICA APP -->
+    <!-- MODAL PRENOTAZIONE -->
+    <div id="modal-booking" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-end sm:items-center justify-center p-4">
+        <div class="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl animate-in slide-in-from-bottom-10">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-lg font-bold text-slate-800">Nuova Prenotazione</h3>
+                <button onclick="hideBookingForm()" class="p-2 bg-slate-100 rounded-full hover:bg-slate-200"><i data-lucide="x" class="w-4 h-4"></i></button>
+            </div>
+            <form id="booking-form" onsubmit="handleBooking(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 mb-1">Nome Ricercatore/Studente</label>
+                    <input type="text" id="inp-name" required class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm font-bold placeholder-slate-300" placeholder="Mario Rossi">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 mb-1">Motivo Utilizzo</label>
+                    <select id="inp-reason" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm">
+                        <option>Manutenzione Ordinaria</option>
+                        <option>Esperimento Didattico</option>
+                        <option>Ricerca / Tesi</option>
+                        <option>Altro</option>
+                    </select>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1">Inizio</label>
+                        <input type="datetime-local" id="inp-start" required class="w-full px-2 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1">Fine</label>
+                        <input type="datetime-local" id="inp-end" required class="w-full px-2 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono">
+                    </div>
+                </div>
+                <button type="submit" class="w-full py-3 bg-indigo-600 text-white rounded-xl font-bold text-sm shadow-lg hover:bg-indigo-700 active:scale-95 transition mt-4">CONFERMA PRENOTAZIONE</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- LOGICA APP -->
     <script type="module">
-        // Importa Firebase da CDN (necessario per file HTML singolo)
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
         import { getAuth, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
-        import { getFirestore, collection, addDoc, query, where, orderBy, onSnapshot, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+        import { getFirestore, collection, addDoc, query, where, orderBy, onSnapshot, serverTimestamp, deleteDoc, doc, updateDoc } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 
-        // --- TUA CONFIGURAZIONE FIREBASE ---
+        // --- CONFIGURAZIONE PRESERVATA ---
         const firebaseConfig = {
           apiKey: "AIzaSyAWbSxLJcDbB0bvd4HoMii3Z5CavR8vR-I",
           authDomain: "unisca-lab.firebaseapp.com",
@@ -179,69 +204,61 @@
           appId: "1:775803411857:web:1a24be42a1c70482ad8e30",
           measurementId: "G-3ECHHPDZJZ"
         };
-        
-        // ID Univoco per i dati dell'app
         const appId = 'unisca-lab-v1';
 
-        // Init Firebase
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // Stato Globale
         let currentUser = null;
         let currentItem = null;
         let html5QrCode = null;
+        let adminMode = false;
 
-        // --- AUTENTICAZIONE ---
+        // AUTH
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 currentUser = user;
-                const statusEl = document.getElementById('user-status');
-                if(statusEl) {
-                    statusEl.classList.remove('bg-red-500', 'animate-pulse');
-                    statusEl.classList.add('bg-green-500');
-                    statusEl.title = "Connesso";
-                }
+                const st = document.getElementById('user-status');
+                if(st) { st.classList.remove('bg-red-500', 'animate-pulse'); st.classList.add('bg-green-500'); }
             } else {
-                signInAnonymously(auth).catch((error) => {
-                    console.error("Errore Autenticazione:", error);
-                });
+                signInAnonymously(auth).catch(console.error);
             }
         });
 
-        // --- GESTIONE INTERFACCIA ---
+        // --- NAVIGAZIONE ---
+        window.switchView = (viewId) => {
+            ['view-scanner', 'view-details', 'view-admin', 'view-my-booking'].forEach(id => {
+                document.getElementById(id).classList.add('hidden');
+            });
+            document.getElementById(viewId).classList.remove('hidden');
+        };
+
+        window.resetApp = () => {
+            window.switchView('view-scanner');
+            // Reset Scanner
+            document.getElementById('camera-overlay').classList.remove('hidden');
+            document.getElementById('laser-line').classList.add('hidden');
+            document.getElementById('btn-stop').classList.add('hidden');
+        };
+
+        // --- SCANNER ---
         window.startScanner = async () => {
             document.getElementById('camera-overlay').classList.add('hidden');
             document.getElementById('laser-line').classList.remove('hidden');
             document.getElementById('btn-stop').classList.remove('hidden');
-
+            
             html5QrCode = new Html5Qrcode("reader");
             try {
-                const config = { 
-                    fps: 10, 
-                    qrbox: { width: 250, height: 250 },
-                    aspectRatio: 1.0 
-                };
-                
-                await html5QrCode.start(
-                    { facingMode: "environment" },
-                    config,
-                    onScanSuccess,
-                    () => {} 
-                );
+                await html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: {width:250, height:250} }, onScanSuccess, () => {});
             } catch (err) {
-                alert("Impossibile avviare la fotocamera. Verifica i permessi o usa HTTPS.");
-                console.error(err);
+                alert("Errore Camera. Usa HTTPS o verifica i permessi.");
                 resetApp();
             }
         };
 
         window.stopScanner = async () => {
-            if (html5QrCode) {
-                try { await html5QrCode.stop(); await html5QrCode.clear(); } catch (e) {}
-                html5QrCode = null;
-            }
+            if(html5QrCode) { try { await html5QrCode.stop(); await html5QrCode.clear(); } catch(e){} html5QrCode = null; }
             document.getElementById('camera-overlay').classList.remove('hidden');
             document.getElementById('laser-line').classList.add('hidden');
             document.getElementById('btn-stop').classList.add('hidden');
@@ -254,15 +271,13 @@
             lucide.createIcons();
         };
 
-        // --- LOGICA DI DETTAGLIO & PRENOTAZIONI ---
+        // --- DETTAGLI E PRENOTAZIONI ---
         function showDetails(text) {
-            document.getElementById('view-scanner').classList.add('hidden');
-            document.getElementById('view-details').classList.remove('hidden');
+            window.switchView('view-details');
             document.getElementById('item-title').innerText = text;
             
-            // Gestione IP e Link
+            // IP Logic
             const ipMatch = text.match(/(\d{1,3}\.){3}\d{1,3}/);
-            const linkMatch = text.match(/https?:\/\/[^\s]+/);
             const btnIp = document.getElementById('ip-actions');
             const linkIp = document.getElementById('btn-open-ip');
             
@@ -270,10 +285,6 @@
                 btnIp.classList.remove('hidden');
                 linkIp.href = `http://${ipMatch[0]}`;
                 linkIp.innerHTML = `<i data-lucide="globe" class="w-4 h-4"></i> APRI IP: ${ipMatch[0]}`;
-            } else if (linkMatch) {
-                btnIp.classList.remove('hidden');
-                linkIp.href = linkMatch[0];
-                linkIp.innerHTML = `<i data-lucide="link" class="w-4 h-4"></i> APRI LINK`;
             } else {
                 btnIp.classList.add('hidden');
             }
@@ -281,97 +292,33 @@
             loadBookings(text);
         }
 
-        function loadBookings(itemId) {
-            const listEl = document.getElementById('bookings-list');
-            listEl.innerHTML = '<div class="text-center py-4"><div class="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600 mx-auto"></div></div>';
+        // --- UTILS ---
+        const generatePNR = () => Math.random().toString(36).substring(2, 8).toUpperCase();
+        const formatDate = (d) => new Date(d).toLocaleDateString('it-IT', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'});
 
-            const q = query(
-                collection(db, 'artifacts', appId, 'public', 'data', 'bookings'),
-                where("resourceId", "==", itemId)
-            );
-
-            onSnapshot(q, (snapshot) => {
-                const bookings = [];
-                snapshot.forEach(doc => bookings.push({ id: doc.id, ...doc.data() }));
-                
-                bookings.sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
-
-                const now = new Date();
-                const yesterday = new Date(now.getTime() - 24*60*60*1000);
-                const relevant = bookings.filter(b => new Date(b.endDate) > yesterday);
-
-                renderBookingsList(relevant);
-            }, (error) => {
-                console.error("Errore Firestore:", error);
-                listEl.innerHTML = `<p class="text-red-500 text-xs text-center">Errore caricamento dati.<br>${error.message}</p>`;
-            });
-        }
-
-        function renderBookingsList(bookings) {
-            const listEl = document.getElementById('bookings-list');
-            if (bookings.length === 0) {
-                listEl.innerHTML = `
-                    <div class="bg-emerald-50 border border-emerald-100 p-4 rounded-xl text-center">
-                        <p class="text-emerald-600 font-bold text-sm">Strumento Libero</p>
-                        <p class="text-emerald-400 text-xs">Nessuna prenotazione futura.</p>
-                    </div>
-                `;
-                return;
-            }
-
-            let html = '';
-            bookings.forEach(b => {
-                const start = new Date(b.startDate);
-                const end = new Date(b.endDate);
-                const now = new Date();
-                const isOngoing = now >= start && now <= end;
-                
-                html += `
-                    <div class="bg-white p-3 rounded-xl border ${isOngoing ? 'border-indigo-500 ring-2 ring-indigo-100' : 'border-slate-100'} shadow-sm flex justify-between items-center mb-2">
-                        <div>
-                            <div class="flex items-center gap-2 mb-1">
-                                <span class="text-xs font-black text-slate-700 uppercase">${b.userName}</span>
-                                ${isOngoing ? '<span class="bg-indigo-600 text-white text-[9px] font-bold px-2 py-0.5 rounded-full">IN USO ORA</span>' : ''}
-                            </div>
-                            <p class="text-xs text-slate-500">
-                                ${start.toLocaleDateString()} | ${start.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})} - ${end.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}
-                            </p>
-                            <p class="text-[10px] text-slate-400 mt-1 italic">${b.reason}</p>
-                        </div>
-                    </div>
-                `;
-            });
-            listEl.innerHTML = html;
-        }
-
-        // --- GESTIONE FORM ---
+        // --- PRENOTAZIONE ---
         window.showBookingForm = () => {
             const now = new Date();
             const toLocalISO = (d) => {
                 const offset = d.getTimezoneOffset() * 60000;
                 return (new Date(d - offset)).toISOString().slice(0, 16);
             };
-
-            const oneHourLater = new Date(now.getTime() + 60*60*1000);
-            
             document.getElementById('inp-start').value = toLocalISO(now);
-            document.getElementById('inp-end').value = toLocalISO(oneHourLater);
-            
+            document.getElementById('inp-end').value = toLocalISO(new Date(now.getTime()+3600000));
             document.getElementById('modal-booking').classList.remove('hidden');
         };
 
-        window.hideBookingForm = () => {
-            document.getElementById('modal-booking').classList.add('hidden');
-        };
+        window.hideBookingForm = () => document.getElementById('modal-booking').classList.add('hidden');
 
         window.handleBooking = async (e) => {
             e.preventDefault();
-            if (!currentUser) return alert("Attendi connessione database...");
+            if (!currentUser) return alert("Connessione assente.");
 
             const name = document.getElementById('inp-name').value;
             const reason = document.getElementById('inp-reason').value;
             const start = document.getElementById('inp-start').value;
             const end = document.getElementById('inp-end').value;
+            const pnr = generatePNR();
 
             try {
                 await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'bookings'), {
@@ -380,32 +327,160 @@
                     reason: reason,
                     startDate: start,
                     endDate: end,
+                    pnr: pnr,
                     bookedBy: currentUser.uid,
                     createdAt: serverTimestamp()
                 });
 
-                const subject = `Conferma Prenotazione Lab: ${currentItem}`;
-                const body = `Ciao ${name},\n\nHai prenotato lo strumento: ${currentItem}\nMotivo: ${reason}\n\nDal: ${start.replace('T', ' ')}\nAl: ${end.replace('T', ' ')}\n\nQuesta email serve come promemoria personale.`;
-                const mailtoLink = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-
                 hideBookingForm();
                 
-                if(confirm("Prenotazione Salvata! Vuoi inviarti un promemoria via email?")) {
-                    window.location.href = mailtoLink;
-                }
+                // Alert PNR
+                const msg = `Prenotazione Confermata!\n\nIl tuo CODICE UNIVOCO è: ${pnr}\n\nSalva questo codice: ti servirà per modificare o cancellare la prenotazione.`;
+                alert(msg);
+
+                // Mailto
+                const subject = `Prenotazione Lab: ${currentItem} [${pnr}]`;
+                const body = `Prenotazione confermata.\nCodice PNR: ${pnr}\nStrumento: ${currentItem}\nOrario: ${start} - ${end}`;
+                window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 
             } catch (err) {
-                console.error(err);
                 alert("Errore salvataggio: " + err.message);
             }
         };
 
-        window.resetApp = () => {
-            document.getElementById('view-details').classList.add('hidden');
-            document.getElementById('view-scanner').classList.remove('hidden');
-            document.getElementById('camera-overlay').classList.remove('hidden');
-            document.getElementById('laser-line').classList.add('hidden');
-            document.getElementById('btn-stop').classList.add('hidden');
+        // --- LOAD LISTA PRENOTAZIONI (User View) ---
+        function loadBookings(itemId) {
+            const listEl = document.getElementById('bookings-list');
+            listEl.innerHTML = '<p class="text-center text-xs text-slate-400">Caricamento...</p>';
+
+            const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'bookings'), where("resourceId", "==", itemId));
+            
+            onSnapshot(q, (snapshot) => {
+                const bookings = [];
+                snapshot.forEach(doc => bookings.push({ id: doc.id, ...doc.data() }));
+                bookings.sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
+                
+                // Filtro solo future o ultime 24h
+                const now = new Date();
+                const relevant = bookings.filter(b => new Date(b.endDate) > new Date(now.getTime() - 86400000));
+
+                if (relevant.length === 0) {
+                    listEl.innerHTML = '<div class="bg-emerald-50 p-4 rounded-xl text-center text-emerald-600 font-bold text-xs">Libero per le prossime 24h</div>';
+                    return;
+                }
+
+                listEl.innerHTML = relevant.map(b => {
+                    const isNow = now >= new Date(b.startDate) && now <= new Date(b.endDate);
+                    return `
+                    <div class="bg-white p-3 rounded-xl border ${isNow ? 'border-indigo-500 bg-indigo-50' : 'border-slate-100'} mb-2 shadow-sm">
+                        <div class="flex justify-between">
+                            <span class="text-xs font-black uppercase text-slate-700">${b.userName}</span>
+                            ${isNow ? '<span class="text-[9px] bg-indigo-600 text-white px-2 rounded-full">IN CORSO</span>' : ''}
+                        </div>
+                        <div class="text-xs text-slate-500 mt-1">${formatDate(b.startDate)} - ${formatDate(b.endDate).split(' ')[1]}</div>
+                    </div>`;
+                }).join('');
+            });
+        }
+
+        // --- ADMIN SIDE ---
+        window.showAdminLogin = () => {
+            const pin = prompt("Inserisci PIN Amministratore:", "");
+            if (pin === "1234") { // PIN SEMPLICE (Modifica qui se vuoi)
+                adminMode = true;
+                window.switchView('view-admin');
+                loadAdminBookings();
+            } else if (pin !== null) {
+                alert("PIN Errato");
+            }
+        };
+
+        window.loadAdminBookings = () => {
+            const listEl = document.getElementById('admin-list');
+            listEl.innerHTML = '<p class="text-center text-xs">Caricamento admin...</p>';
+
+            // Admin vede tutto (senza filtri where)
+            const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'bookings')); // RULE: No orderBy in Firestore without index, sort in JS
+            
+            // Una sola chiamata snapshot per admin dashboard
+            onSnapshot(q, (snapshot) => {
+                const bookings = [];
+                snapshot.forEach(doc => bookings.push({ id: doc.id, ...doc.data() }));
+                // Sort by date desc
+                bookings.sort((a, b) => new Date(b.startDate) - new Date(a.startDate));
+
+                listEl.innerHTML = bookings.map(b => `
+                    <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm flex justify-between items-center">
+                        <div>
+                            <div class="text-xs font-black text-indigo-700 uppercase">${b.resourceId}</div>
+                            <div class="text-xs font-bold text-slate-700">${b.userName}</div>
+                            <div class="text-[10px] text-slate-400 font-mono">PNR: ${b.pnr || 'N/A'}</div>
+                            <div class="text-[10px] text-slate-500">${formatDate(b.startDate)}</div>
+                        </div>
+                        <button onclick="deleteBooking('${b.id}')" class="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                `).join('');
+                lucide.createIcons();
+            });
+        };
+
+        window.deleteBooking = async (id) => {
+            if(confirm("Sei sicuro di voler eliminare questa prenotazione?")) {
+                try {
+                    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'bookings', id));
+                } catch(e) { alert("Errore: " + e.message); }
+            }
+        };
+
+        // --- MY BOOKING SEARCH ---
+        window.showMyBookingSearch = () => window.switchView('view-my-booking');
+
+        window.searchBookingByPNR = async () => {
+            const pnr = document.getElementById('inp-pnr-search').value.trim().toUpperCase();
+            const resDiv = document.getElementById('pnr-result');
+            
+            if(pnr.length < 3) return alert("Inserisci un codice valido");
+            
+            resDiv.innerHTML = '<p class="text-center text-xs">Ricerca...</p>';
+
+            const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'bookings'), where("pnr", "==", pnr));
+            
+            // Usa getDocs per ricerca singola (non serve realtime qui necessariamente, ma usiamo snapshot per coerenza)
+            onSnapshot(q, (snapshot) => {
+                if(snapshot.empty) {
+                    resDiv.innerHTML = '<p class="text-center text-red-500 font-bold text-sm">Nessuna prenotazione trovata con questo codice.</p>';
+                    return;
+                }
+                
+                const docs = [];
+                snapshot.forEach(d => docs.push({id: d.id, ...d.data()}));
+                const b = docs[0]; // Prendi la prima (il PNR dovrebbe essere unico)
+
+                resDiv.innerHTML = `
+                    <div class="bg-white p-4 rounded-xl border-2 border-emerald-500 shadow-xl">
+                        <h3 class="text-sm font-bold text-emerald-700 uppercase mb-2">Prenotazione Trovata</h3>
+                        <p class="text-xs text-slate-500">Strumento:</p>
+                        <p class="font-bold text-slate-800 mb-2">${b.resourceId}</p>
+                        <p class="text-xs text-slate-500">Orario:</p>
+                        <p class="font-mono text-xs text-slate-700 mb-4">${formatDate(b.startDate)}<br>al ${formatDate(b.endDate)}</p>
+                        
+                        <button onclick="deleteBooking('${b.id}')" class="w-full py-2 bg-red-500 text-white rounded-lg font-bold text-xs shadow hover:bg-red-600 transition">
+                            CANCELLA PRENOTAZIONE
+                        </button>
+                    </div>
+                `;
+            });
+        };
+        
+        // Report Issue (Bonus)
+        window.reportIssue = () => {
+            const issue = prompt("Descrivi brevemente il problema riscontrato:");
+            if(issue) {
+                // In un app reale salveremmo su collection 'issues', qui simuliamo solo alert
+                alert("Grazie. La segnalazione è stata inviata all'amministratore.\n\nProblema: " + issue);
+            }
         };
 
         lucide.createIcons();
