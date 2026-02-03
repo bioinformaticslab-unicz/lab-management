@@ -31,7 +31,7 @@
                 <h1 class="text-xl font-black italic tracking-tighter flex items-center gap-2">
                     <i data-lucide="scan-line" class="w-5 h-5"></i> UNISCAN
                 </h1>
-                <p class="text-indigo-200 text-[10px] font-medium uppercase tracking-widest">Lab Management v2.4</p>
+                <p class="text-indigo-200 text-[10px] font-medium uppercase tracking-widest">Lab Management v2.5</p>
             </div>
             <div class="flex gap-3">
                 <button onclick="showAdminLogin()" class="p-2 bg-indigo-700 rounded-full hover:bg-indigo-600 transition" title="Admin">
@@ -149,6 +149,7 @@
             <div class="flex gap-2 text-xs font-bold bg-slate-200 p-1 rounded-lg">
                 <button onclick="switchAdminTab('bookings')" id="tab-btn-bookings" class="flex-1 py-2 bg-white text-indigo-700 rounded-md shadow-sm transition">Prenotazioni</button>
                 <button onclick="switchAdminTab('instruments')" id="tab-btn-instruments" class="flex-1 py-2 text-slate-500 hover:bg-white/50 rounded-md transition">Strumenti</button>
+                <button onclick="switchAdminTab('settings')" id="tab-btn-settings" class="flex-1 py-2 text-slate-500 hover:bg-white/50 rounded-md transition">Impostazioni</button>
             </div>
 
             <!-- Tab Content: Prenotazioni -->
@@ -194,6 +195,39 @@
                     <!-- Lista strumenti -->
                 </div>
             </div>
+
+            <!-- Tab Content: Impostazioni Generali (Manutenzione) -->
+            <div id="admin-content-settings" class="hidden space-y-4">
+                <div class="bg-amber-50 p-4 rounded-xl border border-amber-200 shadow-sm">
+                    <h3 class="text-sm font-bold text-amber-800 mb-2 flex items-center gap-2">
+                        <i data-lucide="cone" class="w-4 h-4"></i> Stato Piattaforma
+                    </h3>
+                    <p class="text-[10px] text-amber-700 mb-4">Attiva la modalità manutenzione per bloccare le prenotazioni a tutti gli utenti non amministratori.</p>
+                    
+                    <div class="space-y-3">
+                        <div class="flex items-center gap-3 bg-white p-3 rounded-lg border border-amber-100">
+                            <div class="relative flex items-center">
+                                <input type="checkbox" id="inp-maint-active" class="peer h-5 w-5 cursor-pointer appearance-none rounded border border-slate-300 shadow transition-all checked:border-red-500 checked:bg-red-500 hover:shadow-md">
+                                <span class="absolute text-white opacity-0 peer-checked:opacity-100 top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none">
+                                    <i data-lucide="alert-octagon" class="w-3 h-3"></i>
+                                </span>
+                            </div>
+                            <label for="inp-maint-active" class="text-xs font-black text-slate-700 cursor-pointer select-none">ATTIVA MANUTENZIONE</label>
+                        </div>
+
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Nome Referente</label>
+                            <input type="text" id="inp-maint-name" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs" placeholder="Es: Segreteria Didattica">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Email Referente</label>
+                            <input type="email" id="inp-maint-email" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs" placeholder="Es: helpdesk@uni.it">
+                        </div>
+
+                        <button onclick="saveGlobalSettings()" class="w-full py-2 bg-slate-800 text-white rounded-lg font-bold text-xs shadow-md hover:bg-slate-700 transition">AGGIORNA STATO</button>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- VISTA 4: RICERCA PRENOTAZIONE -->
@@ -209,6 +243,38 @@
         </div>
 
     </main>
+
+    <!-- OVERLAY MANUTENZIONE -->
+    <div id="view-maintenance" class="hidden fixed inset-0 bg-slate-50 z-[60] flex flex-col items-center justify-center p-6 text-center animate-in fade-in">
+        <div class="w-20 h-20 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mb-6 shadow-lg shadow-amber-100">
+            <i data-lucide="cone" class="w-10 h-10"></i>
+        </div>
+        <h1 class="text-2xl font-black text-slate-800 mb-2 tracking-tight">Piattaforma in Manutenzione</h1>
+        <p class="text-slate-500 mb-8 max-w-xs mx-auto text-sm">Il sistema di prenotazione è momentaneamente sospeso per aggiornamenti tecnici.</p>
+        
+        <div class="bg-white p-6 rounded-2xl shadow-xl border border-slate-200 w-full max-w-sm relative overflow-hidden">
+            <div class="absolute top-0 left-0 w-1 h-full bg-amber-400"></div>
+            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">Contattare il referente</p>
+            <div class="flex items-center gap-3 mb-4">
+                <div class="w-8 h-8 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center flex-shrink-0"><i data-lucide="user" class="w-4 h-4"></i></div>
+                <div class="text-left overflow-hidden">
+                    <p class="text-[10px] text-slate-400 font-bold uppercase">REFERENTE</p>
+                    <p id="maint-ref-name" class="font-bold text-slate-800 text-sm truncate">---</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center flex-shrink-0"><i data-lucide="mail" class="w-4 h-4"></i></div>
+                <div class="text-left overflow-hidden">
+                    <p class="text-[10px] text-slate-400 font-bold uppercase">EMAIL</p>
+                    <a id="maint-ref-email" href="#" class="font-bold text-indigo-600 underline text-sm truncate">---</a>
+                </div>
+            </div>
+        </div>
+
+        <button onclick="showAdminLogin()" class="absolute bottom-8 text-slate-300 hover:text-slate-500 text-[10px] font-bold flex items-center gap-1 transition-colors bg-white/50 px-3 py-1 rounded-full">
+            <i data-lucide="lock" class="w-3 h-3"></i> ACCESSO AMMINISTRATORE
+        </button>
+    </div>
 
     <!-- MODAL PRENOTAZIONE -->
     <div id="modal-booking" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-end sm:items-center justify-center p-4">
@@ -300,8 +366,6 @@
         let adminMode = false;
         let editingBookingId = null;
         window.currentFoundBooking = null;
-        
-        // Cache per calendario
         window.calendarBookingsCache = [];
 
         // AUTH
@@ -310,11 +374,60 @@
                 currentUser = user;
                 const st = document.getElementById('user-status');
                 if(st) { st.classList.remove('bg-red-500', 'animate-pulse'); st.classList.add('bg-green-500'); }
+                
+                // Avvia listener impostazioni globali dopo login
+                loadGlobalSettings();
                 checkUrlParams(); 
             } else {
                 signInAnonymously(auth).catch(console.error);
             }
         });
+
+        // --- GLOBAL SETTINGS & MAINTENANCE ---
+        function loadGlobalSettings() {
+            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'global');
+            onSnapshot(docRef, (doc) => {
+                if (doc.exists()) {
+                    const data = doc.data();
+                    const isMaint = data.maintenanceMode === true;
+                    
+                    // Update Admin UI
+                    document.getElementById('inp-maint-active').checked = isMaint;
+                    document.getElementById('inp-maint-name').value = data.referentName || '';
+                    document.getElementById('inp-maint-email').value = data.referentEmail || '';
+                    
+                    // Update Maint Screen Info
+                    document.getElementById('maint-ref-name').innerText = data.referentName || 'Segreteria';
+                    document.getElementById('maint-ref-email').innerText = data.referentEmail || 'Contattare Amministrazione';
+                    document.getElementById('maint-ref-email').href = "mailto:" + (data.referentEmail || '');
+
+                    // Toggle Screen (Solo se non siamo già loggati come admin)
+                    if (isMaint && !adminMode) {
+                        document.getElementById('view-maintenance').classList.remove('hidden');
+                    } else {
+                        document.getElementById('view-maintenance').classList.add('hidden');
+                    }
+                }
+            });
+        }
+
+        window.saveGlobalSettings = async () => {
+            const isActive = document.getElementById('inp-maint-active').checked;
+            const refName = document.getElementById('inp-maint-name').value;
+            const refEmail = document.getElementById('inp-maint-email').value;
+            
+            try {
+                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'global'), {
+                    maintenanceMode: isActive,
+                    referentName: refName,
+                    referentEmail: refEmail,
+                    updatedAt: serverTimestamp()
+                });
+                alert("Impostazioni globali aggiornate.");
+            } catch (e) {
+                alert("Errore salvataggio impostazioni: " + e.message);
+            }
+        };
 
         function checkUrlParams() {
             const urlParams = new URLSearchParams(window.location.search);
@@ -342,10 +455,11 @@
             document.getElementById('camera-overlay').classList.remove('hidden');
             document.getElementById('laser-line').classList.add('hidden');
             document.getElementById('btn-stop').classList.add('hidden');
-            // Pulisci input manuale
             document.getElementById('inp-manual-code').value = '';
             editingBookingId = null;
             adminMode = false;
+            // Ricarica stato manutenzione per riapplicare blocco se attivo
+            loadGlobalSettings();
         };
 
         // --- SCANNER ---
@@ -397,7 +511,6 @@
             document.getElementById('badge-status').classList.add('hidden');
             const btnBook = document.getElementById('btn-main-book');
             
-            // Default prenotabile
             let isBookable = true;
             let displayName = text;
             
@@ -416,7 +529,6 @@
             currentItemName = displayName;
             document.getElementById('item-title').innerText = displayName;
             
-            // Gestione UI Prenotabile/Non
             if(isBookable) {
                 btnBook.classList.remove('hidden');
                 document.getElementById('badge-status').classList.add('hidden');
@@ -453,17 +565,14 @@
             renderCalendarTimeline();
         };
         
-        // Funzione per Admin per aprire calendario di uno strumento specifico
         window.openCalendarForInstrument = (id, name) => {
             currentItem = id;
             currentItemName = name;
-            // Carica prenotazioni in background se non già caricate
             const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'bookings'), where("resourceId", "==", id));
             onSnapshot(q, (snapshot) => {
                 const bookings = [];
                 snapshot.forEach(doc => bookings.push({ id: doc.id, ...doc.data() }));
-                window.calendarBookingsCache = bookings; // Salva in cache
-                // Apri modal
+                window.calendarBookingsCache = bookings; 
                 document.getElementById('modal-calendar').classList.remove('hidden');
                 renderCalendarTimeline(name);
             });
@@ -471,7 +580,7 @@
 
         function renderCalendarTimeline(titleOverride = null) {
             const container = document.getElementById('calendar-container');
-            const bookings = window.calendarBookingsCache; // Usiamo i dati già caricati da loadBookings
+            const bookings = window.calendarBookingsCache; 
             
             const title = titleOverride || currentItemName || currentItem;
             let html = `<h4 class="font-bold text-slate-700 mb-4 sticky top-0 bg-white pb-2 border-b">${title}</h4>`;
@@ -479,43 +588,31 @@
             const today = new Date();
             today.setHours(0,0,0,0);
 
-            // Genera prossimi 7 giorni
             for(let i=0; i<7; i++) {
                 const day = new Date(today);
                 day.setDate(today.getDate() + i);
                 
-                // Filtra prenotazioni per questo giorno
                 const dayBookings = bookings.filter(b => {
                     const start = new Date(b.startDate);
                     const end = new Date(b.endDate);
                     return start.getDate() === day.getDate() && start.getMonth() === day.getMonth() || 
-                           (start < day && end > day); // Gestione multi-giorno semplificata
+                           (start < day && end > day); 
                 });
 
-                // Crea la barra temporale (8:00 - 20:00)
-                // Usiamo CSS Grid per semplicità: 12 colonne
                 let timelineHTML = '';
                 if(dayBookings.length === 0) {
                      timelineHTML = `<div class="h-2 w-full bg-slate-100 rounded-full mt-2"></div>`;
                 } else {
-                    // Costruiamo una visualizzazione relativa
                     timelineHTML = `<div class="relative h-4 w-full bg-slate-100 rounded-full mt-2 overflow-hidden">`;
                     dayBookings.forEach(b => {
                         const s = new Date(b.startDate);
                         const e = new Date(b.endDate);
-                        
-                        // Normalizza ore su scala 0-24 per semplicità visuale (o 8-20)
-                        // Usiamo 0-24h per coprire tutto
                         let startH = s.getHours() + s.getMinutes()/60;
                         let endH = e.getHours() + e.getMinutes()/60;
-                        
-                        // Clip su giorno corrente
                         if(s.getDate() !== day.getDate()) startH = 0;
                         if(e.getDate() !== day.getDate()) endH = 24;
-
                         const left = (startH / 24) * 100;
                         const width = ((endH - startH) / 24) * 100;
-                        
                         timelineHTML += `<div class="absolute top-0 bottom-0 bg-indigo-600 border-r border-white" style="left:${left}%; width:${width}%;" title="${b.userName}"></div>`;
                     });
                     timelineHTML += `</div>`;
@@ -534,7 +631,6 @@
                     </div>
                 `;
             }
-            
             container.innerHTML = html;
         }
 
@@ -636,7 +732,6 @@
             onSnapshot(q, (snapshot) => {
                 const bookings = [];
                 snapshot.forEach(doc => bookings.push({ id: doc.id, ...doc.data() }));
-                // Aggiorna cache globale per il calendario
                 window.calendarBookingsCache = bookings;
                 
                 bookings.sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
@@ -663,29 +758,29 @@
 
         // --- ADMIN SIDE ---
         window.switchAdminTab = (tab) => {
-            if(tab === 'bookings') {
-                document.getElementById('admin-content-bookings').classList.remove('hidden');
-                document.getElementById('admin-content-instruments').classList.add('hidden');
-                document.getElementById('tab-btn-bookings').classList.add('bg-white', 'text-indigo-700', 'shadow-sm');
-                document.getElementById('tab-btn-bookings').classList.remove('text-slate-500');
-                document.getElementById('tab-btn-instruments').classList.remove('bg-white', 'text-indigo-700', 'shadow-sm');
-                document.getElementById('tab-btn-instruments').classList.add('text-slate-500');
-                loadAdminBookings();
-            } else {
-                document.getElementById('admin-content-bookings').classList.add('hidden');
-                document.getElementById('admin-content-instruments').classList.remove('hidden');
-                document.getElementById('tab-btn-instruments').classList.add('bg-white', 'text-indigo-700', 'shadow-sm');
-                document.getElementById('tab-btn-instruments').classList.remove('text-slate-500');
-                document.getElementById('tab-btn-bookings').classList.remove('bg-white', 'text-indigo-700', 'shadow-sm');
-                document.getElementById('tab-btn-bookings').classList.add('text-slate-500');
-                loadInstruments();
-            }
+            document.querySelectorAll("[id^='tab-btn-']").forEach(el => {
+                el.classList.remove('bg-white', 'text-indigo-700', 'shadow-sm');
+                el.classList.add('text-slate-500');
+            });
+            document.getElementById('tab-btn-' + tab).classList.add('bg-white', 'text-indigo-700', 'shadow-sm');
+            document.getElementById('tab-btn-' + tab).classList.remove('text-slate-500');
+
+            document.getElementById('admin-content-bookings').classList.add('hidden');
+            document.getElementById('admin-content-instruments').classList.add('hidden');
+            document.getElementById('admin-content-settings').classList.add('hidden');
+            document.getElementById('admin-content-' + tab).classList.remove('hidden');
+
+            if(tab === 'bookings') loadAdminBookings();
+            if(tab === 'instruments') loadInstruments();
         };
 
         window.showAdminLogin = () => {
             const pin = prompt("Inserisci PIN Amministratore:", "");
             if (pin === "1234") {
                 adminMode = true;
+                // Se siamo in manutenzione, nascondi l'overlay per l'admin
+                document.getElementById('view-maintenance').classList.add('hidden');
+                
                 window.switchView('view-admin');
                 switchAdminTab('bookings'); 
             } else if (pin !== null) {
