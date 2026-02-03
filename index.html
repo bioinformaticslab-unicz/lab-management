@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>UniScan Lab Manager Pro v3.3</title>
+    <title>UniScan Lab Manager Pro v3.4</title>
     
     <!-- Stili: Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -43,7 +43,7 @@
                 <h1 class="text-xl font-black italic tracking-tighter flex items-center gap-2">
                     <i data-lucide="scan-line" class="w-5 h-5"></i> UNISCAN
                 </h1>
-                <p class="text-indigo-200 text-[10px] font-medium uppercase tracking-widest">Lab Management v3.3</p>
+                <p class="text-indigo-200 text-[10px] font-medium uppercase tracking-widest">Lab Management v3.4</p>
             </div>
             <div class="flex gap-3">
                 <button onclick="showAdminLogin()" class="p-2 bg-indigo-800 rounded-full hover:bg-indigo-700 transition" title="Admin">
@@ -351,6 +351,14 @@
                 <h3 class="text-lg font-bold text-slate-800">Disponibilità 7gg</h3>
                 <button onclick="document.getElementById('modal-calendar').classList.add('hidden')" class="p-2 bg-slate-100 rounded-full"><i data-lucide="x" class="w-4 h-4"></i></button>
             </div>
+            
+            <!-- Added Action Button for Admin -->
+            <div id="calendar-admin-actions" class="hidden mb-3">
+                <button onclick="document.getElementById('modal-calendar').classList.add('hidden'); showBookingForm()" class="w-full py-2 bg-indigo-600 text-white rounded-lg text-xs font-bold flex items-center justify-center gap-2">
+                    <i data-lucide="plus-circle" class="w-4 h-4"></i> NUOVA PRENOTAZIONE (ADMIN)
+                </button>
+            </div>
+            
             <div class="flex-1 overflow-y-auto no-scrollbar space-y-4" id="calendar-container"></div>
         </div>
     </div>
@@ -484,6 +492,7 @@
                         <p class="text-slate-400 text-sm flex items-center gap-2">
                             <i data-lucide="clock" class="w-4 h-4"></i>
                             Termina alle: <span class="text-white font-mono">${new Date(b.endDate).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
+                            del <span class="text-white font-mono">${new Date(b.endDate).toLocaleDateString('it-IT')}</span>
                         </p>
                     </div>
                 `).join('');
@@ -986,6 +995,8 @@
         };
         window.openCalendarModal = () => {
             document.getElementById('modal-calendar').classList.remove('hidden');
+            // Hide admin button for normal user
+            document.getElementById('calendar-admin-actions').classList.add('hidden');
             renderCalendarTimeline();
         };
         window.openCalendarForInstrument = (id, name) => {
@@ -997,6 +1008,8 @@
                 snapshot.forEach(doc => bookings.push({ id: doc.id, ...doc.data() }));
                 window.calendarBookingsCache = bookings; 
                 document.getElementById('modal-calendar').classList.remove('hidden');
+                // Show admin button for admin flow
+                document.getElementById('calendar-admin-actions').classList.remove('hidden');
                 renderCalendarTimeline(name);
             });
         };
