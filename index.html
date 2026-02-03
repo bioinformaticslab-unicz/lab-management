@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>UniScan Lab Manager Pro v3.1</title>
+    <title>UniScan Lab Manager Pro v3.2</title>
     
     <!-- Stili: Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -43,7 +43,7 @@
                 <h1 class="text-xl font-black italic tracking-tighter flex items-center gap-2">
                     <i data-lucide="scan-line" class="w-5 h-5"></i> UNISCAN
                 </h1>
-                <p class="text-indigo-200 text-[10px] font-medium uppercase tracking-widest">Lab Management v3.1</p>
+                <p class="text-indigo-200 text-[10px] font-medium uppercase tracking-widest">Lab Management v3.2</p>
             </div>
             <div class="flex gap-3">
                 <button onclick="showAdminLogin()" class="p-2 bg-indigo-800 rounded-full hover:bg-indigo-700 transition" title="Admin">
@@ -107,7 +107,7 @@
                     <div class="relative z-10">
                         <div class="flex items-center gap-2 mb-1">
                             <p class="text-xs font-bold text-indigo-600 uppercase">Oggetto Rilevato</p>
-                            <span id="badge-status" class="hidden text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-black uppercase">NON PRENOTABILE</span>
+                            <span id="badge-status" class="hidden text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-black uppercase">SOLO CONSULTAZIONE</span>
                         </div>
                         <h2 id="item-title" class="text-2xl font-black text-slate-800 break-all leading-tight">---</h2>
                         <p id="item-subtitle" class="text-sm font-mono text-slate-400 mt-1">ID: ---</p>
@@ -668,9 +668,14 @@
                             <div class="text-xs font-bold text-slate-700">${item.description}</div>
                             <div class="text-[10px] text-slate-400 font-mono">${item.id}</div>
                         </div>
-                        <button onclick="editInstrument('${item.id}')" class="p-2 bg-amber-100 text-amber-700 rounded-lg hover:bg-amber-200 transition">
-                            <i data-lucide="pencil" class="w-4 h-4"></i>
-                        </button>
+                        <div class="flex gap-2">
+                            <button onclick="openCalendarForInstrument('${item.id}', '${item.description}')" class="p-2 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100" title="Calendario">
+                                <i data-lucide="calendar" class="w-4 h-4"></i>
+                            </button>
+                            <button onclick="editInstrument('${item.id}')" class="p-2 bg-amber-100 text-amber-700 rounded-lg hover:bg-amber-200 transition" title="Modifica">
+                                <i data-lucide="pencil" class="w-4 h-4"></i>
+                            </button>
+                        </div>
                     </div>
                 `).join('');
                 lucide.createIcons();
@@ -758,6 +763,11 @@
         async function showDetails(text) {
             window.switchView('view-details');
             document.getElementById('item-title').innerText = text;
+            
+            // Fix: Reset UI state first
+            document.getElementById('btn-main-book').classList.remove('hidden');
+            document.getElementById('badge-status').classList.add('hidden');
+
             loadBookings(text);
             try {
                 const docSnap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'resources', text.replace(/\//g,'_')));
@@ -768,9 +778,6 @@
                     if(data.isBookable === false) {
                         document.getElementById('btn-main-book').classList.add('hidden');
                         document.getElementById('badge-status').classList.remove('hidden');
-                    } else {
-                        document.getElementById('btn-main-book').classList.remove('hidden');
-                        document.getElementById('badge-status').classList.add('hidden');
                     }
                 }
             } catch(e){}
@@ -795,11 +802,18 @@
                 snapshot.forEach(doc => bookings.push({id: doc.id, ...doc.data()}));
                 window.adminBookingsCache = bookings; 
                 document.getElementById('admin-list').innerHTML = bookings.map(b => 
-                    `<div class="bg-white p-2 border-b text-xs flex justify-between">
-                        <span>${b.resourceName || b.resourceId} - ${b.userName}</span>
-                        <span class="text-slate-400">${new Date(b.startDate).toLocaleDateString()}</span>
+                    `<div class="bg-white p-2 border-b text-xs flex justify-between items-center">
+                        <div>
+                            <span>${b.resourceName || b.resourceId} - ${b.userName}</span>
+                            <span class="text-slate-400 block text-[10px]">${new Date(b.startDate).toLocaleDateString()}</span>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="editBookingFromAdmin('${b.id}')" class="p-1 bg-amber-100 text-amber-700 rounded"><i data-lucide="pencil" class="w-3 h-3"></i></button>
+                            <button onclick="deleteBooking('${b.id}')" class="p-1 bg-red-100 text-red-600 rounded"><i data-lucide="trash-2" class="w-3 h-3"></i></button>
+                        </div>
                     </div>`
                 ).join('');
+                lucide.createIcons();
             });
         }
 
@@ -847,10 +861,72 @@
             document.getElementById('modal-calendar').classList.remove('hidden');
             renderCalendarTimeline();
         };
-        function renderCalendarTimeline() {
-            // (Timeline logic simplified for space, same as v2.5)
+        window.openCalendarForInstrument = (id, name) => {
+            currentItem = id;
+            currentItemName = name;
+            const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'bookings'), where("resourceId", "==", id));
+            onSnapshot(q, (snapshot) => {
+                const bookings = [];
+                snapshot.forEach(doc => bookings.push({ id: doc.id, ...doc.data() }));
+                window.calendarBookingsCache = bookings; 
+                document.getElementById('modal-calendar').classList.remove('hidden');
+                renderCalendarTimeline(name);
+            });
+        };
+        function renderCalendarTimeline(titleOverride = null) {
             const container = document.getElementById('calendar-container');
-            container.innerHTML = `<p class="text-center text-xs mt-4">Visualizzazione Timeline (Dati caricati: ${window.calendarBookingsCache.length})</p>`;
+            const bookings = window.calendarBookingsCache; 
+            
+            const title = titleOverride || currentItemName || currentItem;
+            let html = `<h4 class="font-bold text-slate-700 mb-4 sticky top-0 bg-white pb-2 border-b">${title}</h4>`;
+            
+            const today = new Date();
+            today.setHours(0,0,0,0);
+
+            for(let i=0; i<7; i++) {
+                const day = new Date(today);
+                day.setDate(today.getDate() + i);
+                
+                const dayBookings = bookings.filter(b => {
+                    const start = new Date(b.startDate);
+                    const end = new Date(b.endDate);
+                    return start.getDate() === day.getDate() && start.getMonth() === day.getMonth() || 
+                           (start < day && end > day); 
+                });
+
+                let timelineHTML = '';
+                if(dayBookings.length === 0) {
+                     timelineHTML = `<div class="h-2 w-full bg-slate-100 rounded-full mt-2"></div>`;
+                } else {
+                    timelineHTML = `<div class="relative h-4 w-full bg-slate-100 rounded-full mt-2 overflow-hidden">`;
+                    dayBookings.forEach(b => {
+                        const s = new Date(b.startDate);
+                        const e = new Date(b.endDate);
+                        let startH = s.getHours() + s.getMinutes()/60;
+                        let endH = e.getHours() + e.getMinutes()/60;
+                        if(s.getDate() !== day.getDate()) startH = 0;
+                        if(e.getDate() !== day.getDate()) endH = 24;
+                        const left = (startH / 24) * 100;
+                        const width = ((endH - startH) / 24) * 100;
+                        timelineHTML += `<div class="absolute top-0 bottom-0 bg-indigo-600 border-r border-white" style="left:${left}%; width:${width}%;" title="${b.userName}"></div>`;
+                    });
+                    timelineHTML += `</div>`;
+                }
+
+                const dayName = day.toLocaleDateString('it-IT', {weekday:'short', day:'numeric', month:'short'});
+                const isToday = i === 0;
+
+                html += `
+                    <div class="mb-4">
+                        <div class="flex justify-between items-end">
+                            <span class="text-xs font-bold ${isToday ? 'text-indigo-600' : 'text-slate-600'} uppercase">${isToday ? 'OGGI' : dayName}</span>
+                            <span class="text-[10px] text-slate-400">00:00 - 24:00</span>
+                        </div>
+                        ${timelineHTML}
+                    </div>
+                `;
+            }
+            container.innerHTML = html;
         }
 
         lucide.createIcons();
