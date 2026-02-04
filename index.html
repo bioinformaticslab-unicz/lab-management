@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>UniScan Lab Manager Pro v3.4</title>
+    <title>UniScan Lab Manager Pro v3.5</title>
     
     <!-- Stili: Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -29,8 +29,8 @@
             body * { visibility: hidden; }
             #print-area, #print-area * { visibility: visible; }
             #print-area { position: absolute; left: 0; top: 0; width: 100%; display: block !important; }
-            .label-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
-            .label-item { border: 2px solid #000; padding: 15px; text-align: center; page-break-inside: avoid; border-radius: 8px; }
+            .label-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; page-break-inside: avoid; }
+            .label-item { border: 2px solid #000; padding: 10px; text-align: center; page-break-inside: avoid; border-radius: 8px; break-inside: avoid; }
         }
     </style>
 </head>
@@ -43,7 +43,7 @@
                 <h1 class="text-xl font-black italic tracking-tighter flex items-center gap-2">
                     <i data-lucide="scan-line" class="w-5 h-5"></i> UNISCAN
                 </h1>
-                <p class="text-indigo-200 text-[10px] font-medium uppercase tracking-widest">Lab Management v3.4</p>
+                <p class="text-indigo-200 text-[10px] font-medium uppercase tracking-widest">Lab Management v3.5</p>
             </div>
             <div class="flex gap-3">
                 <button onclick="showAdminLogin()" class="p-2 bg-indigo-800 rounded-full hover:bg-indigo-700 transition" title="Admin">
@@ -180,8 +180,18 @@
                         <button onclick="clearInstrumentForm()" class="text-[10px] text-indigo-600 font-bold hover:underline">NUOVO / PULISCI</button>
                     </div>
                     <form onsubmit="saveInstrument(event)" class="space-y-3">
-                        <input type="text" id="inp-inst-id" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-mono" placeholder="Codice ID (es: 1.1.1.1)">
-                        <input type="text" id="inp-inst-desc" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs" placeholder="Nome Strumento">
+                        <div>
+                            <label class="block text-[10px] text-slate-500 font-bold uppercase mb-1">Codice ID (1.1.1.1)</label>
+                            <input type="text" id="inp-inst-id" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-mono">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-slate-500 font-bold uppercase mb-1">Nome Strumento</label>
+                            <input type="text" id="inp-inst-desc" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-slate-500 font-bold uppercase mb-1">Referente / Contatto</label>
+                            <input type="text" id="inp-inst-contact" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs" placeholder="Es: Prof. Rossi (rossi@uni.it)">
+                        </div>
                         <div class="flex items-center gap-3 bg-slate-50 p-2 rounded-lg border border-slate-100">
                             <input type="checkbox" id="inp-inst-bookable" class="h-4 w-4 rounded border-slate-300 text-indigo-600" checked>
                             <label for="inp-inst-bookable" class="text-xs font-bold text-slate-700">Prenotabile</label>
@@ -322,12 +332,12 @@
 
     <!-- MODALI (Booking & Calendar) -->
     <div id="modal-booking" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-end sm:items-center justify-center p-4">
-        <div class="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl animate-in slide-in-from-bottom-10">
+        <div class="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl animate-in slide-in-from-bottom-10 flex flex-col">
             <div class="flex justify-between items-center mb-6">
                 <h3 id="modal-title" class="text-lg font-bold text-slate-800">Prenotazione</h3>
                 <button onclick="hideBookingForm()" class="p-2 bg-slate-100 rounded-full"><i data-lucide="x" class="w-4 h-4"></i></button>
             </div>
-            <form id="booking-form" onsubmit="handleBooking(event)" class="space-y-4">
+            <form id="booking-form" onsubmit="handleBooking(event)" class="space-y-4 flex-1 overflow-y-auto no-scrollbar">
                 <input type="text" id="inp-name" required class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold" placeholder="Nome Cognome">
                 <select id="inp-reason" onchange="toggleCustomReason()" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm">
                     <option value="Manutenzione Ordinaria">Manutenzione Ordinaria</option>
@@ -342,6 +352,23 @@
                 </div>
                 <button id="btn-submit-booking" type="submit" class="w-full py-3 bg-indigo-600 text-white rounded-xl font-bold text-sm shadow-lg">CONFERMA</button>
             </form>
+            
+            <!-- FOOTER INFORMATIVO (NUOVO) -->
+            <div class="mt-4 pt-4 border-t border-slate-100 bg-slate-50 -mx-6 -mb-6 p-4 rounded-b-3xl">
+                <div class="flex gap-2 items-start mb-2">
+                    <i data-lucide="info" class="w-4 h-4 text-indigo-500 mt-0.5 shrink-0"></i>
+                    <p class="text-[10px] text-slate-500 leading-tight">
+                        <strong>Istruzioni:</strong> Usa questo form per prenotare. Salva il codice <strong>PNR</strong> che riceverai per modificare o cancellare la prenotazione in seguito.
+                    </p>
+                </div>
+                <div class="flex gap-2 items-start">
+                    <i data-lucide="user-circle" class="w-4 h-4 text-emerald-600 mt-0.5 shrink-0"></i>
+                    <div>
+                        <p class="text-[10px] font-bold text-slate-700 uppercase">Referente Macchina</p>
+                        <p id="booking-contact-info" class="text-xs text-slate-800 font-medium">---</p>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -394,6 +421,7 @@
         window.calendarBookingsCache = [];
         window.adminBookingsCache = [];
         window.allInstrumentsCache = []; 
+        window.currentInstrumentData = {}; // Stores details of current viewed instrument
 
         // AUTH
         onAuthStateChanged(auth, (user) => {
@@ -626,7 +654,7 @@
             });
         };
 
-        // --- IDEA 7: LABEL GENERATOR ---
+        // --- IDEA 7: LABEL GENERATOR (UPDATED) ---
         window.printLabels = () => {
             if(window.allInstrumentsCache.length === 0) return alert("Nessuno strumento da stampare.");
             
@@ -658,7 +686,10 @@
                 
                 item.innerHTML = `<h3 style="font-size:14px; font-weight:bold; margin-bottom:5px;">${inst.description}</h3>`;
                 item.appendChild(img);
-                item.innerHTML += `<p style="font-family:monospace; font-size:10px; margin-top:5px;">${inst.id}</p>`;
+                item.innerHTML += `
+                    <p style="font-family:sans-serif; font-size:10px; font-weight:bold; margin-top:5px; color:#444;">SCANSIONA PER PRENOTARE</p>
+                    <p style="font-family:monospace; font-size:10px; margin-top:2px;">${inst.id}</p>
+                `;
                 container.appendChild(item);
             });
         };
@@ -684,13 +715,18 @@
             e.preventDefault();
             const id = document.getElementById('inp-inst-id').value.trim();
             const desc = document.getElementById('inp-inst-desc').value.trim();
+            const contact = document.getElementById('inp-inst-contact').value.trim(); // NEW
             const bookable = document.getElementById('inp-inst-bookable').checked;
             
             if(!id || !desc) return alert("Compila tutto");
             try {
                 const safeId = id.replace(/\//g, '_');
                 await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'resources', safeId), {
-                    id: id, description: desc, isBookable: bookable, updatedAt: serverTimestamp()
+                    id: id, 
+                    description: desc, 
+                    contact: contact, // NEW
+                    isBookable: bookable, 
+                    updatedAt: serverTimestamp()
                 });
                 logAudit("UPDATE_INSTRUMENT", `Updated instrument: ${desc} (${id})`);
                 alert("Salvato!");
@@ -701,6 +737,7 @@
         window.clearInstrumentForm = () => {
             document.getElementById('inp-inst-id').value = '';
             document.getElementById('inp-inst-desc').value = '';
+            document.getElementById('inp-inst-contact').value = ''; // NEW
             document.getElementById('inp-inst-bookable').checked = true;
             document.getElementById('inp-inst-id').readOnly = false; 
             document.getElementById('inp-inst-id').classList.remove('bg-slate-100', 'text-slate-500');
@@ -711,6 +748,7 @@
             if(!inst) return;
             document.getElementById('inp-inst-id').value = inst.id;
             document.getElementById('inp-inst-desc').value = inst.description;
+            document.getElementById('inp-inst-contact').value = inst.contact || ''; // NEW
             document.getElementById('inp-inst-bookable').checked = inst.isBookable !== false;
             document.getElementById('admin-content-instruments').scrollIntoView({ behavior: 'smooth' });
             const idField = document.getElementById('inp-inst-id');
@@ -855,7 +893,17 @@
             });
         }
         
-        window.showBookingForm = () => { editingBookingId = null; document.getElementById('modal-booking').classList.remove('hidden'); };
+        window.showBookingForm = () => { 
+            editingBookingId = null; 
+            document.getElementById('modal-booking').classList.remove('hidden'); 
+            updateBookingFooter(); // Aggiorna il footer con il referente corrente
+        };
+        
+        function updateBookingFooter() {
+            const info = window.currentInstrumentData?.contact || "Referente non assegnato";
+            document.getElementById('booking-contact-info').innerText = info;
+        }
+
         window.hideBookingForm = () => document.getElementById('modal-booking').classList.add('hidden');
         window.toggleCustomReason = () => {
             const v = document.getElementById('inp-reason').value;
@@ -903,12 +951,15 @@
             // Fix: Reset UI state first
             document.getElementById('btn-main-book').classList.remove('hidden');
             document.getElementById('badge-status').classList.add('hidden');
+            
+            window.currentInstrumentData = { id: text }; // Reset current data
 
             loadBookings(text);
             try {
                 const docSnap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'resources', text.replace(/\//g,'_')));
                 if(docSnap.exists()) {
                     const data = docSnap.data();
+                    window.currentInstrumentData = data; // Save for modal footer
                     document.getElementById('item-title').innerText = data.description || text;
                     currentItemName = data.description;
                     if(data.isBookable === false) {
@@ -980,6 +1031,9 @@
             document.getElementById('inp-start').value = booking.startDate;
             document.getElementById('inp-end').value = booking.endDate;
             document.getElementById('modal-booking').classList.remove('hidden');
+            
+            // Per le modifiche, usiamo il referente della prenotazione se salvato, o generico
+            updateBookingFooter();
         };
         window.editBookingFromAdmin = (id) => {
             const booking = window.adminBookingsCache.find(b => b.id === id);
