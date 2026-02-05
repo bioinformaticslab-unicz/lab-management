@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>UniScan v4.3 (Lab + Magazzino Pro)</title>
+    <title>UniScan v4.4 (Lab + Magazzino Pro)</title>
     
     <!-- Stili: Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -42,7 +42,7 @@
                 <h1 class="text-xl font-black italic tracking-tighter flex items-center gap-2">
                     <i data-lucide="scan-line" class="w-5 h-5 text-emerald-400"></i> UNISCAN
                 </h1>
-                <p class="text-slate-400 text-[10px] font-medium uppercase tracking-widest">Lab & Stock v4.3</p>
+                <p class="text-slate-400 text-[10px] font-medium uppercase tracking-widest">Lab & Stock v4.4</p>
             </div>
             <div class="flex gap-3">
                 <button onclick="showAdminLogin()" class="p-2 bg-slate-800 rounded-full hover:bg-slate-700 transition" title="Admin">
@@ -89,7 +89,7 @@
             </div>
             
             <div class="flex gap-2">
-                <input type="text" id="inp-manual-code" placeholder="Codice, Nome o Marchio..." class="flex-1 px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-mono shadow-sm">
+                <input type="text" id="inp-manual-code" placeholder="Cerca nome, codice o marchio..." class="flex-1 px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-mono shadow-sm" onkeypress="if(event.key === 'Enter') manualSearch()">
                 <button onclick="manualSearch()" class="px-4 py-3 bg-slate-800 text-white rounded-xl font-bold shadow-lg hover:bg-slate-700 transition flex items-center justify-center">
                     <i data-lucide="search" class="w-5 h-5"></i>
                 </button>
@@ -142,7 +142,10 @@
             <div class="bg-slate-800 text-white p-5 rounded-3xl shadow-lg relative overflow-hidden">
                 <div class="absolute top-0 right-0 p-4 opacity-10"><i data-lucide="package" class="w-24 h-24"></i></div>
                 <div class="relative z-10">
-                    <p class="text-xs font-bold text-emerald-400 uppercase mb-1">Articolo Magazzino</p>
+                    <div class="flex justify-between items-start">
+                         <p class="text-xs font-bold text-emerald-400 uppercase mb-1">Articolo Magazzino</p>
+                         <p id="inv-item-category-view" class="text-[10px] bg-slate-700 px-2 py-0.5 rounded text-slate-300 font-bold uppercase">---</p>
+                    </div>
                     <h2 id="inv-item-name" class="text-2xl font-black break-all leading-tight mb-1">---</h2>
                     <p id="inv-item-brand" class="text-sm text-slate-300 italic mb-2">---</p>
                     
@@ -196,7 +199,7 @@
             </h2>
             <div class="relative">
                 <i data-lucide="search" class="absolute left-3 top-2.5 w-4 h-4 text-slate-400"></i>
-                <input type="text" onkeyup="filterInventoryList(this.value)" placeholder="Cerca materiale o marchio..." class="w-full pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                <input type="text" onkeyup="filterInventoryList(this.value)" placeholder="Cerca materiale, marchio o cat..." class="w-full pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
             </div>
             <div id="public-inventory-container" class="space-y-2 pb-10">
                 <p class="text-center text-xs text-slate-400 mt-10">Caricamento...</p>
@@ -240,7 +243,20 @@
                     <form onsubmit="saveInventoryItem(event)" class="space-y-3">
                         <input type="text" id="inp-inv-id" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-mono" placeholder="Codice a Barre / ID">
                         <input type="text" id="inp-inv-name" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs" placeholder="Nome Articolo (es. Etanolo)">
-                        <input type="text" id="inp-inv-brand" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs" placeholder="Marchio / Produttore (es. Sigma)">
+                        <div class="grid grid-cols-2 gap-2">
+                            <input type="text" id="inp-inv-brand" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs" placeholder="Marchio / Produttore">
+                            <div class="relative">
+                                <select id="inp-inv-category" onchange="checkNewCategory(this)" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs appearance-none">
+                                    <option value="" disabled selected>Seleziona Categoria...</option>
+                                    <option value="Reagenti">Reagenti</option>
+                                    <option value="Vetreria">Vetreria</option>
+                                    <option value="DPI">DPI</option>
+                                    <option value="Cancelleria">Cancelleria</option>
+                                    <option value="new">+ Nuova Categoria...</option>
+                                </select>
+                                <input type="text" id="inp-inv-category-new" class="hidden w-full absolute top-0 left-0 px-3 py-2 bg-white border border-indigo-500 rounded-lg text-xs" placeholder="Nome Nuova Categoria">
+                            </div>
+                        </div>
                         
                         <div class="grid grid-cols-2 gap-2">
                             <!-- Select Unità -->
@@ -414,6 +430,7 @@
         window.allInstrumentsCache = []; 
         window.allInventoryCache = []; 
         window.currentInventoryData = {}; 
+        window.resourcesCache = []; // Cache for smart search of instruments
 
         // AUTH
         onAuthStateChanged(auth, (user) => {
@@ -422,12 +439,43 @@
                 document.getElementById('user-status').classList.remove('bg-red-500', 'animate-pulse');
                 document.getElementById('user-status').classList.add('bg-green-500');
                 loadGlobalSettings();
-                loadPublicInventory(); // Cache for smart search
+                loadPublicInventory(); 
+                loadResourcesCache(); // New: Load instruments for smart search
                 checkUrlParams(); 
             } else {
                 signInAnonymously(auth).catch(console.error);
             }
         });
+
+        // --- HELPER LOADERS ---
+        function loadResourcesCache() {
+            const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'resources'));
+            onSnapshot(q, (snapshot) => {
+                window.resourcesCache = [];
+                snapshot.forEach(doc => window.resourcesCache.push(doc.data()));
+            });
+        }
+
+        function loadInventoryCategories() {
+            // Get unique categories from inventory items
+            const categories = new Set();
+            window.allInventoryCache.forEach(item => {
+                if (item.category) categories.add(item.category);
+            });
+            // Standard categories always present
+            categories.add("Reagenti");
+            categories.add("Vetreria");
+            categories.add("DPI");
+            categories.add("Cancelleria");
+            
+            const select = document.getElementById('inp-inv-category');
+            select.innerHTML = '<option value="" disabled selected>Seleziona Categoria...</option>';
+            
+            Array.from(categories).sort().forEach(cat => {
+                 select.innerHTML += `<option value="${cat}">${cat}</option>`;
+            });
+            select.innerHTML += `<option value="new">+ Nuova Categoria...</option>`;
+        }
 
         // --- SCANNER ROUTER ---
         const onScanSuccess = (decodedText) => {
@@ -487,6 +535,7 @@
             document.getElementById('inv-item-qty').innerText = data.quantity || 0;
             document.getElementById('inv-item-brand').innerText = data.brand || "---";
             document.getElementById('inv-item-threshold').innerText = data.threshold || 0;
+            document.getElementById('inv-item-category-view').innerText = data.category || "---";
             
             let unitLabel = data.unit || "pz";
             if (data.unit === 'pacco') {
@@ -617,6 +666,7 @@
             onSnapshot(q, (snapshot) => {
                 window.allInventoryCache = []; 
                 snapshot.forEach(doc => window.allInventoryCache.push(doc.data()));
+                loadInventoryCategories(); // Update options for Admin form when cache updates
                 // If view is active, rerender
                 if(!document.getElementById('view-inventory-list').classList.contains('hidden')) {
                     renderInventoryList(window.allInventoryCache, document.getElementById('public-inventory-container'), false);
@@ -626,7 +676,12 @@
 
         window.filterInventoryList = (term) => {
             term = term.toLowerCase();
-            const filtered = window.allInventoryCache.filter(i => i.name.toLowerCase().includes(term) || i.id.toLowerCase().includes(term) || (i.brand && i.brand.toLowerCase().includes(term)));
+            const filtered = window.allInventoryCache.filter(i => 
+                i.name.toLowerCase().includes(term) || 
+                i.id.toLowerCase().includes(term) || 
+                (i.brand && i.brand.toLowerCase().includes(term)) ||
+                (i.category && i.category.toLowerCase().includes(term))
+            );
             const container = document.getElementById(document.getElementById('view-inventory-list').classList.contains('hidden') ? 'inventory-list' : 'public-inventory-container');
             const isAdmin = !document.getElementById('view-inventory-list').classList.contains('hidden') ? false : true;
             renderInventoryList(filtered, container, isAdmin);
@@ -640,8 +695,9 @@
             
             container.innerHTML = items.map(i => {
                 const isLow = (i.quantity || 0) <= (i.threshold || 0);
+                // clickAction logic: if admin view (Admin tab) -> edit, if public list view -> handleScannedCode (view details)
                 const clickAction = isAdmin 
-                    ? `editInventoryItem('${i.id}', '${i.name}', '${i.unit}', '${i.threshold}', '${i.location}', '${i.packSize || ''}', '${i.brand || ''}')` 
+                    ? `editInventoryItem('${i.id}', '${i.name}', '${i.unit}', '${i.threshold}', '${i.location}', '${i.packSize || ''}', '${i.brand || ''}', '${i.category || ''}')` 
                     : `handleScannedCode('${i.id}')`;
                 
                 let quantityDisplay = `${i.quantity} <span class="text-[10px] text-slate-400">${i.unit}</span>`;
@@ -651,15 +707,21 @@
                 }
 
                 return `
-                <div onclick="${clickAction}" class="bg-white p-3 rounded-lg border ${isLow ? 'border-red-300 bg-red-50' : 'border-slate-100'} flex justify-between items-center shadow-sm cursor-pointer hover:border-indigo-300">
-                    <div>
-                        <div class="text-xs font-bold text-slate-700">${i.name}</div>
+                <div class="bg-white p-3 rounded-lg border ${isLow ? 'border-red-300 bg-red-50' : 'border-slate-100'} flex justify-between items-center shadow-sm hover:border-indigo-300">
+                    <div class="cursor-pointer flex-1" onclick="${clickAction}">
+                        <div class="flex items-center gap-2">
+                             <div class="text-xs font-bold text-slate-700">${i.name}</div>
+                             ${i.category ? `<span class="text-[8px] bg-slate-200 px-1 rounded text-slate-500 uppercase">${i.category}</span>` : ''}
+                        </div>
                         <div class="text-[10px] text-slate-500 font-medium">${i.brand || ''}</div>
                         <div class="text-[10px] text-slate-400 font-mono">${i.id} | ${i.location || '-'}</div>
                     </div>
-                    <div class="text-right">
-                        <p class="text-sm font-bold ${isLow ? 'text-red-600' : 'text-slate-800'}">${quantityDisplay}</p>
-                        ${isLow ? '<p class="text-[9px] text-red-500 font-bold uppercase">SCORTA BASSA</p>' : ''}
+                    <div class="text-right flex items-center gap-2">
+                        <div>
+                            <p class="text-sm font-bold ${isLow ? 'text-red-600' : 'text-slate-800'}">${quantityDisplay}</p>
+                            ${isLow ? '<p class="text-[9px] text-red-500 font-bold uppercase">SCORTA BASSA</p>' : ''}
+                        </div>
+                        ${isAdmin ? `<button onclick="deleteInventoryItem('${i.id}')" class="p-2 bg-red-100 text-red-600 rounded-lg"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : ''}
                     </div>
                 </div>`;
             }).join('');
@@ -667,6 +729,17 @@
         }
 
         // --- ADMIN INVENTORY ---
+        window.checkNewCategory = (select) => {
+            const input = document.getElementById('inp-inv-category-new');
+            if(select.value === 'new') {
+                input.classList.remove('hidden');
+                input.required = true;
+            } else {
+                input.classList.add('hidden');
+                input.required = false;
+            }
+        }
+
         window.togglePackSize = () => {
             const unit = document.getElementById('inp-inv-unit').value;
             const packDiv = document.getElementById('div-inv-packsize');
@@ -690,6 +763,9 @@
             const threshold = parseFloat(document.getElementById('inp-inv-threshold').value) || 0;
             const loc = document.getElementById('inp-inv-loc').value.trim();
             
+            let category = document.getElementById('inp-inv-category').value;
+            if(category === 'new') category = document.getElementById('inp-inv-category-new').value.trim();
+
             let packSize = 1;
             if(unit === 'pacco') {
                 packSize = parseFloat(document.getElementById('inp-inv-packsize').value);
@@ -704,11 +780,19 @@
                 const currentQty = snap.exists() ? snap.data().quantity : 0;
 
                 await setDoc(docRef, {
-                    id, name, brand, unit, threshold, location: loc, quantity: currentQty, packSize: packSize
+                    id, name, brand, unit, threshold, location: loc, quantity: currentQty, packSize: packSize, category: category || ''
                 });
                 alert("Articolo salvato!");
                 clearInventoryForm();
             } catch(e) { alert(e.message); }
+        };
+        
+        window.deleteInventoryItem = async (id) => {
+            if(confirm("Sei sicuro di voler eliminare questo articolo dal magazzino?")) {
+                try {
+                    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'inventory', id.replace(/\//g,'_')));
+                } catch(e) { alert("Errore: " + e.message); }
+            }
         };
         
         window.clearInventoryForm = () => {
@@ -719,17 +803,38 @@
              document.getElementById('inp-inv-threshold').value = '';
              document.getElementById('inp-inv-loc').value = '';
              document.getElementById('inp-inv-packsize').value = '';
+             document.getElementById('inp-inv-category').value = '';
+             document.getElementById('inp-inv-category-new').classList.add('hidden');
              togglePackSize();
              document.getElementById('inp-inv-id').readOnly = false;
         }
         
-        window.editInventoryItem = (id, name, unit, threshold, loc, packSize, brand) => {
+        window.editInventoryItem = (id, name, unit, threshold, loc, packSize, brand, category) => {
              document.getElementById('inp-inv-id').value = id;
              document.getElementById('inp-inv-name').value = name;
              document.getElementById('inp-inv-brand').value = brand || '';
              document.getElementById('inp-inv-unit').value = unit;
              document.getElementById('inp-inv-threshold').value = threshold;
              document.getElementById('inp-inv-loc').value = loc;
+             
+             // Handle Category select
+             const catSelect = document.getElementById('inp-inv-category');
+             let catFound = false;
+             for (let i = 0; i < catSelect.options.length; i++) {
+                if (catSelect.options[i].value === category) {
+                    catSelect.selectedIndex = i;
+                    catFound = true;
+                    break;
+                }
+             }
+             if(!catFound && category) {
+                 catSelect.value = 'new';
+                 document.getElementById('inp-inv-category-new').classList.remove('hidden');
+                 document.getElementById('inp-inv-category-new').value = category;
+             } else {
+                 document.getElementById('inp-inv-category-new').classList.add('hidden');
+             }
+             
              if(packSize && packSize !== 'undefined') document.getElementById('inp-inv-packsize').value = packSize;
              
              togglePackSize();
@@ -747,9 +852,9 @@
         // --- IMPORT/EXPORT ---
         window.exportInventoryCSV = () => {
             if(window.allInventoryCache.length === 0) return alert("Nessun dato.");
-            const headers = ["ID", "Nome", "Marchio", "Unita", "Quantita", "Pezzi_Pacco", "Soglia", "Posizione"];
+            const headers = ["ID", "Nome", "Marchio", "Categoria", "Unita", "Quantita", "Pezzi_Pacco", "Soglia", "Posizione"];
             const rows = window.allInventoryCache.map(i => [
-                i.id, i.name, i.brand || '', i.unit, i.quantity, i.packSize || 1, i.threshold, i.location || ''
+                i.id, i.name, i.brand || '', i.category || '', i.unit, i.quantity, i.packSize || 1, i.threshold, i.location || ''
             ]);
             const csvContent = "data:text/csv;charset=utf-8," + headers.join(",") + "\n" + rows.map(e => e.join(",")).join("\n");
             const link = document.createElement("a");
@@ -769,12 +874,12 @@
                 for(let row of rows) {
                     const cols = row.split(',');
                     if(cols.length < 2) continue;
-                    // Format: ID, Name, Brand, Unit, Qty, PackSize, Threshold, Loc
-                    const [id, name, brand, unit, qty, packSize, threshold, loc] = cols;
+                    // Format: ID, Name, Brand, Category, Unit, Qty, PackSize, Threshold, Loc
+                    const [id, name, brand, category, unit, qty, packSize, threshold, loc] = cols;
                     if(id && name) {
                         try {
                             await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'inventory', id.trim().replace(/\//g,'_')), {
-                                id: id.trim(), name: name.trim(), brand: brand?.trim() || '', unit: unit?.trim() || 'pz',
+                                id: id.trim(), name: name.trim(), brand: brand?.trim() || '', category: category?.trim() || '', unit: unit?.trim() || 'pz',
                                 quantity: parseFloat(qty) || 0, packSize: parseFloat(packSize) || 1,
                                 threshold: parseFloat(threshold) || 0, location: loc?.trim() || ''
                             }, {merge:true});
@@ -807,16 +912,25 @@
             const term = document.getElementById('inp-manual-code').value.trim();
             if(!term) return;
             
-            // 1. Try exact match ID logic first
-            // But first check if it looks like an ID or a Name search
-            // We search local cache for name match first
-            const nameMatch = window.allInventoryCache.find(i => i.name.toLowerCase() === term.toLowerCase() || i.brand?.toLowerCase() === term.toLowerCase());
+            // Check Inventory Cache for partial match
+            const invMatch = window.allInventoryCache.find(i => 
+                i.name.toLowerCase() === term.toLowerCase() || 
+                i.brand?.toLowerCase() === term.toLowerCase() ||
+                i.id.toLowerCase() === term.toLowerCase()
+            );
+
+            // Check Resources Cache for partial match
+            const resMatch = window.resourcesCache.find(r => 
+                r.description.toLowerCase() === term.toLowerCase() || 
+                r.id.toLowerCase() === term.toLowerCase()
+            );
             
-            if(nameMatch) {
-                // If exact name match found, open it
-                handleScannedCode(nameMatch.id);
+            if(invMatch) {
+                handleScannedCode(invMatch.id);
+            } else if (resMatch) {
+                handleScannedCode(resMatch.id);
             } else {
-                // Otherwise fall back to ID handler which handles exact ID check or prompts creation
+                // If no direct name match, pass term as ID to handleScannedCode which handles creation or alerts
                 handleScannedCode(term);
             }
         };
