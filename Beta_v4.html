@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>UniScan v4.6 (Lab + Magazzino Pro)</title>
+    <title>UniScan v4.7 (Lab + Magazzino Pro)</title>
     
     <!-- Stili: Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -42,7 +42,7 @@
                 <h1 class="text-xl font-black italic tracking-tighter flex items-center gap-2">
                     <i data-lucide="scan-line" class="w-5 h-5 text-emerald-400"></i> UNISCAN
                 </h1>
-                <p class="text-slate-400 text-[10px] font-medium uppercase tracking-widest">Lab & Stock v4.6</p>
+                <p class="text-slate-400 text-[10px] font-medium uppercase tracking-widest">Lab & Stock v4.7</p>
             </div>
             <div class="flex gap-3">
                 <button onclick="showAdminLogin()" class="p-2 bg-slate-800 rounded-full hover:bg-slate-700 transition" title="Admin">
@@ -286,6 +286,12 @@
                             <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Pezzi per Pacco</label>
                             <input type="number" id="inp-inv-packsize" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs" placeholder="Es. 12">
                         </div>
+                        
+                        <!-- Modifica Quantità Admin -->
+                         <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Quantità Disponibile (Rettifica)</label>
+                            <input type="number" step="0.01" id="inp-inv-qty" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs" placeholder="Quantità attuale">
+                        </div>
 
                         <input type="text" id="inp-inv-loc" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs" placeholder="Posizione (es. Armadio A)">
                         <button type="submit" class="w-full py-2 bg-slate-800 text-white rounded-lg font-bold text-xs">SALVA ARTICOLO</button>
@@ -497,8 +503,8 @@
             }
             handleScannedCode(finalCode);
         };
-
-        async function handleScannedCode(code) {
+        // MAKE GLOBAL FOR CLICK EVENTS
+        window.handleScannedCode = async function(code) {
             currentItem = code;
             
             // 1. Cerca nei Tools (Exact ID)
@@ -715,7 +721,7 @@
                 // clickAction logic: if admin view (Admin tab) -> edit, if public list view -> handleScannedCode (view details)
                 // Need to pass image param now
                 const clickAction = isAdmin 
-                    ? `editInventoryItem('${i.id}', '${i.name.replace(/'/g, "\\'")}', '${i.unit}', '${i.threshold}', '${(i.location||'').replace(/'/g, "\\'")}', '${i.packSize || ''}', '${(i.brand||'').replace(/'/g, "\\'")}', '${(i.category||'').replace(/'/g, "\\'")}', '${(i.image||'').replace(/'/g, "\\'")}')` 
+                    ? `editInventoryItem('${i.id}', '${i.name.replace(/'/g, "\\'")}', '${i.unit}', '${i.threshold}', '${(i.location||'').replace(/'/g, "\\'")}', '${i.packSize || ''}', '${(i.brand||'').replace(/'/g, "\\'")}', '${(i.category||'').replace(/'/g, "\\'")}', '${(i.image||'').replace(/'/g, "\\'")}', '${i.quantity}')` 
                     : `handleScannedCode('${i.id}')`;
                 
                 let quantityDisplay = `${i.quantity} <span class="text-[10px] text-slate-400">${i.unit}</span>`;
@@ -781,6 +787,7 @@
             const threshold = parseFloat(document.getElementById('inp-inv-threshold').value) || 0;
             const loc = document.getElementById('inp-inv-loc').value.trim();
             const image = document.getElementById('inp-inv-image').value.trim();
+            const qtyInput = document.getElementById('inp-inv-qty');
             
             let category = document.getElementById('inp-inv-category').value;
             if(category === 'new') category = document.getElementById('inp-inv-category-new').value.trim();
@@ -795,11 +802,18 @@
 
             try {
                 const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'inventory', id.replace(/\//g,'_'));
-                const snap = await getDoc(docRef);
-                const currentQty = snap.exists() ? snap.data().quantity : 0;
+                
+                // Determine quantity: use admin input if valid number, else preserve/init
+                let finalQty = 0;
+                if (qtyInput.value !== "") {
+                    finalQty = parseFloat(qtyInput.value);
+                } else {
+                    const snap = await getDoc(docRef);
+                    finalQty = snap.exists() ? snap.data().quantity : 0;
+                }
 
                 await setDoc(docRef, {
-                    id, name, brand, unit, threshold, location: loc, quantity: currentQty, packSize: packSize, category: category || '', image: image || ''
+                    id, name, brand, unit, threshold, location: loc, quantity: finalQty, packSize: packSize, category: category || '', image: image || ''
                 });
                 alert("Articolo salvato!");
                 clearInventoryForm();
@@ -824,12 +838,13 @@
              document.getElementById('inp-inv-packsize').value = '';
              document.getElementById('inp-inv-category').value = '';
              document.getElementById('inp-inv-image').value = '';
+             document.getElementById('inp-inv-qty').value = ''; // Clear qty
              document.getElementById('inp-inv-category-new').classList.add('hidden');
              togglePackSize();
              document.getElementById('inp-inv-id').readOnly = false;
         }
         
-        window.editInventoryItem = (id, name, unit, threshold, loc, packSize, brand, category, image) => {
+        window.editInventoryItem = (id, name, unit, threshold, loc, packSize, brand, category, image, qty) => {
              document.getElementById('inp-inv-id').value = id;
              document.getElementById('inp-inv-name').value = name;
              document.getElementById('inp-inv-brand').value = brand || '';
@@ -837,6 +852,7 @@
              document.getElementById('inp-inv-threshold').value = threshold;
              document.getElementById('inp-inv-loc').value = loc;
              document.getElementById('inp-inv-image').value = image || '';
+             document.getElementById('inp-inv-qty').value = qty !== 'undefined' ? qty : 0; // Populate qty
              
              // Handle Category select
              const catSelect = document.getElementById('inp-inv-category');
