@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>UniScan v4.2 (Lab + Magazzino Pro)</title>
+    <title>UniScan v4.3 (Lab + Magazzino Pro)</title>
     
     <!-- Stili: Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -42,7 +42,7 @@
                 <h1 class="text-xl font-black italic tracking-tighter flex items-center gap-2">
                     <i data-lucide="scan-line" class="w-5 h-5 text-emerald-400"></i> UNISCAN
                 </h1>
-                <p class="text-slate-400 text-[10px] font-medium uppercase tracking-widest">Lab & Stock v4.2</p>
+                <p class="text-slate-400 text-[10px] font-medium uppercase tracking-widest">Lab & Stock v4.3</p>
             </div>
             <div class="flex gap-3">
                 <button onclick="showAdminLogin()" class="p-2 bg-slate-800 rounded-full hover:bg-slate-700 transition" title="Admin">
@@ -89,9 +89,9 @@
             </div>
             
             <div class="flex gap-2">
-                <input type="text" id="inp-manual-code" placeholder="Inserisci codice manuale..." class="flex-1 px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-mono shadow-sm">
+                <input type="text" id="inp-manual-code" placeholder="Codice, Nome o Marchio..." class="flex-1 px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-mono shadow-sm">
                 <button onclick="manualSearch()" class="px-4 py-3 bg-slate-800 text-white rounded-xl font-bold shadow-lg hover:bg-slate-700 transition flex items-center justify-center">
-                    <i data-lucide="arrow-right" class="w-5 h-5"></i>
+                    <i data-lucide="search" class="w-5 h-5"></i>
                 </button>
             </div>
         </div>
@@ -153,7 +153,7 @@
                         </div>
                         <div class="mb-2">
                             <p id="inv-item-unit" class="text-sm text-slate-400 font-bold">unità</p>
-                            <p id="inv-item-pack-detail" class="text-[10px] text-slate-500 hidden">---</p>
+                            <p id="inv-item-pack-detail" class="text-[10px] text-emerald-400 font-bold hidden">---</p>
                         </div>
                         <div class="ml-auto mb-1 text-right">
                              <p class="text-[10px] text-slate-400 uppercase font-bold">Soglia Minima</p>
@@ -196,7 +196,7 @@
             </h2>
             <div class="relative">
                 <i data-lucide="search" class="absolute left-3 top-2.5 w-4 h-4 text-slate-400"></i>
-                <input type="text" onkeyup="filterInventoryList(this.value)" placeholder="Cerca materiale..." class="w-full pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                <input type="text" onkeyup="filterInventoryList(this.value)" placeholder="Cerca materiale o marchio..." class="w-full pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
             </div>
             <div id="public-inventory-container" class="space-y-2 pb-10">
                 <p class="text-center text-xs text-slate-400 mt-10">Caricamento...</p>
@@ -224,6 +224,14 @@
 
             <!-- Content: Magazzino (ADMIN) -->
             <div id="admin-content-inventory" class="hidden space-y-4">
+                <div class="flex gap-2">
+                    <button onclick="exportInventoryCSV()" class="flex-1 py-2 bg-indigo-100 text-indigo-700 rounded-lg text-xs font-bold flex items-center justify-center gap-1"><i data-lucide="download" class="w-3 h-3"></i> SCARICA CSV</button>
+                    <label class="flex-1 py-2 bg-slate-800 text-white rounded-lg text-xs font-bold flex items-center justify-center gap-1 cursor-pointer">
+                        <i data-lucide="upload" class="w-3 h-3"></i> IMPORTA CSV
+                        <input type="file" id="inp-csv-import" accept=".csv" class="hidden" onchange="importInventoryCSV(this)">
+                    </label>
+                </div>
+
                 <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
                     <div class="flex justify-between items-center mb-3">
                         <h3 class="text-sm font-bold text-slate-700 flex items-center gap-2"><i data-lucide="package-plus" class="w-4 h-4"></i> Gestione Articolo</h3>
@@ -414,6 +422,7 @@
                 document.getElementById('user-status').classList.remove('bg-red-500', 'animate-pulse');
                 document.getElementById('user-status').classList.add('bg-green-500');
                 loadGlobalSettings();
+                loadPublicInventory(); // Cache for smart search
                 checkUrlParams(); 
             } else {
                 signInAnonymously(auth).catch(console.error);
@@ -585,7 +594,7 @@
                     <div class="flex flex-col text-xs p-2 bg-slate-50 rounded border border-slate-100 mb-1">
                         <div class="flex justify-between items-center mb-1">
                             <span class="${m.action === 'add' ? 'text-emerald-600' : 'text-red-600'} font-bold">
-                                ${m.action === 'add' ? '+' : '-'}${m.amount} <span class="text-slate-400 font-normal">${m.unit || ''}</span>
+                                ${m.action === 'add' ? '+' : '-'}${m.amount} <span class="text-slate-400 font-normal">${m.unit === 'pacco' ? 'pacchi' : (m.unit || '')}</span>
                             </span>
                             <span class="text-slate-400 text-[10px]">${m.timestamp ? new Date(m.timestamp.seconds * 1000).toLocaleDateString() : ''}</span>
                         </div>
@@ -599,17 +608,19 @@
         // --- PUBLIC INVENTORY LIST ---
         window.showPublicInventoryList = () => {
             window.switchView('view-inventory-list');
-            loadPublicInventory();
+            // loadPublicInventory called on init
+            renderInventoryList(window.allInventoryCache, document.getElementById('public-inventory-container'), false);
         }
 
         window.loadPublicInventory = () => {
-            const container = document.getElementById('public-inventory-container');
             const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'inventory'));
-            
             onSnapshot(q, (snapshot) => {
-                window.allInventoryCache = []; // Aggiorna cache globale
+                window.allInventoryCache = []; 
                 snapshot.forEach(doc => window.allInventoryCache.push(doc.data()));
-                renderInventoryList(window.allInventoryCache, container, false); // False = public view
+                // If view is active, rerender
+                if(!document.getElementById('view-inventory-list').classList.contains('hidden')) {
+                    renderInventoryList(window.allInventoryCache, document.getElementById('public-inventory-container'), false);
+                }
             });
         }
 
@@ -629,11 +640,16 @@
             
             container.innerHTML = items.map(i => {
                 const isLow = (i.quantity || 0) <= (i.threshold || 0);
-                // Args: id, name, unit, threshold, loc, packSize, brand
                 const clickAction = isAdmin 
                     ? `editInventoryItem('${i.id}', '${i.name}', '${i.unit}', '${i.threshold}', '${i.location}', '${i.packSize || ''}', '${i.brand || ''}')` 
                     : `handleScannedCode('${i.id}')`;
                 
+                let quantityDisplay = `${i.quantity} <span class="text-[10px] text-slate-400">${i.unit}</span>`;
+                if(i.unit === 'pacco') {
+                    const total = (i.quantity || 0) * (i.packSize || 1);
+                    quantityDisplay = `${i.quantity} pacchi <span class="block text-[9px] text-slate-400">(${total} pz tot)</span>`;
+                }
+
                 return `
                 <div onclick="${clickAction}" class="bg-white p-3 rounded-lg border ${isLow ? 'border-red-300 bg-red-50' : 'border-slate-100'} flex justify-between items-center shadow-sm cursor-pointer hover:border-indigo-300">
                     <div>
@@ -642,7 +658,7 @@
                         <div class="text-[10px] text-slate-400 font-mono">${i.id} | ${i.location || '-'}</div>
                     </div>
                     <div class="text-right">
-                        <p class="text-sm font-bold ${isLow ? 'text-red-600' : 'text-slate-800'}">${i.quantity} <span class="text-[10px] text-slate-400">${i.unit}</span></p>
+                        <p class="text-sm font-bold ${isLow ? 'text-red-600' : 'text-slate-800'}">${quantityDisplay}</p>
                         ${isLow ? '<p class="text-[9px] text-red-500 font-bold uppercase">SCORTA BASSA</p>' : ''}
                     </div>
                 </div>`;
@@ -724,14 +740,52 @@
         window.loadInventoryListAdmin = () => {
             const listEl = document.getElementById('inventory-list');
             listEl.innerHTML = '<p class="text-center text-xs">Caricamento...</p>';
-            const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'inventory'));
-            
-            onSnapshot(q, (snapshot) => {
-                const items = [];
-                snapshot.forEach(doc => items.push(doc.data()));
-                window.allInventoryCache = items;
-                renderInventoryList(items, listEl, true);
-            });
+            // Uses already loaded cache
+            renderInventoryList(window.allInventoryCache, listEl, true);
+        };
+
+        // --- IMPORT/EXPORT ---
+        window.exportInventoryCSV = () => {
+            if(window.allInventoryCache.length === 0) return alert("Nessun dato.");
+            const headers = ["ID", "Nome", "Marchio", "Unita", "Quantita", "Pezzi_Pacco", "Soglia", "Posizione"];
+            const rows = window.allInventoryCache.map(i => [
+                i.id, i.name, i.brand || '', i.unit, i.quantity, i.packSize || 1, i.threshold, i.location || ''
+            ]);
+            const csvContent = "data:text/csv;charset=utf-8," + headers.join(",") + "\n" + rows.map(e => e.join(",")).join("\n");
+            const link = document.createElement("a");
+            link.href = encodeURI(csvContent);
+            link.download = `inventory_${new Date().toISOString().slice(0,10)}.csv`;
+            document.body.appendChild(link); link.click(); document.body.removeChild(link);
+        };
+
+        window.importInventoryCSV = (input) => {
+            const file = input.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                const text = e.target.result;
+                const rows = text.split('\n').slice(1); // skip header
+                let count = 0;
+                for(let row of rows) {
+                    const cols = row.split(',');
+                    if(cols.length < 2) continue;
+                    // Format: ID, Name, Brand, Unit, Qty, PackSize, Threshold, Loc
+                    const [id, name, brand, unit, qty, packSize, threshold, loc] = cols;
+                    if(id && name) {
+                        try {
+                            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'inventory', id.trim().replace(/\//g,'_')), {
+                                id: id.trim(), name: name.trim(), brand: brand?.trim() || '', unit: unit?.trim() || 'pz',
+                                quantity: parseFloat(qty) || 0, packSize: parseFloat(packSize) || 1,
+                                threshold: parseFloat(threshold) || 0, location: loc?.trim() || ''
+                            }, {merge:true});
+                            count++;
+                        } catch(err) { console.error("Import error row", row, err); }
+                    }
+                }
+                alert(`Importati/Aggiornati ${count} articoli.`);
+                input.value = ''; // reset
+            };
+            reader.readAsText(file);
         };
 
         // --- UTILS & STARTUP ---
@@ -747,6 +801,25 @@
                 if (resourceId) handleScannedCode(resourceId);
             }
         }
+        
+        // --- MANUAL SEARCH SMART ---
+        window.manualSearch = () => {
+            const term = document.getElementById('inp-manual-code').value.trim();
+            if(!term) return;
+            
+            // 1. Try exact match ID logic first
+            // But first check if it looks like an ID or a Name search
+            // We search local cache for name match first
+            const nameMatch = window.allInventoryCache.find(i => i.name.toLowerCase() === term.toLowerCase() || i.brand?.toLowerCase() === term.toLowerCase());
+            
+            if(nameMatch) {
+                // If exact name match found, open it
+                handleScannedCode(nameMatch.id);
+            } else {
+                // Otherwise fall back to ID handler which handles exact ID check or prompts creation
+                handleScannedCode(term);
+            }
+        };
         
         // --- ADMIN TABS (UPDATED) ---
         window.switchAdminTab = (tab) => {
@@ -781,10 +854,6 @@
         window.switchView = (id) => {
             ['view-scanner', 'view-details', 'view-admin', 'view-my-booking', 'view-inventory', 'view-inventory-list'].forEach(v => document.getElementById(v).classList.add('hidden'));
             document.getElementById(id).classList.remove('hidden');
-        };
-        window.manualSearch = () => {
-            const c = document.getElementById('inp-manual-code').value.trim();
-            if(c) handleScannedCode(c);
         };
         window.startScanner = async () => {
             document.getElementById('camera-overlay').classList.add('hidden');
