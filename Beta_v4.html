@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>UniScan v4.7 (Lab + Magazzino Pro)</title>
+    <title>UniScan v4.8 (Lab + Magazzino Pro)</title>
     
     <!-- Stili: Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -42,7 +42,7 @@
                 <h1 class="text-xl font-black italic tracking-tighter flex items-center gap-2">
                     <i data-lucide="scan-line" class="w-5 h-5 text-emerald-400"></i> UNISCAN
                 </h1>
-                <p class="text-slate-400 text-[10px] font-medium uppercase tracking-widest">Lab & Stock v4.7</p>
+                <p class="text-slate-400 text-[10px] font-medium uppercase tracking-widest">Lab & Stock v4.8</p>
             </div>
             <div class="flex gap-3">
                 <button onclick="showAdminLogin()" class="p-2 bg-slate-800 rounded-full hover:bg-slate-700 transition" title="Admin">
@@ -170,9 +170,15 @@
                         </div>
                     </div>
                     
-                    <p id="inv-alert-restock" class="hidden mt-3 text-xs font-bold text-red-400 bg-red-900/30 p-2 rounded border border-red-800/50 flex items-center gap-2">
-                        <i data-lucide="alert-triangle" class="w-4 h-4"></i> RIORDINO NECESSARIO
-                    </p>
+                    <!-- STATUS ALERTS -->
+                    <div id="inv-alert-restock" class="hidden mt-3 text-xs font-bold text-red-400 bg-red-900/30 p-2 rounded border border-red-800/50 flex justify-between items-center">
+                        <span class="flex items-center gap-2"><i data-lucide="alert-triangle" class="w-4 h-4"></i> SCORTA BASSA</span>
+                        <button onclick="openOrderModal()" class="bg-red-600 text-white px-2 py-1 rounded text-[10px] hover:bg-red-500">SEGNA ORDINATO</button>
+                    </div>
+
+                    <div id="inv-alert-ordered" class="hidden mt-3 text-xs font-bold text-amber-400 bg-amber-900/30 p-2 rounded border border-amber-800/50 flex items-center gap-2">
+                        <i data-lucide="truck" class="w-4 h-4"></i> <span id="inv-ordered-text">Ordinato</span>
+                    </div>
 
                     <p id="inv-item-loc" class="text-xs text-slate-400 mt-3 flex items-center gap-1"><i data-lucide="map-pin" class="w-3 h-3"></i> ---</p>
                 </div>
@@ -346,7 +352,26 @@
 
     </main>
 
-    <!-- MODALE MOVIMENTO MAGAZZINO (Nuovo) -->
+    <!-- MODALE ORDINE MAGAZZINO (Nuovo) -->
+    <div id="modal-order" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl">
+            <h3 class="text-lg font-bold text-slate-800 mb-4">Segna come Ordinato</h3>
+            <form onsubmit="confirmOrder(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 mb-1">Ordinato da (Nome)</label>
+                    <input type="text" id="inp-order-by" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm" placeholder="Nome...">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 mb-1">Data Ordine</label>
+                    <input type="date" id="inp-order-date" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+                </div>
+                <button type="submit" class="w-full py-3 bg-amber-500 text-white rounded-xl font-bold shadow-lg">CONFERMA ORDINE</button>
+                <button type="button" onclick="document.getElementById('modal-order').classList.add('hidden')" class="w-full py-2 text-slate-400 text-xs font-bold">ANNULLA</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODALE MOVIMENTO MAGAZZINO -->
     <div id="modal-stock" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
         <div class="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl">
             <h3 id="stock-modal-title" class="text-lg font-bold text-slate-800 mb-4">Movimento</h3>
@@ -358,6 +383,11 @@
                 <div>
                     <label class="block text-xs font-bold text-slate-500 mb-1">Identificativo Operatore (Opzionale)</label>
                     <input type="text" id="inp-stock-user-id" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm" placeholder="Nome, PI o Codice...">
+                </div>
+                <!-- Checkbox rimozione stato ordine (visibile solo se articolo ordinato e azione add) -->
+                <div id="div-remove-order" class="hidden flex items-center gap-2 bg-amber-50 p-2 rounded border border-amber-200">
+                    <input type="checkbox" id="inp-remove-order" checked class="h-4 w-4 text-amber-600 rounded">
+                    <label for="inp-remove-order" class="text-xs font-bold text-amber-800">Merce arrivata: rimuovi stato "Ordinato"</label>
                 </div>
                 <button type="submit" class="w-full py-3 bg-slate-800 text-white rounded-xl font-bold shadow-lg">CONFERMA</button>
                 <button type="button" onclick="document.getElementById('modal-stock').classList.add('hidden')" class="w-full py-2 text-slate-400 text-xs font-bold">ANNULLA</button>
@@ -394,6 +424,12 @@
     <div id="view-totem" class="hidden fixed inset-0 bg-slate-900 text-white z-[200] p-6 flex flex-col">
         <div class="flex justify-between border-b border-slate-700 pb-4 mb-6"><h1 class="text-3xl font-black">UNISCAN LIVE</h1><div class="text-right"><div id="totem-clock" class="text-3xl font-mono">00:00</div></div></div>
         <div class="flex gap-8 flex-1 overflow-hidden"><div class="w-1/2"><h2 class="text-emerald-400 font-bold mb-4">IN CORSO</h2><div id="totem-active-list" class="space-y-4"></div></div><div class="w-1/2 border-l border-slate-700 pl-8"><h2 class="text-indigo-400 font-bold mb-4">PROSSIME</h2><div id="totem-upcoming-list" class="space-y-4"></div></div></div>
+        <!-- Totem Footer Stock Alert (Nuovo) -->
+        <div id="totem-stock-alerts" class="mt-4 pt-4 border-t border-slate-700 h-16 overflow-hidden relative">
+            <div class="absolute flex gap-8 animate-marquee whitespace-nowrap text-red-400 text-sm font-bold uppercase tracking-widest">
+                <!-- Stock alerts injected here -->
+            </div>
+        </div>
     </div>
 
     <!-- AREA STAMPA -->
@@ -582,6 +618,14 @@
                 qtyEl.classList.replace('text-red-400', 'text-white');
                 alertEl.classList.add('hidden');
             }
+            
+            // Show Order Status Banner
+            if(data.isOrdered) {
+                document.getElementById('inv-alert-ordered').classList.remove('hidden');
+                document.getElementById('inv-ordered-text').innerText = `Ordinato il ${data.orderDate || '?'} da ${data.orderBy || '?'}`;
+            } else {
+                document.getElementById('inv-alert-ordered').classList.add('hidden');
+            }
 
             loadStockHistory(id);
         }
@@ -595,8 +639,42 @@
             document.getElementById('stock-modal-unit').innerText = unit;
             document.getElementById('inp-stock-qty').value = '';
             document.getElementById('inp-stock-user-id').value = ''; // Reset user ID
+            
+            // Gestione Checkbox rimuovi ordine
+            if (action === 'add' && window.currentInventoryData.isOrdered) {
+                document.getElementById('div-remove-order').classList.remove('hidden');
+            } else {
+                document.getElementById('div-remove-order').classList.add('hidden');
+            }
+            
             document.getElementById('modal-stock').classList.remove('hidden');
             document.getElementById('inp-stock-qty').focus();
+        };
+        
+        window.openOrderModal = () => {
+            document.getElementById('inp-order-by').value = '';
+            document.getElementById('inp-order-date').valueAsDate = new Date();
+            document.getElementById('modal-order').classList.remove('hidden');
+        };
+        
+        window.confirmOrder = async (e) => {
+            e.preventDefault();
+            const by = document.getElementById('inp-order-by').value;
+            const date = document.getElementById('inp-order-date').value;
+            const safeId = currentItem.replace(/\//g,'_');
+            
+            try {
+                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'inventory', safeId), {
+                    isOrdered: true,
+                    orderBy: by,
+                    orderDate: date
+                });
+                alert("Stato Ordine salvato.");
+                document.getElementById('modal-order').classList.add('hidden');
+                // Refresh view
+                const snap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'inventory', safeId));
+                showInventoryView(currentItem, snap.data());
+            } catch(e) { alert(e); }
         };
 
         window.confirmStockMovement = async (e) => {
@@ -604,6 +682,7 @@
             const qty = parseFloat(document.getElementById('inp-stock-qty').value);
             if (!qty || qty <= 0) return alert("Quantità non valida.");
             const operatorName = document.getElementById('inp-stock-user-id').value.trim();
+            const removeOrder = document.getElementById('inp-remove-order').checked;
 
             const safeId = currentItem.replace(/\//g,'_');
             const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'inventory', safeId);
@@ -615,14 +694,22 @@
                     
                     const currentQty = parseFloat(sfDoc.data().quantity || 0);
                     let newQty = currentQty;
+                    let updates = {};
                     
-                    if (currentStockAction === 'add') newQty += qty;
-                    else {
+                    if (currentStockAction === 'add') {
+                         newQty += qty;
+                         if (removeOrder && sfDoc.data().isOrdered) {
+                             updates.isOrdered = false;
+                             updates.orderBy = null;
+                             updates.orderDate = null;
+                         }
+                    } else {
                         if (currentQty < qty) throw "Quantità insufficiente!";
                         newQty -= qty;
                     }
-
-                    transaction.update(docRef, { quantity: newQty });
+                    
+                    updates.quantity = newQty;
+                    transaction.update(docRef, updates);
                     
                     const movementRef = doc(collection(db, 'artifacts', appId, 'public', 'data', 'stock_movements'));
                     transaction.set(movementRef, {
@@ -1177,6 +1264,22 @@
                 const upcoming = bookings.filter(b => new Date(b.startDate) > now).sort((a,b)=>new Date(a.startDate)-new Date(b.startDate));
                 document.getElementById('totem-active-list').innerHTML = active.map(b => `<div class="bg-slate-800 p-3 mb-2 rounded border-l-4 border-emerald-500"><h3 class="font-bold text-white">${b.resourceName}</h3><p class="text-emerald-400">${b.userName}</p></div>`).join('') || '<p class="text-slate-500">Nessuna attività</p>';
                 document.getElementById('totem-upcoming-list').innerHTML = upcoming.map(b => `<div class="bg-slate-800 p-2 mb-2 rounded flex justify-between"><span class="text-white">${b.resourceName}</span><span class="text-slate-400">${new Date(b.startDate).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</span></div>`).join('') || '<p class="text-slate-500">Nessuna prenotazione</p>';
+                
+                // Totem Stock Alerts (New v4.8)
+                updateTotemStockAlerts();
+            });
+        }
+        
+        function updateTotemStockAlerts() {
+            const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'inventory'));
+            onSnapshot(q, (snapshot) => {
+                const alerts = [];
+                snapshot.forEach(doc => {
+                    const i = doc.data();
+                    if((i.quantity || 0) <= (i.threshold || 0)) alerts.push(`${i.name} (Sotto scorta)`);
+                });
+                const ticker = document.querySelector('#totem-stock-alerts .animate-marquee');
+                if(ticker) ticker.innerText = alerts.length ? "ATTENZIONE: " + alerts.join(" • ") : "";
             });
         }
 
