@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>UniScan v4.0 (Lab + Magazzino)</title>
+    <title>UniScan v4.1 (Lab + Magazzino Pro)</title>
     
     <!-- Stili: Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -42,7 +42,7 @@
                 <h1 class="text-xl font-black italic tracking-tighter flex items-center gap-2">
                     <i data-lucide="scan-line" class="w-5 h-5 text-emerald-400"></i> UNISCAN
                 </h1>
-                <p class="text-slate-400 text-[10px] font-medium uppercase tracking-widest">Lab & Stock v4.0</p>
+                <p class="text-slate-400 text-[10px] font-medium uppercase tracking-widest">Lab & Stock v4.1</p>
             </div>
             <div class="flex gap-3">
                 <button onclick="showAdminLogin()" class="p-2 bg-slate-800 rounded-full hover:bg-slate-700 transition" title="Admin">
@@ -57,14 +57,18 @@
     <main id="main-container" class="p-5 max-w-md mx-auto relative">
         
         <!-- MENU PRINCIPALE -->
-        <div id="main-menu" class="flex justify-center gap-3 mb-6 fade-in">
-            <button onclick="resetApp()" class="flex-1 py-3 bg-white border border-slate-200 shadow-sm rounded-xl flex flex-col items-center gap-1 active:scale-95 transition">
+        <div id="main-menu" class="grid grid-cols-3 gap-3 mb-6 fade-in">
+            <button onclick="resetApp()" class="py-3 bg-white border border-slate-200 shadow-sm rounded-xl flex flex-col items-center gap-1 active:scale-95 transition hover:border-indigo-300">
                 <i data-lucide="qr-code" class="w-5 h-5 text-indigo-600"></i>
                 <span class="text-[10px] font-bold uppercase text-slate-500">Scanner</span>
             </button>
-            <button onclick="showMyBookingSearch()" class="flex-1 py-3 bg-white border border-slate-200 shadow-sm rounded-xl flex flex-col items-center gap-1 active:scale-95 transition">
-                <i data-lucide="ticket" class="w-5 h-5 text-emerald-600"></i>
+            <button onclick="showMyBookingSearch()" class="py-3 bg-white border border-slate-200 shadow-sm rounded-xl flex flex-col items-center gap-1 active:scale-95 transition hover:border-indigo-300">
+                <i data-lucide="ticket" class="w-5 h-5 text-indigo-600"></i>
                 <span class="text-[10px] font-bold uppercase text-slate-500">Prenotazioni</span>
+            </button>
+            <button onclick="showPublicInventoryList()" class="py-3 bg-white border border-slate-200 shadow-sm rounded-xl flex flex-col items-center gap-1 active:scale-95 transition hover:border-emerald-300">
+                <i data-lucide="package" class="w-5 h-5 text-emerald-600"></i>
+                <span class="text-[10px] font-bold uppercase text-slate-500">Magazzino</span>
             </button>
         </div>
 
@@ -132,7 +136,7 @@
             </div>
         </div>
 
-        <!-- VISTA 3: MAGAZZINO (Nuova Feature v4) -->
+        <!-- VISTA 3: MAGAZZINO DETTAGLIO -->
         <div id="view-inventory" class="hidden fade-in space-y-5">
             <!-- Header Articolo -->
             <div class="bg-slate-800 text-white p-5 rounded-3xl shadow-lg relative overflow-hidden">
@@ -142,7 +146,10 @@
                     <h2 id="inv-item-name" class="text-2xl font-black break-all leading-tight">---</h2>
                     <div class="flex items-end gap-2 mt-2">
                         <p id="inv-item-qty" class="text-4xl font-mono font-bold text-white">0</p>
-                        <p id="inv-item-unit" class="text-sm text-slate-400 font-bold mb-2">unità</p>
+                        <div class="mb-2">
+                            <p id="inv-item-unit" class="text-sm text-slate-400 font-bold">unità</p>
+                            <p id="inv-item-pack-detail" class="text-[10px] text-slate-500 hidden">---</p>
+                        </div>
                     </div>
                     <p id="inv-item-loc" class="text-xs text-slate-400 mt-2 flex items-center gap-1"><i data-lucide="map-pin" class="w-3 h-3"></i> ---</p>
                 </div>
@@ -152,11 +159,11 @@
             <div class="grid grid-cols-2 gap-3">
                 <button onclick="openStockModal('remove')" class="py-4 bg-red-100 text-red-700 rounded-2xl flex flex-col items-center justify-center gap-1 shadow-sm active:scale-95 transition hover:bg-red-200">
                     <i data-lucide="minus-circle" class="w-8 h-8"></i>
-                    <span class="text-xs font-black uppercase">Preleva</span>
+                    <span class="text-xs font-black uppercase">Preleva (Scarico)</span>
                 </button>
                 <button onclick="openStockModal('add')" class="py-4 bg-emerald-100 text-emerald-700 rounded-2xl flex flex-col items-center justify-center gap-1 shadow-sm active:scale-95 transition hover:bg-emerald-200">
                     <i data-lucide="plus-circle" class="w-8 h-8"></i>
-                    <span class="text-xs font-black uppercase">Rifornisci</span>
+                    <span class="text-xs font-black uppercase">Rifornisci (Carico)</span>
                 </button>
             </div>
 
@@ -165,6 +172,20 @@
                     <i data-lucide="history" class="w-3 h-3"></i> Ultimi Movimenti
                 </h3>
                 <div id="stock-history-list" class="space-y-2"></div>
+            </div>
+        </div>
+
+        <!-- VISTA: LISTA MAGAZZINO PUBBLICA -->
+        <div id="view-inventory-list" class="hidden fade-in space-y-4">
+            <h2 class="text-lg font-black text-slate-800 flex items-center gap-2 border-b pb-2">
+                <i data-lucide="package" class="w-5 h-5 text-emerald-600"></i> Magazzino Lab
+            </h2>
+            <div class="relative">
+                <i data-lucide="search" class="absolute left-3 top-2.5 w-4 h-4 text-slate-400"></i>
+                <input type="text" onkeyup="filterInventoryList(this.value)" placeholder="Cerca materiale..." class="w-full pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            </div>
+            <div id="public-inventory-container" class="space-y-2 pb-10">
+                <p class="text-center text-xs text-slate-400 mt-10">Caricamento...</p>
             </div>
         </div>
 
@@ -187,7 +208,7 @@
                 <div id="admin-list" class="space-y-3"></div>
             </div>
 
-            <!-- Content: Magazzino (NUOVO) -->
+            <!-- Content: Magazzino (ADMIN) -->
             <div id="admin-content-inventory" class="hidden space-y-4">
                 <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
                     <div class="flex justify-between items-center mb-3">
@@ -197,10 +218,29 @@
                     <form onsubmit="saveInventoryItem(event)" class="space-y-3">
                         <input type="text" id="inp-inv-id" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-mono" placeholder="Codice a Barre / ID">
                         <input type="text" id="inp-inv-name" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs" placeholder="Nome Articolo (es. Etanolo)">
+                        
                         <div class="grid grid-cols-2 gap-2">
-                            <input type="text" id="inp-inv-unit" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs" placeholder="Unità (ml, pz)">
-                            <input type="number" id="inp-inv-threshold" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs" placeholder="Soglia Minima">
+                            <!-- Select Unità -->
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Unità</label>
+                                <select id="inp-inv-unit" onchange="togglePackSize()" class="w-full px-2 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs outline-none">
+                                    <option value="pz">Pezzi (pz)</option>
+                                    <option value="ml">Millilitri (ml)</option>
+                                    <option value="pacco">Pacco/Conf.</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Soglia Min.</label>
+                                <input type="number" id="inp-inv-threshold" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs" placeholder="0">
+                            </div>
                         </div>
+                        
+                        <!-- Pack Size (Condizionale) -->
+                        <div id="div-inv-packsize" class="hidden">
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Pezzi per Pacco</label>
+                            <input type="number" id="inp-inv-packsize" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs" placeholder="Es. 12">
+                        </div>
+
                         <input type="text" id="inp-inv-loc" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs" placeholder="Posizione (es. Armadio A)">
                         <button type="submit" class="w-full py-2 bg-slate-800 text-white rounded-lg font-bold text-xs">SALVA ARTICOLO</button>
                     </form>
@@ -260,7 +300,7 @@
             <h3 id="stock-modal-title" class="text-lg font-bold text-slate-800 mb-4">Movimento</h3>
             <form onsubmit="confirmStockMovement(event)" class="space-y-4">
                 <div>
-                    <label class="block text-xs font-bold text-slate-500 mb-1">Quantità</label>
+                    <label class="block text-xs font-bold text-slate-500 mb-1">Quantità (<span id="stock-modal-unit">pz</span>)</label>
                     <input type="number" step="0.01" id="inp-stock-qty" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-2xl font-mono font-bold text-center" placeholder="0">
                 </div>
                 <button type="submit" class="w-full py-3 bg-slate-800 text-white rounded-xl font-bold shadow-lg">CONFERMA</button>
@@ -346,6 +386,7 @@
         window.adminBookingsCache = [];
         window.allInstrumentsCache = []; 
         window.allInventoryCache = []; 
+        window.currentInventoryData = {}; // Stores details of current viewed item
 
         // AUTH
         onAuthStateChanged(auth, (user) => {
@@ -413,9 +454,22 @@
         // --- INVENTORY VIEW ---
         function showInventoryView(id, data) {
             window.switchView('view-inventory');
+            window.currentInventoryData = data;
             document.getElementById('inv-item-name').innerText = data.name || "Sconosciuto";
             document.getElementById('inv-item-qty').innerText = data.quantity || 0;
-            document.getElementById('inv-item-unit').innerText = data.unit || "pz";
+            
+            // Gestione unità e pack
+            let unitLabel = data.unit || "pz";
+            if (data.unit === 'pacco') {
+                document.getElementById('inv-item-unit').innerText = "pacchi";
+                const totalPieces = (data.quantity || 0) * (data.packSize || 1);
+                document.getElementById('inv-item-pack-detail').innerText = `(1 pacco = ${data.packSize || 1} pz. Totale: ${totalPieces} pz)`;
+                document.getElementById('inv-item-pack-detail').classList.remove('hidden');
+            } else {
+                document.getElementById('inv-item-unit').innerText = unitLabel;
+                document.getElementById('inv-item-pack-detail').classList.add('hidden');
+            }
+
             document.getElementById('inv-item-loc').innerHTML = `<i data-lucide="map-pin" class="w-3 h-3"></i> ${data.location || "N/D"}`;
             
             const qtyEl = document.getElementById('inv-item-qty');
@@ -428,7 +482,10 @@
         window.openStockModal = (action) => {
             currentStockAction = action;
             const title = action === 'add' ? "Rifornimento (+)" : "Prelievo (-)";
+            const unit = window.currentInventoryData.unit === 'pacco' ? 'pacchi' : window.currentInventoryData.unit;
+            
             document.getElementById('stock-modal-title').innerText = title;
+            document.getElementById('stock-modal-unit').innerText = unit;
             document.getElementById('inp-stock-qty').value = '';
             document.getElementById('modal-stock').classList.remove('hidden');
             document.getElementById('inp-stock-qty').focus();
@@ -464,6 +521,7 @@
                         itemName: sfDoc.data().name,
                         action: currentStockAction,
                         amount: qty,
+                        unit: sfDoc.data().unit,
                         user: currentUser.uid,
                         timestamp: serverTimestamp()
                     });
@@ -497,7 +555,7 @@
                 listEl.innerHTML = recent.map(m => `
                     <div class="flex justify-between items-center text-xs p-2 bg-slate-50 rounded border border-slate-100">
                         <span class="${m.action === 'add' ? 'text-emerald-600' : 'text-red-600'} font-bold">
-                            ${m.action === 'add' ? '+' : '-'}${m.amount}
+                            ${m.action === 'add' ? '+' : '-'}${m.amount} <span class="text-slate-400 font-normal">${m.unit || ''}</span>
                         </span>
                         <span class="text-slate-400">${m.timestamp ? new Date(m.timestamp.seconds * 1000).toLocaleDateString() : ''}</span>
                     </div>
@@ -505,44 +563,128 @@
             });
         }
 
+        // --- PUBLIC INVENTORY LIST ---
+        window.showPublicInventoryList = () => {
+            window.switchView('view-inventory-list');
+            loadPublicInventory();
+        }
+
+        window.loadPublicInventory = () => {
+            const container = document.getElementById('public-inventory-container');
+            const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'inventory'));
+            
+            onSnapshot(q, (snapshot) => {
+                window.allInventoryCache = []; // Aggiorna cache globale
+                snapshot.forEach(doc => window.allInventoryCache.push(doc.data()));
+                renderInventoryList(window.allInventoryCache, container, false); // False = public view
+            });
+        }
+
+        window.filterInventoryList = (term) => {
+            term = term.toLowerCase();
+            const filtered = window.allInventoryCache.filter(i => i.name.toLowerCase().includes(term) || i.id.toLowerCase().includes(term));
+            const container = document.getElementById(document.getElementById('view-inventory-list').classList.contains('hidden') ? 'inventory-list' : 'public-inventory-container');
+            const isAdmin = !document.getElementById('view-inventory-list').classList.contains('hidden') ? false : true;
+            renderInventoryList(filtered, container, isAdmin);
+        }
+
+        function renderInventoryList(items, container, isAdmin) {
+            if(items.length === 0) {
+                container.innerHTML = '<p class="text-center text-xs text-slate-400">Nessun articolo trovato.</p>';
+                return;
+            }
+            
+            container.innerHTML = items.map(i => {
+                const isLow = (i.quantity || 0) <= (i.threshold || 0);
+                const clickAction = isAdmin 
+                    ? `editInventoryItem('${i.id}', '${i.name}', '${i.unit}', '${i.threshold}', '${i.location}', '${i.packSize || ''}')` 
+                    : `handleScannedCode('${i.id}')`;
+                
+                return `
+                <div onclick="${clickAction}" class="bg-white p-3 rounded-lg border ${isLow ? 'border-red-300 bg-red-50' : 'border-slate-100'} flex justify-between items-center shadow-sm cursor-pointer hover:border-indigo-300">
+                    <div>
+                        <div class="text-xs font-bold text-slate-700">${i.name}</div>
+                        <div class="text-[10px] text-slate-400 font-mono">${i.id} | ${i.location || '-'}</div>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-sm font-bold ${isLow ? 'text-red-600' : 'text-slate-800'}">${i.quantity} <span class="text-[10px] text-slate-400">${i.unit}</span></p>
+                        ${isLow ? '<p class="text-[9px] text-red-500 font-bold uppercase">SCORTA BASSA</p>' : ''}
+                    </div>
+                </div>`;
+            }).join('');
+            lucide.createIcons();
+        }
+
         // --- ADMIN INVENTORY ---
+        window.togglePackSize = () => {
+            const unit = document.getElementById('inp-inv-unit').value;
+            const packDiv = document.getElementById('div-inv-packsize');
+            const packInput = document.getElementById('inp-inv-packsize');
+            
+            if(unit === 'pacco') {
+                packDiv.classList.remove('hidden');
+                packInput.required = true;
+            } else {
+                packDiv.classList.add('hidden');
+                packInput.required = false;
+            }
+        };
+
         window.saveInventoryItem = async (e) => {
             e.preventDefault();
             const id = document.getElementById('inp-inv-id').value.trim();
             const name = document.getElementById('inp-inv-name').value.trim();
-            const unit = document.getElementById('inp-inv-unit').value.trim();
+            const unit = document.getElementById('inp-inv-unit').value;
             const threshold = parseFloat(document.getElementById('inp-inv-threshold').value) || 0;
             const loc = document.getElementById('inp-inv-loc').value.trim();
+            
+            let packSize = 1;
+            if(unit === 'pacco') {
+                packSize = parseFloat(document.getElementById('inp-inv-packsize').value);
+                if(!packSize || packSize <= 0) return alert("Inserire numero pezzi per pacco.");
+            }
 
             if(!id || !name) return alert("Dati obbligatori.");
 
             try {
-                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'inventory', id.replace(/\//g,'_')), {
-                    id, name, unit, threshold, location: loc, quantity: 0 
+                // Check if exists to preserve quantity if editing
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'inventory', id.replace(/\//g,'_'));
+                const snap = await getDoc(docRef);
+                const currentQty = snap.exists() ? snap.data().quantity : 0;
+
+                await setDoc(docRef, {
+                    id, name, unit, threshold, location: loc, quantity: currentQty, packSize: packSize
                 });
                 alert("Articolo salvato!");
-                document.getElementById('inp-inv-id').value = '';
-                document.getElementById('inp-inv-name').value = '';
+                clearInventoryForm();
             } catch(e) { alert(e.message); }
         };
         
         window.clearInventoryForm = () => {
              document.getElementById('inp-inv-id').value = '';
              document.getElementById('inp-inv-name').value = '';
+             document.getElementById('inp-inv-unit').value = 'pz';
+             document.getElementById('inp-inv-threshold').value = '';
+             document.getElementById('inp-inv-loc').value = '';
+             document.getElementById('inp-inv-packsize').value = '';
+             togglePackSize();
              document.getElementById('inp-inv-id').readOnly = false;
         }
         
-        window.editInventoryItem = (id, name, unit, threshold, loc) => {
+        window.editInventoryItem = (id, name, unit, threshold, loc, packSize) => {
              document.getElementById('inp-inv-id').value = id;
              document.getElementById('inp-inv-name').value = name;
              document.getElementById('inp-inv-unit').value = unit;
              document.getElementById('inp-inv-threshold').value = threshold;
              document.getElementById('inp-inv-loc').value = loc;
+             if(packSize && packSize !== 'undefined') document.getElementById('inp-inv-packsize').value = packSize;
+             
+             togglePackSize();
              document.getElementById('inp-inv-id').readOnly = true;
              document.querySelector('.bg-white').scrollIntoView({behavior:'smooth'});
         }
 
-        window.loadInventoryList = () => {
+        window.loadInventoryListAdmin = () => {
             const listEl = document.getElementById('inventory-list');
             listEl.innerHTML = '<p class="text-center text-xs">Caricamento...</p>';
             const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'inventory'));
@@ -551,22 +693,7 @@
                 const items = [];
                 snapshot.forEach(doc => items.push(doc.data()));
                 window.allInventoryCache = items;
-
-                listEl.innerHTML = items.map(i => {
-                    const isLow = (i.quantity || 0) <= (i.threshold || 0);
-                    return `
-                    <div class="bg-white p-3 rounded-lg border ${isLow ? 'border-red-300 bg-red-50' : 'border-slate-100'} flex justify-between items-center shadow-sm">
-                        <div onclick="editInventoryItem('${i.id}', '${i.name}', '${i.unit}', '${i.threshold}', '${i.location}')">
-                            <div class="text-xs font-bold text-slate-700">${i.name}</div>
-                            <div class="text-[10px] text-slate-400 font-mono">${i.id}</div>
-                        </div>
-                        <div class="text-right">
-                            <p class="text-sm font-bold ${isLow ? 'text-red-600' : 'text-slate-800'}">${i.quantity} <span class="text-[10px] text-slate-400">${i.unit}</span></p>
-                            ${isLow ? '<p class="text-[9px] text-red-500 font-bold uppercase">SCORTA BASSA</p>' : ''}
-                        </div>
-                    </div>`;
-                }).join('');
-                lucide.createIcons();
+                renderInventoryList(items, listEl, true);
             });
         };
 
@@ -600,7 +727,7 @@
 
             if(tab === 'bookings') loadAdminBookings();
             if(tab === 'instruments') loadInstruments();
-            if(tab === 'inventory') loadInventoryList();
+            if(tab === 'inventory') loadInventoryListAdmin();
         };
 
         // --- COPIED FROM V3.5 (Preserving all previous functionality) ---
@@ -615,7 +742,7 @@
             loadGlobalSettings();
         };
         window.switchView = (id) => {
-            ['view-scanner', 'view-details', 'view-admin', 'view-my-booking', 'view-inventory'].forEach(v => document.getElementById(v).classList.add('hidden'));
+            ['view-scanner', 'view-details', 'view-admin', 'view-my-booking', 'view-inventory', 'view-inventory-list'].forEach(v => document.getElementById(v).classList.add('hidden'));
             document.getElementById(id).classList.remove('hidden');
         };
         window.manualSearch = () => {
