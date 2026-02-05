@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>UniScan v4.4 (Lab + Magazzino Pro)</title>
+    <title>UniScan v4.5 (Lab + Magazzino Pro)</title>
     
     <!-- Stili: Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -42,7 +42,7 @@
                 <h1 class="text-xl font-black italic tracking-tighter flex items-center gap-2">
                     <i data-lucide="scan-line" class="w-5 h-5 text-emerald-400"></i> UNISCAN
                 </h1>
-                <p class="text-slate-400 text-[10px] font-medium uppercase tracking-widest">Lab & Stock v4.4</p>
+                <p class="text-slate-400 text-[10px] font-medium uppercase tracking-widest">Lab & Stock v4.5</p>
             </div>
             <div class="flex gap-3">
                 <button onclick="showAdminLogin()" class="p-2 bg-slate-800 rounded-full hover:bg-slate-700 transition" title="Admin">
@@ -146,6 +146,12 @@
                          <p class="text-xs font-bold text-emerald-400 uppercase mb-1">Articolo Magazzino</p>
                          <p id="inv-item-category-view" class="text-[10px] bg-slate-700 px-2 py-0.5 rounded text-slate-300 font-bold uppercase">---</p>
                     </div>
+                    
+                    <!-- FOTO PRODOTTO -->
+                    <div class="mb-4 flex justify-center">
+                         <img id="inv-item-img-display" src="" class="h-32 w-32 object-contain rounded-xl bg-white p-2 hidden shadow-lg" alt="Prodotto">
+                    </div>
+
                     <h2 id="inv-item-name" class="text-2xl font-black break-all leading-tight mb-1">---</h2>
                     <p id="inv-item-brand" class="text-sm text-slate-300 italic mb-2">---</p>
                     
@@ -243,6 +249,7 @@
                     <form onsubmit="saveInventoryItem(event)" class="space-y-3">
                         <input type="text" id="inp-inv-id" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-mono" placeholder="Codice a Barre / ID">
                         <input type="text" id="inp-inv-name" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs" placeholder="Nome Articolo (es. Etanolo)">
+                        <input type="text" id="inp-inv-image" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs" placeholder="URL Immagine Prodotto (http://...)">
                         <div class="grid grid-cols-2 gap-2">
                             <input type="text" id="inp-inv-brand" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs" placeholder="Marchio / Produttore">
                             <div class="relative">
@@ -494,7 +501,7 @@
         async function handleScannedCode(code) {
             currentItem = code;
             
-            // 1. Cerca nei Tools
+            // 1. Cerca nei Tools (Exact ID)
             const toolRef = doc(db, 'artifacts', appId, 'public', 'data', 'resources', code.replace(/\//g,'_'));
             const toolSnap = await getDoc(toolRef);
             if (toolSnap.exists()) {
@@ -502,7 +509,7 @@
                 return;
             }
 
-            // 2. Cerca nel Magazzino
+            // 2. Cerca nel Magazzino (Exact ID)
             const invRef = doc(db, 'artifacts', appId, 'public', 'data', 'inventory', code.replace(/\//g,'_'));
             const invSnap = await getDoc(invRef);
             if (invSnap.exists()) {
@@ -536,6 +543,16 @@
             document.getElementById('inv-item-brand').innerText = data.brand || "---";
             document.getElementById('inv-item-threshold').innerText = data.threshold || 0;
             document.getElementById('inv-item-category-view').innerText = data.category || "---";
+            
+            // Set Image
+            const imgEl = document.getElementById('inv-item-img-display');
+            if (data.image) {
+                imgEl.src = data.image;
+                imgEl.classList.remove('hidden');
+            } else {
+                imgEl.src = '';
+                imgEl.classList.add('hidden');
+            }
             
             let unitLabel = data.unit || "pz";
             if (data.unit === 'pacco') {
@@ -696,8 +713,9 @@
             container.innerHTML = items.map(i => {
                 const isLow = (i.quantity || 0) <= (i.threshold || 0);
                 // clickAction logic: if admin view (Admin tab) -> edit, if public list view -> handleScannedCode (view details)
+                // Need to pass image param now
                 const clickAction = isAdmin 
-                    ? `editInventoryItem('${i.id}', '${i.name}', '${i.unit}', '${i.threshold}', '${i.location}', '${i.packSize || ''}', '${i.brand || ''}', '${i.category || ''}')` 
+                    ? `editInventoryItem('${i.id}', '${i.name}', '${i.unit}', '${i.threshold}', '${i.location}', '${i.packSize || ''}', '${i.brand || ''}', '${i.category || ''}', '${i.image || ''}')` 
                     : `handleScannedCode('${i.id}')`;
                 
                 let quantityDisplay = `${i.quantity} <span class="text-[10px] text-slate-400">${i.unit}</span>`;
@@ -762,6 +780,7 @@
             const unit = document.getElementById('inp-inv-unit').value;
             const threshold = parseFloat(document.getElementById('inp-inv-threshold').value) || 0;
             const loc = document.getElementById('inp-inv-loc').value.trim();
+            const image = document.getElementById('inp-inv-image').value.trim();
             
             let category = document.getElementById('inp-inv-category').value;
             if(category === 'new') category = document.getElementById('inp-inv-category-new').value.trim();
@@ -780,7 +799,7 @@
                 const currentQty = snap.exists() ? snap.data().quantity : 0;
 
                 await setDoc(docRef, {
-                    id, name, brand, unit, threshold, location: loc, quantity: currentQty, packSize: packSize, category: category || ''
+                    id, name, brand, unit, threshold, location: loc, quantity: currentQty, packSize: packSize, category: category || '', image: image || ''
                 });
                 alert("Articolo salvato!");
                 clearInventoryForm();
@@ -804,18 +823,20 @@
              document.getElementById('inp-inv-loc').value = '';
              document.getElementById('inp-inv-packsize').value = '';
              document.getElementById('inp-inv-category').value = '';
+             document.getElementById('inp-inv-image').value = '';
              document.getElementById('inp-inv-category-new').classList.add('hidden');
              togglePackSize();
              document.getElementById('inp-inv-id').readOnly = false;
         }
         
-        window.editInventoryItem = (id, name, unit, threshold, loc, packSize, brand, category) => {
+        window.editInventoryItem = (id, name, unit, threshold, loc, packSize, brand, category, image) => {
              document.getElementById('inp-inv-id').value = id;
              document.getElementById('inp-inv-name').value = name;
              document.getElementById('inp-inv-brand').value = brand || '';
              document.getElementById('inp-inv-unit').value = unit;
              document.getElementById('inp-inv-threshold').value = threshold;
              document.getElementById('inp-inv-loc').value = loc;
+             document.getElementById('inp-inv-image').value = image || '';
              
              // Handle Category select
              const catSelect = document.getElementById('inp-inv-category');
@@ -907,30 +928,44 @@
             }
         }
         
-        // --- MANUAL SEARCH SMART ---
+        // --- MANUAL SEARCH SMART (UPDATED) ---
         window.manualSearch = () => {
             const term = document.getElementById('inp-manual-code').value.trim();
             if(!term) return;
             
-            // Check Inventory Cache for partial match
-            const invMatch = window.allInventoryCache.find(i => 
-                i.name.toLowerCase() === term.toLowerCase() || 
-                i.brand?.toLowerCase() === term.toLowerCase() ||
-                i.id.toLowerCase() === term.toLowerCase()
+            const lowerTerm = term.toLowerCase();
+            
+            // 1. Check exact ID match
+            const exactIdMatch = window.allInventoryCache.find(i => i.id.toLowerCase() === lowerTerm);
+            const resourceIdMatch = window.resourcesCache.find(r => r.id.toLowerCase() === lowerTerm);
+
+            if (exactIdMatch) {
+                handleScannedCode(exactIdMatch.id);
+                return;
+            }
+            if (resourceIdMatch) {
+                handleScannedCode(resourceIdMatch.id);
+                return;
+            }
+
+            // 2. Check Name/Brand partial matches
+            const matches = window.allInventoryCache.filter(i => 
+                i.name.toLowerCase().includes(lowerTerm) || 
+                (i.brand && i.brand.toLowerCase().includes(lowerTerm))
             );
 
-            // Check Resources Cache for partial match
-            const resMatch = window.resourcesCache.find(r => 
-                r.description.toLowerCase() === term.toLowerCase() || 
-                r.id.toLowerCase() === term.toLowerCase()
-            );
-            
-            if(invMatch) {
-                handleScannedCode(invMatch.id);
-            } else if (resMatch) {
-                handleScannedCode(resMatch.id);
+            if (matches.length === 1) {
+                handleScannedCode(matches[0].id);
+            } else if (matches.length > 1) {
+                // Open public list filtered
+                showPublicInventoryList();
+                const searchInput = document.querySelector('#view-inventory-list input[type="text"]');
+                if(searchInput) {
+                    searchInput.value = term;
+                    filterInventoryList(term);
+                }
             } else {
-                // If no direct name match, pass term as ID to handleScannedCode which handles creation or alerts
+                // Try fallback logic (e.g. create new)
                 handleScannedCode(term);
             }
         };
