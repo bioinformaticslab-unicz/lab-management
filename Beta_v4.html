@@ -803,10 +803,10 @@
         const googleProvider = new GoogleAuthProvider();
 
         // --- EMAILJS CONFIG (Replace with your actual IDs) ---
-        const EMAILJS_PUBLIC_KEY = 'YtUZvHbAekxZBu8n--';
+        const EMAILJS_PUBLIC_KEY = 'OSVoNoZCEeHUrwaaq';
         const EMAILJS_SERVICE_ID = 'service_6zh4wqk';
         const EMAILJS_RESTOCK_TEMPLATE_ID = 'template_6nayepk';
-        const EMAILJS_BOOKING_REMINDER_TEMPLATE_ID = 'template_hvc2lnt';
+        const EMAILJS_BOOKING_CONFIRM_TEMPLATE_ID = 'template_hvc2lnt';
         try { emailjs.init(EMAILJS_PUBLIC_KEY); } catch (e) { console.warn('EmailJS init failed:', e); }
 
         let currentUser = null;
@@ -852,9 +852,6 @@
                 loadPublicInventory();
                 loadResourcesCache();
                 checkUrlParams();
-                // Start booking reminder check
-                checkBookingReminders();
-                setInterval(checkBookingReminders, 60 * 60 * 1000); // Check every hour
             } else {
                 document.getElementById('view-login').classList.remove('hidden');
                 document.getElementById('btn-logout').classList.add('hidden');
@@ -1660,11 +1657,16 @@
                     alert("Modificata!");
                 } else {
                     const pnr = Math.random().toString(36).substring(2, 8).toUpperCase();
+                    const resourceName = currentItemName || currentItem;
                     await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'bookings'), {
-                        resourceId: currentItem, resourceName: currentItemName || currentItem,
+                        resourceId: currentItem, resourceName: resourceName,
                         userName: name, email: email || '', startDate: start, endDate: end, pnr: pnr, bookedBy: currentUser.uid, createdAt: serverTimestamp()
                     });
                     alert(`Confermata! PNR: ${pnr}`);
+                    // Send confirmation email
+                    if (email) {
+                        sendBookingConfirmation(email, name, resourceName, start, end, pnr);
+                    }
                 }
                 hideBookingForm();
             } catch (e) { alert(e.message); }
@@ -1833,44 +1835,53 @@
                     pnr, bookedBy: currentUser.uid, createdAt: serverTimestamp()
                 });
                 alert(`Prenotazione creata! PNR: ${pnr}`);
+                // Send confirmation email
+                if (email) {
+                    sendBookingConfirmation(email, userName, resourceName, start, end, pnr);
+                }
                 closeAdminBookingModal();
                 loadAdminBookings();
             } catch (err) { alert('Errore: ' + err.message); }
         };
 
-        // --- BOOKING REMINDER SYSTEM ---
-        async function checkBookingReminders() {
+        // --- BOOKING CONFIRMATION EMAIL ---
+        function buildGoogleCalendarUrl(title, startStr, endStr, description) {
+            // Convert datetime-local string "YYYY-MM-DDTHH:MM" to "YYYYMMDDTHHmmSS"
+            const fmt = (s) => s.replace(/[-:]/g, '').replace('T', 'T') + '00';
+            const params = new URLSearchParams({
+                action: 'TEMPLATE',
+                text: title,
+                dates: `${fmt(startStr)}/${fmt(endStr)}`,
+                details: description
+            });
+            return `https://calendar.google.com/calendar/render?${params.toString()}`;
+        }
+
+        async function sendBookingConfirmation(toEmail, userName, instrumentName, startDate, endDate, pnr) {
+            const startFormatted = new Date(startDate).toLocaleString('it-IT', { dateStyle: 'full', timeStyle: 'short' });
+            const endFormatted = new Date(endDate).toLocaleString('it-IT', { dateStyle: 'full', timeStyle: 'short' });
+            const appUrl = window.location.href.split('?')[0];
+
+            const calendarUrl = buildGoogleCalendarUrl(
+                `Prenotazione: ${instrumentName}`,
+                startDate, endDate,
+                `Prenotazione UniScan Lab\nStrumento: ${instrumentName}\nPNR: ${pnr}\nGestisci: ${appUrl}`
+            );
+
             try {
-                const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'bookings'));
-                const snapshot = await new Promise((resolve) => {
-                    const unsub = onSnapshot(q, (snap) => { unsub(); resolve(snap); });
+                await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_BOOKING_CONFIRM_TEMPLATE_ID, {
+                    to_email: toEmail,
+                    user_name: userName,
+                    instrument_name: instrumentName,
+                    start_date: startFormatted,
+                    end_date: endFormatted,
+                    pnr: pnr,
+                    calendar_url: calendarUrl,
+                    app_url: appUrl,
+                    from_name: 'UniScan Lab'
                 });
-                const now = new Date();
-                const in24h = new Date(now.getTime() + 24 * 60 * 60 * 1000);
-                snapshot.forEach(async (docSnap) => {
-                    const b = docSnap.data();
-                    const startDate = new Date(b.startDate);
-                    // Send reminder if booking starts within 24h, has email, and reminder not yet sent
-                    if (b.email && !b.reminderSent && startDate > now && startDate <= in24h) {
-                        try {
-                            await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_BOOKING_REMINDER_TEMPLATE_ID, {
-                                to_email: b.email,
-                                user_name: b.userName,
-                                instrument_name: b.resourceName || b.resourceId,
-                                start_date: new Date(b.startDate).toLocaleString('it-IT'),
-                                end_date: new Date(b.endDate).toLocaleString('it-IT'),
-                                pnr: b.pnr || '',
-                                from_name: 'UniScan Lab'
-                            });
-                            // Mark reminder as sent
-                            await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'bookings', docSnap.id), {
-                                reminderSent: true
-                            });
-                            console.log('Booking reminder sent to', b.email, 'for', b.resourceName);
-                        } catch (emailErr) { console.warn('Booking reminder email failed:', emailErr); }
-                    }
-                });
-            } catch (e) { console.warn('Reminder check error:', e); }
+                console.log('Booking confirmation sent to', toEmail);
+            } catch (err) { console.warn('Booking confirmation email failed:', err); }
         }
 
         // --- CSV EXPORT UPDATE (include restockEmail) ---
