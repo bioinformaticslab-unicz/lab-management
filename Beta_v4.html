@@ -519,6 +519,19 @@
                     <button onclick="saveGlobalSettings()"
                         class="w-full py-2 bg-amber-600 text-white rounded text-xs font-bold">AGGIORNA</button>
                 </div>
+
+                <!-- Admin Management -->
+                <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-200 shadow-sm">
+                    <h3 class="text-sm font-bold text-indigo-800 mb-3">👥 Gestione Amministratori</h3>
+                    <div id="admin-list-emails" class="space-y-2 mb-3"></div>
+                    <div class="flex gap-2">
+                        <input type="email" id="inp-new-admin-email" class="flex-1 text-xs p-2 border rounded"
+                            placeholder="email@esempio.com">
+                        <button onclick="addAdminEmail()"
+                            class="px-3 py-2 bg-indigo-600 text-white rounded text-xs font-bold">AGGIUNGI</button>
+                    </div>
+                </div>
+
                 <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-200 shadow-sm text-center">
                     <a href="?mode=totem" target="_blank"
                         class="block w-full py-2 bg-indigo-600 text-white rounded font-bold text-xs">APRI DASHBOARD
@@ -841,13 +854,19 @@
                 nameEl.innerText = displayName;
                 nameEl.classList.remove('hidden');
                 // Check if user is admin
+                const DEFAULT_ADMINS = ['vono.niccolo@gmail.com'];
+                isAdmin = DEFAULT_ADMINS.includes(user.email);
                 try {
                     const adminSnap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'admins'));
                     if (adminSnap.exists()) {
                         const adminEmails = adminSnap.data().emails || [];
-                        isAdmin = adminEmails.includes(user.email);
+                        if (adminEmails.includes(user.email)) isAdmin = true;
                     }
                 } catch (e) { console.warn('Admin check failed:', e); }
+                // Auto-enter admin mode if admin
+                if (isAdmin) {
+                    adminMode = true;
+                }
                 loadGlobalSettings();
                 loadPublicInventory();
                 loadResourcesCache();
@@ -1733,14 +1752,9 @@
                 document.getElementById('view-maintenance').classList.add('hidden');
                 window.switchView('view-admin');
                 switchAdminTab('bookings');
+                loadAdminEmails(); // Load admin list when entering settings
             } else {
-                // Fallback PIN for initial setup (before admin list is configured)
-                if (prompt("PIN Admin:") === "1234") {
-                    adminMode = true;
-                    document.getElementById('view-maintenance').classList.add('hidden');
-                    window.switchView('view-admin');
-                    switchAdminTab('bookings');
-                }
+                alert('Non hai i permessi di amministratore. Contatta un admin per essere abilitato.');
             }
         };
         window.exportBookingsCSV = () => {
@@ -1785,8 +1799,34 @@
             alert("Settings salvati.");
         };
         window.deleteBooking = async (id) => { if (confirm("Eliminare?")) await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'bookings', id)); };
-        window.editBookingFromAdmin = (id) => { window.currentFoundBooking = window.adminBookingsCache.find(b => b.id === id); window.openEditModal(); };
-        window.openEditModal = () => window.showBookingForm();
+        window.editBookingFromAdmin = (id) => {
+            const booking = window.adminBookingsCache.find(b => b.id === id);
+            if (!booking) return alert('Prenotazione non trovata.');
+            // Reuse admin booking modal for editing
+            const select = document.getElementById('inp-admin-instrument');
+            select.innerHTML = '<option value="" disabled>Seleziona strumento...</option>';
+            window.allInstrumentsCache.forEach(inst => {
+                const selected = inst.id === booking.resourceId ? 'selected' : '';
+                select.innerHTML += `<option value="${inst.id}" data-desc="${inst.description}" ${selected}>${inst.description} (${inst.id})</option>`;
+            });
+            // If resource not in cache, add it manually
+            if (!window.allInstrumentsCache.find(i => i.id === booking.resourceId)) {
+                select.innerHTML += `<option value="${booking.resourceId}" data-desc="${booking.resourceName || booking.resourceId}" selected>${booking.resourceName || booking.resourceId}</option>`;
+            }
+            document.getElementById('inp-admin-name').value = booking.userName || '';
+            document.getElementById('inp-admin-booking-email').value = booking.email || '';
+            document.getElementById('inp-admin-start').value = booking.startDate || '';
+            document.getElementById('inp-admin-end').value = booking.endDate || '';
+            // Store editing state
+            window._editingAdminBookingId = id;
+            document.getElementById('modal-admin-booking').classList.remove('hidden');
+            lucide.createIcons();
+        };
+        window.openEditModal = () => {
+            if (window.currentFoundBooking) {
+                editBookingFromAdmin(window.currentFoundBooking.id);
+            }
+        };
         window.showMyBookingSearch = () => window.switchView('view-my-booking');
         window.searchBookingByPNR = () => {
             const pnr = document.getElementById('inp-pnr-search').value.trim().toUpperCase();
@@ -1801,6 +1841,7 @@
 
         // --- ADMIN BOOKING MODAL ---
         window.openAdminBookingModal = () => {
+            window._editingAdminBookingId = null; // Reset editing state
             const select = document.getElementById('inp-admin-instrument');
             select.innerHTML = '<option value="" disabled selected>Seleziona strumento...</option>';
             window.allInstrumentsCache.forEach(inst => {
@@ -1828,20 +1869,83 @@
             const end = document.getElementById('inp-admin-end').value;
             if (!resourceId || !userName || !start || !end) return alert('Compilare tutti i campi.');
             try {
-                const pnr = Math.random().toString(36).substring(2, 8).toUpperCase();
-                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'bookings'), {
-                    resourceId, resourceName,
-                    userName, email: email || '', startDate: start, endDate: end,
-                    pnr, bookedBy: currentUser.uid, createdAt: serverTimestamp()
-                });
-                alert(`Prenotazione creata! PNR: ${pnr}`);
-                // Send confirmation email
+                let pnr;
+                if (window._editingAdminBookingId) {
+                    // EDIT existing booking
+                    const existingBooking = window.adminBookingsCache.find(b => b.id === window._editingAdminBookingId);
+                    pnr = existingBooking?.pnr || Math.random().toString(36).substring(2, 8).toUpperCase();
+                    await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'bookings', window._editingAdminBookingId), {
+                        resourceId, resourceName,
+                        userName, email: email || '', startDate: start, endDate: end, updatedAt: serverTimestamp()
+                    });
+                    alert(`Prenotazione aggiornata! PNR: ${pnr}`);
+                } else {
+                    // CREATE new booking
+                    pnr = Math.random().toString(36).substring(2, 8).toUpperCase();
+                    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'bookings'), {
+                        resourceId, resourceName,
+                        userName, email: email || '', startDate: start, endDate: end,
+                        pnr, bookedBy: currentUser.uid, createdAt: serverTimestamp()
+                    });
+                    alert(`Prenotazione creata! PNR: ${pnr}`);
+                }
+                // Send confirmation email (both create and edit)
                 if (email) {
                     sendBookingConfirmation(email, userName, resourceName, start, end, pnr);
                 }
+                window._editingAdminBookingId = null;
                 closeAdminBookingModal();
                 loadAdminBookings();
             } catch (err) { alert('Errore: ' + err.message); }
+        };
+
+        // --- ADMIN EMAIL MANAGEMENT ---
+        async function loadAdminEmails() {
+            try {
+                const adminSnap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'admins'));
+                const emails = adminSnap.exists() ? (adminSnap.data().emails || []) : [];
+                const container = document.getElementById('admin-list-emails');
+                if (emails.length === 0) {
+                    container.innerHTML = '<p class="text-xs text-slate-400">Nessun admin aggiuntivo configurato.</p>';
+                } else {
+                    container.innerHTML = emails.map(em => `
+                        <div class="flex justify-between items-center bg-white p-2 rounded border border-indigo-100">
+                            <span class="text-xs font-mono text-slate-700">${em}</span>
+                            <button onclick="removeAdminEmail('${em}')" class="text-red-500 text-xs font-bold px-2 py-1 hover:bg-red-50 rounded">✕</button>
+                        </div>
+                    `).join('');
+                }
+                // Show default admins (not removable)
+                const defaultInfo = '<p class="text-[10px] text-indigo-400 mt-2">Admin predefiniti: vono.niccolo@gmail.com</p>';
+                container.innerHTML += defaultInfo;
+            } catch (e) { console.warn('Load admin emails failed:', e); }
+        }
+        window.addAdminEmail = async () => {
+            const emailInput = document.getElementById('inp-new-admin-email');
+            const newEmail = emailInput.value.trim().toLowerCase();
+            if (!newEmail || !newEmail.includes('@')) return alert('Email non valida.');
+            try {
+                const adminRef = doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'admins');
+                const adminSnap = await getDoc(adminRef);
+                const emails = adminSnap.exists() ? (adminSnap.data().emails || []) : [];
+                if (emails.includes(newEmail)) return alert('Email già presente.');
+                emails.push(newEmail);
+                await setDoc(adminRef, { emails }, { merge: true });
+                emailInput.value = '';
+                loadAdminEmails();
+                alert(`${newEmail} aggiunto come amministratore.`);
+            } catch (e) { alert('Errore: ' + e.message); }
+        };
+        window.removeAdminEmail = async (emailToRemove) => {
+            if (!confirm(`Rimuovere ${emailToRemove} dagli amministratori?`)) return;
+            try {
+                const adminRef = doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'admins');
+                const adminSnap = await getDoc(adminRef);
+                const emails = adminSnap.exists() ? (adminSnap.data().emails || []) : [];
+                const updated = emails.filter(em => em !== emailToRemove);
+                await setDoc(adminRef, { emails: updated });
+                loadAdminEmails();
+            } catch (e) { alert('Errore: ' + e.message); }
         };
 
         // --- BOOKING CONFIRMATION EMAIL ---
