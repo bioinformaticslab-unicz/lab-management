@@ -146,7 +146,7 @@ graph TD
     F --> H[Aggiorna Quantità]
     G --> H
     H --> I[Check Soglia Minima]
-    I -->|Sotto Soglia| J[Email Alert Riordino 📩]
+    I -->|Sotto Soglia| J[Email Alert Riordino]
     I -->|Sopra Soglia| K[OK]
 ```
 

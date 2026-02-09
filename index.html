@@ -440,6 +440,7 @@
                             </div>
                         </div>
 
+
                         <!-- Email Responsabile Riordino -->
                         <div>
                             <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Email Responsabile
@@ -553,8 +554,13 @@
                 <h3 class="text-sm font-bold text-slate-700 flex items-center gap-2">
                     <i data-lucide="scroll-text" class="w-4 h-4"></i> Registro Attività
                 </h3>
-                <button onclick="loadAdminLogs()"
-                    class="text-xs text-indigo-600 font-bold hover:underline">AGGIORNA</button>
+                <div class="flex gap-2">
+                    <button onclick="downloadLogsTXT()"
+                        class="text-xs text-indigo-600 font-bold hover:underline flex items-center gap-1"><i
+                            data-lucide="download" class="w-3 h-3"></i> TXT</button>
+                    <button onclick="loadAdminLogs()"
+                        class="text-xs text-indigo-600 font-bold hover:underline">AGGIORNA</button>
+                </div>
             </div>
             <div id="admin-logs-list" class="space-y-2 text-xs font-mono max-h-[60vh] overflow-y-auto pr-1"></div>
         </div>
@@ -893,6 +899,8 @@
         window.allInventoryCache = [];
         window.currentInventoryData = {};
         window.resourcesCache = [];
+        window.allLogsCache = [];
+
 
         // --- LOGGING SYSTEM ---
         window.logAction = async (action, category, details, specificUser = null) => {
@@ -1232,7 +1240,7 @@
                 const updatedData = updatedSnap.data();
                 showInventoryView(currentItem, updatedData);
 
-                logAction('UPDATE', 'INVENTORY', `Stock movement for ${sfDoc.data().name} (${currentItem}): ${currentStockAction === 'add' ? '+' : '-'}${qty} ${sfDoc.data().unit}. User: ${operatorName}`);
+                logAction('UPDATE', 'INVENTORY', `Stock movement for ${updatedData.name} (${currentItem}): ${currentStockAction === 'add' ? '+' : '-'}${qty} ${updatedData.unit}. User: ${operatorName}`);
 
                 // --- RESTOCK ALERT EMAIL ---
                 if (updatedData.quantity <= (updatedData.threshold || 0) && updatedData.restockEmail) {
@@ -2350,6 +2358,7 @@
             onSnapshot(q, (snapshot) => {
                 const logs = [];
                 snapshot.forEach(doc => logs.push({ id: doc.id, ...doc.data() }));
+                window.allLogsCache = logs;
 
                 if (logs.length === 0) {
                     listEl.innerHTML = '<p class="text-center text-xs text-slate-400">Nessun log presente.</p>';
@@ -2378,6 +2387,26 @@
                      </div>`;
                 }).join('');
             });
+        };
+
+        window.downloadLogsTXT = () => {
+            if (!window.allLogsCache || window.allLogsCache.length === 0) return alert("Nessun log da scaricare.");
+
+            const lines = window.allLogsCache.map(l => {
+                const dateStr = l.timestamp ? new Date(l.timestamp.seconds * 1000).toLocaleString('it-IT') : '---';
+                return `[${dateStr}] [${l.category}] ${l.action} - ${l.details} (User: ${l.userEmail || l.userId})`;
+            });
+
+            const content = lines.join('\\n');
+            const blob = new Blob([content], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `uniscan_logs_${new Date().toISOString().slice(0, 10)}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
         };
 
         // --- CSV EXPORT UPDATE (include restockEmail) ---
