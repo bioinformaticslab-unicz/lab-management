@@ -629,19 +629,25 @@
                     <option>Ricerca</option>
                     <option>Altro</option>
                 </select>
-                <div class="space-y-2">
+                <div class="space-y-3">
                     <div>
-                        <label for="inp-start" class="block text-[10px] font-bold text-slate-500 uppercase mb-1">📅 Data
-                            e ora inizio</label>
-                        <input type="datetime-local" id="inp-start" required
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">📅 Data</label>
+                        <input type="date" id="inp-date" required
                             class="w-full border rounded-lg p-2.5 text-sm bg-slate-50">
                     </div>
                     <div>
-                        <label for="inp-end" class="block text-[10px] font-bold text-slate-500 uppercase mb-1">📅 Data e
-                            ora fine</label>
-                        <input type="datetime-local" id="inp-end" required
-                            class="w-full border rounded-lg p-2.5 text-sm bg-slate-50">
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">🕐 Ora inizio</label>
+                        <div id="time-slots-start" class="grid grid-cols-4 gap-1 max-h-32 overflow-y-auto"></div>
+                        <input type="hidden" id="inp-start" required>
                     </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">🕐 Ora fine</label>
+                        <div id="time-slots-end" class="grid grid-cols-4 gap-1 max-h-32 overflow-y-auto"></div>
+                        <input type="hidden" id="inp-end" required>
+                    </div>
+                    <div id="booking-overlap-warning"
+                        class="hidden text-xs text-red-600 bg-red-50 p-2 rounded-lg font-bold">⚠️ Orario non
+                        disponibile!</div>
                 </div>
                 <button type="submit"
                     class="w-full py-3 bg-indigo-600 text-white rounded font-bold text-sm">CONFERMA</button>
@@ -722,20 +728,25 @@
                     <option>Ricerca</option>
                     <option>Altro</option>
                 </select>
-                <div class="space-y-2">
+                <div class="space-y-3">
                     <div>
-                        <label for="inp-admin-start"
-                            class="block text-[10px] font-bold text-slate-500 uppercase mb-1">📅 Data e ora
-                            inizio</label>
-                        <input type="datetime-local" id="inp-admin-start" required
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">📅 Data</label>
+                        <input type="date" id="inp-admin-date" required
                             class="w-full border rounded-lg p-2.5 text-sm bg-slate-50">
                     </div>
                     <div>
-                        <label for="inp-admin-end" class="block text-[10px] font-bold text-slate-500 uppercase mb-1">📅
-                            Data e ora fine</label>
-                        <input type="datetime-local" id="inp-admin-end" required
-                            class="w-full border rounded-lg p-2.5 text-sm bg-slate-50">
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">🕐 Ora inizio</label>
+                        <div id="admin-time-slots-start" class="grid grid-cols-4 gap-1 max-h-32 overflow-y-auto"></div>
+                        <input type="hidden" id="inp-admin-start" required>
                     </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">🕐 Ora fine</label>
+                        <div id="admin-time-slots-end" class="grid grid-cols-4 gap-1 max-h-32 overflow-y-auto"></div>
+                        <input type="hidden" id="inp-admin-end" required>
+                    </div>
+                    <div id="admin-booking-overlap-warning"
+                        class="hidden text-xs text-red-600 bg-red-50 p-2 rounded-lg font-bold">⚠️ Orario non
+                        disponibile!</div>
                 </div>
                 <button type="submit"
                     class="w-full py-3 bg-indigo-600 text-white rounded font-bold text-sm">CONFERMA</button>
@@ -819,7 +830,7 @@
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
-        import { getFirestore, collection, addDoc, query, where, orderBy, onSnapshot, serverTimestamp, deleteDoc, doc, updateDoc, setDoc, getDoc, runTransaction } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+        import { getFirestore, collection, addDoc, query, where, orderBy, onSnapshot, serverTimestamp, deleteDoc, doc, updateDoc, setDoc, getDoc, getDocs, runTransaction } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 
         // --- INSERISCI QUI LA TUA CONFIGURAZIONE FIREBASE ---
         const firebaseConfig = {
@@ -1676,12 +1687,95 @@
             document.querySelector('#admin-content-instruments').scrollIntoView({ behavior: 'smooth' });
         };
 
+        // --- TIME SLOT PICKER UTILS ---
+        function generateTimeSlots() {
+            const slots = [];
+            for (let h = 5; h <= 20; h++) {
+                slots.push(`${String(h).padStart(2, '0')}:00`);
+                slots.push(`${String(h).padStart(2, '0')}:30`);
+            }
+            slots.push('21:00');
+            return slots;
+        }
+        function renderTimeSlots(containerId, hiddenInputId, type, prefix) {
+            const container = document.getElementById(containerId);
+            const slots = generateTimeSlots();
+            container.innerHTML = slots.map(slot =>
+                `<button type="button" class="time-slot-btn text-[11px] py-1.5 px-1 rounded-lg border border-slate-200 text-slate-600 hover:bg-indigo-100 hover:border-indigo-400 transition-all font-medium" data-time="${slot}" data-prefix="${prefix}" data-type="${type}" onclick="selectTimeSlot(this, '${hiddenInputId}', '${prefix}', '${type}')">${slot}</button>`
+            ).join('');
+        }
+        window.selectTimeSlot = (btn, hiddenInputId, prefix, type) => {
+            // Deselect all in same group
+            btn.parentElement.querySelectorAll('.time-slot-btn').forEach(b => {
+                b.classList.remove('bg-indigo-600', 'text-white', 'border-indigo-600');
+                b.classList.add('border-slate-200', 'text-slate-600');
+            });
+            btn.classList.add('bg-indigo-600', 'text-white', 'border-indigo-600');
+            btn.classList.remove('border-slate-200', 'text-slate-600');
+            // Get date
+            const dateInput = document.getElementById(prefix === 'admin' ? 'inp-admin-date' : 'inp-date');
+            const date = dateInput.value;
+            if (date) {
+                document.getElementById(hiddenInputId).value = date + 'T' + btn.dataset.time;
+            } else {
+                document.getElementById(hiddenInputId).value = btn.dataset.time;
+            }
+            // Auto-set end time if start just selected
+            if (type === 'start') {
+                const endHidden = document.getElementById(prefix === 'admin' ? 'inp-admin-end' : 'inp-end');
+                if (!endHidden.value || endHidden.value.indexOf('T') === -1) {
+                    // Auto-select next slot as end
+                    const slots = generateTimeSlots();
+                    const idx = slots.indexOf(btn.dataset.time);
+                    if (idx >= 0 && idx < slots.length - 1) {
+                        const endContainer = document.getElementById(prefix === 'admin' ? 'admin-time-slots-end' : 'time-slots-end');
+                        const nextBtn = endContainer.querySelector(`[data-time="${slots[idx + 1]}"]`);
+                        if (nextBtn) selectTimeSlot(nextBtn, prefix === 'admin' ? 'inp-admin-end' : 'inp-end', prefix, 'end');
+                    }
+                }
+            }
+        };
+        // Update hidden inputs when date changes
+        function onDateChange(prefix) {
+            const dateVal = document.getElementById(prefix === 'admin' ? 'inp-admin-date' : 'inp-date').value;
+            ['start', 'end'].forEach(type => {
+                const hiddenId = prefix === 'admin' ? `inp-admin-${type}` : `inp-${type}`;
+                const container = document.getElementById(prefix === 'admin' ? `admin-time-slots-${type}` : `time-slots-${type}`);
+                const selected = container.querySelector('.bg-indigo-600');
+                if (selected && dateVal) {
+                    document.getElementById(hiddenId).value = dateVal + 'T' + selected.dataset.time;
+                }
+            });
+        }
+        // Overlap checking utility
+        async function checkBookingOverlap(resourceId, startStr, endStr, excludeBookingId) {
+            const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'bookings'), where('resourceId', '==', resourceId));
+            const snapshot = await getDocs(q);
+            const newStart = new Date(startStr), newEnd = new Date(endStr);
+            let overlap = false;
+            snapshot.forEach(d => {
+                if (d.id === excludeBookingId) return;
+                const b = d.data();
+                const bStart = new Date(b.startDate), bEnd = new Date(b.endDate);
+                if (newStart < bEnd && newEnd > bStart) overlap = true;
+            });
+            return overlap;
+        }
+
         // --- BOOKING LOGIC ---
         window.showBookingForm = () => {
             editingBookingId = null;
             document.getElementById('modal-booking').classList.remove('hidden');
             const info = window.currentInstrumentData?.contact || "Non assegnato";
             document.getElementById('booking-contact-info').innerText = info;
+            // Init time slot pickers
+            renderTimeSlots('time-slots-start', 'inp-start', 'start', 'user');
+            renderTimeSlots('time-slots-end', 'inp-end', 'end', 'user');
+            document.getElementById('inp-start').value = '';
+            document.getElementById('inp-end').value = '';
+            document.getElementById('inp-date').value = '';
+            document.getElementById('inp-date').addEventListener('change', () => onDateChange('user'));
+            document.getElementById('booking-overlap-warning').classList.add('hidden');
         };
         window.hideBookingForm = () => document.getElementById('modal-booking').classList.add('hidden');
         window.handleBooking = async (e) => {
@@ -1691,7 +1785,17 @@
             const email = document.getElementById('inp-booking-email').value.trim();
             const start = document.getElementById('inp-start').value;
             const end = document.getElementById('inp-end').value;
+            if (!start || !end || start.indexOf('T') === -1 || end.indexOf('T') === -1) return alert('Seleziona data e orari.');
+            if (new Date(start) >= new Date(end)) return alert('L\'ora di fine deve essere dopo l\'inizio.');
             try {
+                // Overlap check
+                const resourceId = currentItem;
+                const hasOverlap = await checkBookingOverlap(resourceId, start, end, editingBookingId);
+                if (hasOverlap) {
+                    document.getElementById('booking-overlap-warning').classList.remove('hidden');
+                    return alert('⚠️ Orario non disponibile! C\'è già una prenotazione in questo intervallo.');
+                }
+                document.getElementById('booking-overlap-warning').classList.add('hidden');
                 if (editingBookingId) {
                     await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'bookings', editingBookingId), {
                         userName: name, email: email || '', startDate: start, endDate: end, updatedAt: serverTimestamp()
@@ -1747,7 +1851,7 @@
                 const active = bookings.filter(b => { const s = new Date(b.startDate), e = new Date(b.endDate); return now >= s && now <= e; });
                 const upcoming = bookings.filter(b => new Date(b.startDate) > now).sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
                 document.getElementById('totem-active-list').innerHTML = active.map(b => `<div class="bg-slate-800 p-3 mb-2 rounded border-l-4 border-emerald-500"><h3 class="font-bold text-white">${b.resourceName}</h3><p class="text-emerald-400">${b.userName}</p></div>`).join('') || '<p class="text-slate-500">Nessuna attività</p>';
-                document.getElementById('totem-upcoming-list').innerHTML = upcoming.map(b => `<div class="bg-slate-800 p-2 mb-2 rounded flex justify-between"><span class="text-white">${b.resourceName}</span><span class="text-slate-400">${new Date(b.startDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span></div>`).join('') || '<p class="text-slate-500">Nessuna prenotazione</p>';
+                document.getElementById('totem-upcoming-list').innerHTML = upcoming.map(b => `<div class="bg-slate-800 p-3 mb-2 rounded"><div class="flex justify-between"><span class="text-white font-bold">${b.resourceName}</span><span class="text-slate-400 text-sm">${new Date(b.startDate).toLocaleDateString('it-IT', { day: '2-digit', month: 'short' })}</span></div><div class="flex justify-between mt-1"><span class="text-indigo-400 text-sm">${b.userName}</span><span class="text-emerald-400 text-sm">${new Date(b.startDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - ${new Date(b.endDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span></div></div>`).join('') || '<p class="text-slate-500">Nessuna prenotazione</p>';
 
                 // Totem Stock Alerts (New v4.8)
                 updateTotemStockAlerts();
@@ -1805,8 +1909,37 @@
         window.copyDirectLink = () => {
             navigator.clipboard.writeText(window.location.href.split('?')[0] + '?r=' + currentItem).then(() => alert("Copiato!"));
         };
-        window.openCalendarModal = () => { document.getElementById('modal-calendar').classList.remove('hidden'); document.getElementById('calendar-container').innerHTML = '<p class="text-center mt-10">Funzione Calendario attiva.</p>'; };
-        window.openCalendarForInstrument = (id, name) => { window.openCalendarModal(); };
+        window.openCalendarModal = () => { document.getElementById('modal-calendar').classList.remove('hidden'); };
+        window.openCalendarForInstrument = (id, name) => {
+            document.getElementById('modal-calendar').classList.remove('hidden');
+            const container = document.getElementById('calendar-container');
+            container.innerHTML = '<p class="text-center text-xs text-slate-400">Caricamento...</p>';
+            const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'bookings'), where('resourceId', '==', id));
+            onSnapshot(q, (snapshot) => {
+                const bookings = [];
+                snapshot.forEach(d => bookings.push({ id: d.id, ...d.data() }));
+                const now = new Date();
+                const future = bookings.filter(b => new Date(b.endDate) >= now).sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
+                if (future.length === 0) {
+                    container.innerHTML = `<div class="text-center py-8"><p class="text-lg font-bold text-slate-700">${name}</p><p class="text-xs text-slate-400 mt-2">Nessuna prenotazione futura</p></div>`;
+                } else {
+                    container.innerHTML = `<p class="text-sm font-bold text-slate-700 mb-3">${name} — ${future.length} prenotazioni</p>` +
+                        future.map(b => {
+                            const sd = new Date(b.startDate), ed = new Date(b.endDate);
+                            const isActive = now >= sd && now <= ed;
+                            const border = isActive ? 'border-emerald-500 bg-emerald-50' : 'border-slate-200';
+                            return `<div class="p-3 mb-2 rounded-lg border-l-4 ${border} bg-white shadow-sm">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm font-bold text-slate-700">${b.userName}</span>
+                                    ${isActive ? '<span class="text-[10px] bg-emerald-500 text-white px-2 py-0.5 rounded-full font-bold">IN USO</span>' : ''}
+                                </div>
+                                <div class="text-xs text-slate-500 mt-1">${sd.toLocaleDateString('it-IT', { weekday: 'short', day: '2-digit', month: 'short' })} • ${sd.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - ${ed.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                                ${b.pnr ? '<div class="text-[10px] text-slate-400 mt-1 font-mono">PNR: ' + b.pnr + '</div>' : ''}
+                            </div>`;
+                        }).join('');
+                }
+            });
+        };
         window.reportIssue = () => alert("Segnalazione inviata.");
 
         function loadGlobalSettings() {
@@ -1833,15 +1966,36 @@
                 const selected = inst.id === booking.resourceId ? 'selected' : '';
                 select.innerHTML += `<option value="${inst.id}" data-desc="${inst.description}" ${selected}>${inst.description} (${inst.id})</option>`;
             });
-            // If resource not in cache, add it manually
             if (!instruments.find(i => i.id === booking.resourceId)) {
                 select.innerHTML += `<option value="${booking.resourceId}" data-desc="${booking.resourceName || booking.resourceId}" selected>${booking.resourceName || booking.resourceId}</option>`;
             }
             document.getElementById('inp-admin-name').value = booking.userName || '';
             document.getElementById('inp-admin-booking-email').value = booking.email || '';
-            document.getElementById('inp-admin-start').value = booking.startDate || '';
-            document.getElementById('inp-admin-end').value = booking.endDate || '';
-            // Store editing state
+            // Init time slot pickers for admin
+            renderTimeSlots('admin-time-slots-start', 'inp-admin-start', 'start', 'admin');
+            renderTimeSlots('admin-time-slots-end', 'inp-admin-end', 'end', 'admin');
+            // Pre-select date and times from existing booking
+            if (booking.startDate) {
+                const [dateStr, startTime] = booking.startDate.split('T');
+                document.getElementById('inp-admin-date').value = dateStr;
+                document.getElementById('inp-admin-start').value = booking.startDate;
+                if (startTime) {
+                    const startSlotTime = startTime.substring(0, 5);
+                    const startBtn = document.querySelector(`#admin-time-slots-start [data-time="${startSlotTime}"]`);
+                    if (startBtn) { startBtn.classList.add('bg-indigo-600', 'text-white', 'border-indigo-600'); startBtn.classList.remove('border-slate-200', 'text-slate-600'); }
+                }
+            }
+            if (booking.endDate) {
+                document.getElementById('inp-admin-end').value = booking.endDate;
+                const endTime = booking.endDate.split('T')[1];
+                if (endTime) {
+                    const endSlotTime = endTime.substring(0, 5);
+                    const endBtn = document.querySelector(`#admin-time-slots-end [data-time="${endSlotTime}"]`);
+                    if (endBtn) { endBtn.classList.add('bg-indigo-600', 'text-white', 'border-indigo-600'); endBtn.classList.remove('border-slate-200', 'text-slate-600'); }
+                }
+            }
+            document.getElementById('inp-admin-date').addEventListener('change', () => onDateChange('admin'));
+            document.getElementById('admin-booking-overlap-warning').classList.add('hidden');
             window._editingAdminBookingId = id;
             document.getElementById('modal-admin-booking').classList.remove('hidden');
             lucide.createIcons();
@@ -1865,8 +2019,7 @@
 
         // --- ADMIN BOOKING MODAL ---
         window.openAdminBookingModal = () => {
-            window._editingAdminBookingId = null; // Reset editing state
-            // Use allInstrumentsCache if loaded, otherwise fall back to resourcesCache
+            window._editingAdminBookingId = null;
             const instruments = window.allInstrumentsCache.length > 0 ? window.allInstrumentsCache : (window.resourcesCache || []);
             if (instruments.length === 0) return alert('Nessuno strumento disponibile. Aggiungi strumenti prima.');
             const select = document.getElementById('inp-admin-instrument');
@@ -1876,8 +2029,14 @@
             });
             document.getElementById('inp-admin-name').value = '';
             document.getElementById('inp-admin-booking-email').value = '';
+            document.getElementById('inp-admin-date').value = '';
             document.getElementById('inp-admin-start').value = '';
             document.getElementById('inp-admin-end').value = '';
+            // Init time slot pickers
+            renderTimeSlots('admin-time-slots-start', 'inp-admin-start', 'start', 'admin');
+            renderTimeSlots('admin-time-slots-end', 'inp-admin-end', 'end', 'admin');
+            document.getElementById('inp-admin-date').addEventListener('change', () => onDateChange('admin'));
+            document.getElementById('admin-booking-overlap-warning').classList.add('hidden');
             document.getElementById('modal-admin-booking').classList.remove('hidden');
             lucide.createIcons();
         };
@@ -1894,11 +2053,18 @@
             const email = document.getElementById('inp-admin-booking-email').value.trim();
             const start = document.getElementById('inp-admin-start').value;
             const end = document.getElementById('inp-admin-end').value;
-            if (!resourceId || !userName || !start || !end) return alert('Compilare tutti i campi.');
+            if (!resourceId || !userName || !start || !end || start.indexOf('T') === -1 || end.indexOf('T') === -1) return alert('Compilare tutti i campi e selezionare data e orari.');
+            if (new Date(start) >= new Date(end)) return alert('L\'ora di fine deve essere dopo l\'inizio.');
             try {
+                // Overlap check
+                const hasOverlap = await checkBookingOverlap(resourceId, start, end, window._editingAdminBookingId);
+                if (hasOverlap) {
+                    document.getElementById('admin-booking-overlap-warning').classList.remove('hidden');
+                    return alert('⚠️ Orario non disponibile! C\'è già una prenotazione in questo intervallo.');
+                }
+                document.getElementById('admin-booking-overlap-warning').classList.add('hidden');
                 let pnr;
                 if (window._editingAdminBookingId) {
-                    // EDIT existing booking
                     const existingBooking = window.adminBookingsCache.find(b => b.id === window._editingAdminBookingId);
                     pnr = existingBooking?.pnr || Math.random().toString(36).substring(2, 8).toUpperCase();
                     await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'bookings', window._editingAdminBookingId), {
@@ -1907,7 +2073,6 @@
                     });
                     alert(`Prenotazione aggiornata! PNR: ${pnr}`);
                 } else {
-                    // CREATE new booking
                     pnr = Math.random().toString(36).substring(2, 8).toUpperCase();
                     await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'bookings'), {
                         resourceId, resourceName,
@@ -1916,7 +2081,6 @@
                     });
                     alert(`Prenotazione creata! PNR: ${pnr}`);
                 }
-                // Send confirmation email (both create and edit)
                 if (email) {
                     sendBookingConfirmation(email, userName, resourceName, start, end, pnr);
                 }
