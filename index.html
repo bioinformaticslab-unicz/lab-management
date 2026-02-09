@@ -349,6 +349,8 @@
                     class="admin-tab-btn flex-1 py-2 px-3 rounded-md transition whitespace-nowrap">Strumenti</button>
                 <button onclick="switchAdminTab('settings')" id="tab-btn-settings"
                     class="admin-tab-btn flex-1 py-2 px-3 rounded-md transition whitespace-nowrap">Settings</button>
+                <button onclick="switchAdminTab('logs')" id="tab-btn-logs"
+                    class="admin-tab-btn flex-1 py-2 px-3 rounded-md transition whitespace-nowrap">Log Sistema</button>
             </div>
 
             <!-- Content: Prenotazioni -->
@@ -543,6 +545,18 @@
                         TOTEM</a>
                 </div>
             </div>
+        </div>
+
+        <!-- Content: Logs -->
+        <div id="admin-content-logs" class="hidden space-y-4">
+            <div class="flex justify-between items-center">
+                <h3 class="text-sm font-bold text-slate-700 flex items-center gap-2">
+                    <i data-lucide="scroll-text" class="w-4 h-4"></i> Registro Attività
+                </h3>
+                <button onclick="loadAdminLogs()"
+                    class="text-xs text-indigo-600 font-bold hover:underline">AGGIORNA</button>
+            </div>
+            <div id="admin-logs-list" class="space-y-2 text-xs font-mono max-h-[60vh] overflow-y-auto pr-1"></div>
         </div>
 
         <!-- VISTA 5: RICERCA -->
@@ -880,6 +894,26 @@
         window.currentInventoryData = {};
         window.resourcesCache = [];
 
+        // --- LOGGING SYSTEM ---
+        window.logAction = async (action, category, details, specificUser = null) => {
+            try {
+                const user = specificUser || currentUser;
+                const logData = {
+                    timestamp: serverTimestamp(),
+                    action: action,      // CREATE, UPDATE, DELETE, EMAIL, LOGIN, ERROR
+                    category: category,  // BOOKING, INVENTORY, ADMIN, SYSTEM, AUTH
+                    details: details,    // String or Object
+                    userId: user ? user.uid : 'system',
+                    userEmail: user ? (user.email || 'system') : 'system',
+                    userName: user ? (user.displayName || 'system') : 'system'
+                };
+                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'logs'), logData);
+                console.log(`[LOG] ${category} - ${action}:`, details);
+            } catch (e) {
+                console.warn("Logging failed:", e);
+            }
+        };
+
         // AUTH
         onAuthStateChanged(auth, async (user) => {
             if (user) {
@@ -910,6 +944,7 @@
                 loadPublicInventory();
                 loadResourcesCache();
                 checkUrlParams();
+                logAction('LOGIN', 'AUTH', `User logged in: ${user.email}`);
             } else {
                 document.getElementById('view-login').classList.remove('hidden');
                 document.getElementById('btn-logout').classList.add('hidden');
@@ -950,6 +985,7 @@
         };
         window.logoutUser = async () => {
             if (confirm('Sei sicuro di voler uscire?')) {
+                logAction('LOGOUT', 'AUTH', `User logged out: ${currentUser.email}`);
                 adminMode = false;
                 isAdmin = false;
                 await signOut(auth);
@@ -1140,6 +1176,7 @@
                 // Refresh view
                 const snap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'inventory', safeId));
                 showInventoryView(currentItem, snap.data());
+                logAction('UPDATE', 'INVENTORY', `Order status updated for ${safeId}: Ordered by ${by} on ${date}`);
             } catch (e) { alert(e); }
         };
 
@@ -1195,6 +1232,8 @@
                 const updatedData = updatedSnap.data();
                 showInventoryView(currentItem, updatedData);
 
+                logAction('UPDATE', 'INVENTORY', `Stock movement for ${sfDoc.data().name} (${currentItem}): ${currentStockAction === 'add' ? '+' : '-'}${qty} ${sfDoc.data().unit}. User: ${operatorName}`);
+
                 // --- RESTOCK ALERT EMAIL ---
                 if (updatedData.quantity <= (updatedData.threshold || 0) && updatedData.restockEmail) {
                     try {
@@ -1206,7 +1245,9 @@
                             unit: updatedData.unit === 'pacco' ? 'pacchi' : (updatedData.unit || 'pz'),
                             from_name: 'UniScan Lab'
                         });
+
                         console.log('Restock alert email sent to', updatedData.restockEmail);
+                        logAction('EMAIL', 'SYSTEM', `Restock alert sent to ${updatedData.restockEmail} for ${updatedData.name}`);
                     } catch (emailErr) { console.warn('Restock email failed:', emailErr); }
                 }
 
@@ -1386,6 +1427,7 @@
                     id, name, brand, unit, threshold, location: loc, quantity: finalQty, packSize: packSize, category: category || '', image: image || '', restockEmail: restockEmail || ''
                 });
                 alert("Articolo salvato!");
+                logAction('UPDATE', 'INVENTORY', `Inventory item saved: ${name} (${id}). Qty: ${finalQty}`);
                 clearInventoryForm();
             } catch (e) { alert(e.message); }
         };
@@ -1394,6 +1436,7 @@
             if (confirm("Sei sicuro di voler eliminare questo articolo dal magazzino?")) {
                 try {
                     await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'inventory', id.replace(/\//g, '_')));
+                    logAction('DELETE', 'INVENTORY', `Inventory item deleted: ${id}`);
                 } catch (e) { alert("Errore: " + e.message); }
             }
         };
@@ -1632,7 +1675,7 @@
             });
             document.getElementById('tab-btn-' + tab).classList.add('bg-white', 'text-indigo-700', 'shadow-sm');
 
-            ['bookings', 'instruments', 'settings', 'inventory'].forEach(t => {
+            ['bookings', 'instruments', 'settings', 'inventory', 'logs'].forEach(t => {
                 const el = document.getElementById('admin-content-' + t);
                 if (el) el.classList.add('hidden');
             });
@@ -1641,6 +1684,7 @@
             if (tab === 'bookings') loadAdminBookings();
             if (tab === 'instruments') loadInstruments();
             if (tab === 'inventory') loadInventoryListAdmin();
+            if (tab === 'logs') loadAdminLogs();
         };
 
         // --- COPIED FROM V3.5 (Preserving all previous functionality) ---
@@ -1729,6 +1773,7 @@
                     id, description: desc, contact, isBookable: bookable, updatedAt: serverTimestamp()
                 });
                 alert("Salvato!");
+                logAction('UPDATE', 'INSTRUMENT', `Instrument saved: ${desc} (${id})`);
                 clearInstrumentForm();
             } catch (e) { alert(e.message); }
         };
@@ -1899,6 +1944,7 @@
                     await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'bookings', editingBookingId), {
                         userName: name, email: email || '', startDate: start, endDate: end, updatedAt: serverTimestamp()
                     });
+                    logAction('UPDATE', 'BOOKING', `Booking updated for ${currentItemName} (${currentItem}). New time: ${start} - ${end}`);
                     alert("Modificata!");
                 } else {
                     const pnr = Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -1912,6 +1958,7 @@
                     if (email) {
                         sendBookingConfirmation(email, name, resourceName, start, end, pnr);
                     }
+                    logAction('CREATE', 'BOOKING', `New booking for ${resourceName} (${currentItem}). Time: ${start} - ${end}. PNR: ${pnr}`);
                 }
                 hideBookingForm();
             } catch (e) { alert(e.message); }
@@ -2051,9 +2098,15 @@
         window.saveGlobalSettings = async () => {
             const active = document.getElementById('inp-maint-active').checked;
             await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'global'), { maintenanceMode: active, referentName: document.getElementById('inp-maint-name').value, referentEmail: document.getElementById('inp-maint-email').value });
+            logAction('UPDATE', 'SETTINGS', `Global settings updated. Maintenance: ${active}`);
             alert("Settings salvati.");
         };
-        window.deleteBooking = async (id) => { if (confirm("Eliminare?")) await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'bookings', id)); };
+        window.deleteBooking = async (id) => {
+            if (confirm("Eliminare?")) {
+                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'bookings', id));
+                logAction('DELETE', 'BOOKING', `Booking ${id} deleted by user.`);
+            }
+        };
         window.editBookingFromAdmin = (id) => {
             const booking = window.adminBookingsCache.find(b => b.id === id);
             if (!booking) return alert('Prenotazione non trovata.');
@@ -2170,6 +2223,7 @@
                         resourceId, resourceName,
                         userName, email: email || '', startDate: start, endDate: end, updatedAt: serverTimestamp()
                     });
+                    logAction('UPDATE', 'ADMIN', `Admin updated booking ${window._editingAdminBookingId} for ${resourceName}.`);
                     alert(`Prenotazione aggiornata! PNR: ${pnr}`);
                 } else {
                     pnr = Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -2178,6 +2232,7 @@
                         userName, email: email || '', startDate: start, endDate: end,
                         pnr, bookedBy: currentUser.uid, createdAt: serverTimestamp()
                     });
+                    logAction('CREATE', 'ADMIN', `Admin created booking for ${resourceName}. Time: ${start} - ${end}. PNR: ${pnr}`);
                     alert(`Prenotazione creata! PNR: ${pnr}`);
                 }
                 if (email) {
@@ -2223,6 +2278,7 @@
                 await setDoc(adminRef, { emails }, { merge: true });
                 emailInput.value = '';
                 loadAdminEmails();
+                logAction('UPDATE', 'SETTINGS', `Admin added: ${newEmail}`);
                 alert(`${newEmail} aggiunto come amministratore.`);
             } catch (e) { alert('Errore: ' + e.message); }
         };
@@ -2235,6 +2291,7 @@
                 const updated = emails.filter(em => em !== emailToRemove);
                 await setDoc(adminRef, { emails: updated });
                 loadAdminEmails();
+                logAction('UPDATE', 'SETTINGS', `Admin removed: ${emailToRemove}`);
             } catch (e) { alert('Errore: ' + e.message); }
         };
 
@@ -2275,8 +2332,53 @@
                     from_name: 'UniScan Lab'
                 });
                 console.log('Booking confirmation sent to', toEmail);
+                logAction('EMAIL', 'SYSTEM', `Booking confirmation sent to ${toEmail} for ${instrumentName} (${pnr})`);
             } catch (err) { console.warn('Booking confirmation email failed:', err); }
         }
+
+
+
+        // --- ADMIN LOGS ---
+        window.loadAdminLogs = () => {
+            const listEl = document.getElementById('admin-logs-list');
+            listEl.innerHTML = '<p class="text-center text-xs text-slate-400">Caricamento log...</p>';
+
+            // Limit to last 50 logs for performance
+            const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'logs'), orderBy('timestamp', 'desc')); // Limited by UI scroll mostly, but could add limit(50)
+
+            // Standard snapshot listener for realtime updates
+            onSnapshot(q, (snapshot) => {
+                const logs = [];
+                snapshot.forEach(doc => logs.push({ id: doc.id, ...doc.data() }));
+
+                if (logs.length === 0) {
+                    listEl.innerHTML = '<p class="text-center text-xs text-slate-400">Nessun log presente.</p>';
+                    return;
+                }
+
+                listEl.innerHTML = logs.slice(0, 100).map(l => {
+                    let color = 'bg-slate-100 text-slate-600';
+                    if (l.category === 'BOOKING') color = 'bg-indigo-50 text-indigo-600';
+                    if (l.category === 'INVENTORY') color = 'bg-emerald-50 text-emerald-600';
+                    if (l.category === 'ADMIN') color = 'bg-amber-50 text-amber-600';
+                    if (l.category === 'SYSTEM') color = 'bg-purple-50 text-purple-600';
+                    if (l.category === 'AUTH') color = 'bg-blue-50 text-blue-600';
+
+                    const dateStr = l.timestamp ? new Date(l.timestamp.seconds * 1000).toLocaleString('it-IT') : '---';
+
+                    return `
+                     <div class="p-2 border-l-4 border-slate-300 bg-white shadow-sm mb-1 text-[10px] md:text-xs">
+                         <div class="flex justify-between items-center mb-1">
+                             <span class="font-bold px-1.5 py-0.5 rounded ${color} text-[9px] uppercase tracking-wider">${l.category}</span>
+                             <span class="text-slate-400 text-[9px]">${dateStr}</span>
+                         </div>
+                         <div class="font-bold text-slate-700 mb-0.5">${l.action}</div>
+                         <div class="text-slate-500 break-words">${l.details}</div>
+                         <div class="text-[9px] text-slate-400 mt-1 italic text-right">User: ${l.userEmail || l.userId || 'System'}</div>
+                     </div>`;
+                }).join('');
+            });
+        };
 
         // --- CSV EXPORT UPDATE (include restockEmail) ---
         const _origExportCSV = window.exportInventoryCSV;

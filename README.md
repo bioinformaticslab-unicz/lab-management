@@ -133,6 +133,23 @@ graph TD
     I -->|Conflitto| K[Errore: orario non disponibile]
 ```
 
+## 📦 Flusso Magazzino
+
+```mermaid
+graph TD
+    A[Scansione QR Articolo] --> B{Esiste?}
+    B -->|Sì| C[Visualizza Dettagli & Quantità]
+    B -->|No| D[Admin: Crea nuovo articolo?]
+    C --> E[Seleziona Azione]
+    E --> F[Preleva (-)]
+    E --> G[Rifornisci (+)]
+    F --> H[Aggiorna Quantità]
+    G --> H
+    H --> I[Check Soglia Minima]
+    I -->|Sotto Soglia| J[Email Alert Riordino 📩]
+    I -->|Sopra Soglia| K[OK]
+```
+
 ---
 
 ## 🛠️ Sviluppo
