@@ -629,9 +629,20 @@
                     <option>Ricerca</option>
                     <option>Altro</option>
                 </select>
-                <div class="grid grid-cols-2 gap-2"><input type="datetime-local" id="inp-start" required
-                        class="border rounded p-2 text-xs"><input type="datetime-local" id="inp-end" required
-                        class="border rounded p-2 text-xs"></div>
+                <div class="space-y-2">
+                    <div>
+                        <label for="inp-start" class="block text-[10px] font-bold text-slate-500 uppercase mb-1">📅 Data
+                            e ora inizio</label>
+                        <input type="datetime-local" id="inp-start" required
+                            class="w-full border rounded-lg p-2.5 text-sm bg-slate-50">
+                    </div>
+                    <div>
+                        <label for="inp-end" class="block text-[10px] font-bold text-slate-500 uppercase mb-1">📅 Data e
+                            ora fine</label>
+                        <input type="datetime-local" id="inp-end" required
+                            class="w-full border rounded-lg p-2.5 text-sm bg-slate-50">
+                    </div>
+                </div>
                 <button type="submit"
                     class="w-full py-3 bg-indigo-600 text-white rounded font-bold text-sm">CONFERMA</button>
             </form>
@@ -711,9 +722,21 @@
                     <option>Ricerca</option>
                     <option>Altro</option>
                 </select>
-                <div class="grid grid-cols-2 gap-2"><input type="datetime-local" id="inp-admin-start" required
-                        class="border rounded p-2 text-xs"><input type="datetime-local" id="inp-admin-end" required
-                        class="border rounded p-2 text-xs"></div>
+                <div class="space-y-2">
+                    <div>
+                        <label for="inp-admin-start"
+                            class="block text-[10px] font-bold text-slate-500 uppercase mb-1">📅 Data e ora
+                            inizio</label>
+                        <input type="datetime-local" id="inp-admin-start" required
+                            class="w-full border rounded-lg p-2.5 text-sm bg-slate-50">
+                    </div>
+                    <div>
+                        <label for="inp-admin-end" class="block text-[10px] font-bold text-slate-500 uppercase mb-1">📅
+                            Data e ora fine</label>
+                        <input type="datetime-local" id="inp-admin-end" required
+                            class="w-full border rounded-lg p-2.5 text-sm bg-slate-50">
+                    </div>
+                </div>
                 <button type="submit"
                     class="w-full py-3 bg-indigo-600 text-white rounded font-bold text-sm">CONFERMA</button>
             </form>
@@ -1803,14 +1826,15 @@
             const booking = window.adminBookingsCache.find(b => b.id === id);
             if (!booking) return alert('Prenotazione non trovata.');
             // Reuse admin booking modal for editing
+            const instruments = window.allInstrumentsCache.length > 0 ? window.allInstrumentsCache : (window.resourcesCache || []);
             const select = document.getElementById('inp-admin-instrument');
             select.innerHTML = '<option value="" disabled>Seleziona strumento...</option>';
-            window.allInstrumentsCache.forEach(inst => {
+            instruments.forEach(inst => {
                 const selected = inst.id === booking.resourceId ? 'selected' : '';
                 select.innerHTML += `<option value="${inst.id}" data-desc="${inst.description}" ${selected}>${inst.description} (${inst.id})</option>`;
             });
             // If resource not in cache, add it manually
-            if (!window.allInstrumentsCache.find(i => i.id === booking.resourceId)) {
+            if (!instruments.find(i => i.id === booking.resourceId)) {
                 select.innerHTML += `<option value="${booking.resourceId}" data-desc="${booking.resourceName || booking.resourceId}" selected>${booking.resourceName || booking.resourceId}</option>`;
             }
             document.getElementById('inp-admin-name').value = booking.userName || '';
@@ -1842,9 +1866,12 @@
         // --- ADMIN BOOKING MODAL ---
         window.openAdminBookingModal = () => {
             window._editingAdminBookingId = null; // Reset editing state
+            // Use allInstrumentsCache if loaded, otherwise fall back to resourcesCache
+            const instruments = window.allInstrumentsCache.length > 0 ? window.allInstrumentsCache : (window.resourcesCache || []);
+            if (instruments.length === 0) return alert('Nessuno strumento disponibile. Aggiungi strumenti prima.');
             const select = document.getElementById('inp-admin-instrument');
             select.innerHTML = '<option value="" disabled selected>Seleziona strumento...</option>';
-            window.allInstrumentsCache.forEach(inst => {
+            instruments.forEach(inst => {
                 select.innerHTML += `<option value="${inst.id}" data-desc="${inst.description}">${inst.description} (${inst.id})</option>`;
             });
             document.getElementById('inp-admin-name').value = '';
