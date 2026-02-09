@@ -174,14 +174,19 @@
                     class="hidden absolute bottom-4 left-1/2 -translate-x-1/2 bg-white/20 backdrop-blur-md border border-white/30 text-white px-4 py-1 rounded-full text-xs font-bold z-30">Chiudi</button>
             </div>
 
-            <div class="flex gap-2">
-                <input type="text" id="inp-manual-code" placeholder="Cerca nome, codice o marchio..."
-                    class="flex-1 px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-mono shadow-sm"
-                    onkeypress="if(event.key === 'Enter') manualSearch()">
-                <button onclick="manualSearch()"
-                    class="px-4 py-3 bg-slate-800 text-white rounded-xl font-bold shadow-lg hover:bg-slate-700 transition flex items-center justify-center">
-                    <i data-lucide="search" class="w-5 h-5"></i>
-                </button>
+            <div class="relative">
+                <div class="flex gap-2">
+                    <input type="text" id="inp-manual-code" placeholder="Cerca strumento o materiale..."
+                        class="flex-1 px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-sm shadow-sm"
+                        oninput="smartSearch(this.value)" onkeypress="if(event.key === 'Enter') smartSearchGo()">
+                    <button onclick="smartSearchGo()"
+                        class="px-4 py-3 bg-slate-800 text-white rounded-xl font-bold shadow-lg hover:bg-slate-700 transition flex items-center justify-center">
+                        <i data-lucide="search" class="w-5 h-5"></i>
+                    </button>
+                </div>
+                <div id="smart-search-results"
+                    class="hidden absolute left-0 right-0 top-full mt-1 bg-white rounded-2xl shadow-2xl border border-slate-200 max-h-72 overflow-y-auto z-50">
+                </div>
             </div>
         </div>
 
@@ -1520,47 +1525,104 @@
             }
         }
 
-        // --- MANUAL SEARCH SMART (UPDATED) ---
-        window.manualSearch = () => {
+        // --- SMART SEARCH (Strumenti + Magazzino) ---
+        let _searchTimeout = null;
+        window.smartSearch = (term) => {
+            clearTimeout(_searchTimeout);
+            const container = document.getElementById('smart-search-results');
+            if (!term || term.trim().length < 2) {
+                container.classList.add('hidden');
+                return;
+            }
+            _searchTimeout = setTimeout(() => {
+                const lowerTerm = term.trim().toLowerCase();
+                const results = [];
+                // Search instruments
+                const instruments = window.allInstrumentsCache?.length > 0 ? window.allInstrumentsCache : (window.resourcesCache || []);
+                instruments.forEach(inst => {
+                    const desc = (inst.description || '').toLowerCase();
+                    const id = (inst.id || '').toLowerCase();
+                    const contact = (inst.contact || '').toLowerCase();
+                    if (desc.includes(lowerTerm) || id.includes(lowerTerm) || contact.includes(lowerTerm)) {
+                        results.push({ type: 'instrument', id: inst.id, name: inst.description || inst.id, sub: inst.contact || inst.id, bookable: inst.isBookable !== false });
+                    }
+                });
+                // Search inventory
+                (window.allInventoryCache || []).forEach(item => {
+                    const name = (item.name || '').toLowerCase();
+                    const brand = (item.brand || '').toLowerCase();
+                    const id = (item.id || '').toLowerCase();
+                    const cat = (item.category || '').toLowerCase();
+                    if (name.includes(lowerTerm) || brand.includes(lowerTerm) || id.includes(lowerTerm) || cat.includes(lowerTerm)) {
+                        const lowStock = (item.quantity || 0) <= (item.threshold || 0);
+                        results.push({ type: 'inventory', id: item.id, name: item.name, sub: item.brand ? `${item.brand} • ${item.category || ''}` : (item.category || item.id), qty: item.quantity, unit: item.unit || 'pz', lowStock });
+                    }
+                });
+                if (results.length === 0) {
+                    container.innerHTML = `<div class="p-4 text-center text-xs text-slate-400">Nessun risultato per "${term.trim()}"</div>`;
+                } else {
+                    container.innerHTML = results.slice(0, 10).map(r => {
+                        if (r.type === 'instrument') {
+                            return `<button onclick="navigateToInstrument('${r.id}')" class="w-full flex items-center gap-3 p-3 hover:bg-indigo-50 transition text-left border-b border-slate-50 last:border-0">
+                                <div class="w-10 h-10 bg-indigo-100 rounded-xl flex items-center justify-center flex-shrink-0"><i data-lucide="microscope" class="w-5 h-5 text-indigo-600"></i></div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-bold text-slate-800 truncate">${r.name}</p>
+                                    <p class="text-[10px] text-slate-400 truncate">${r.sub}</p>
+                                </div>
+                                <span class="text-[10px] font-bold px-2 py-1 rounded-full bg-indigo-100 text-indigo-600 whitespace-nowrap">🔬 Prenota</span>
+                            </button>`;
+                        } else {
+                            const stockColor = r.lowStock ? 'text-red-600 bg-red-50' : 'text-emerald-600 bg-emerald-50';
+                            return `<button onclick="navigateToInventory('${r.id}')" class="w-full flex items-center gap-3 p-3 hover:bg-emerald-50 transition text-left border-b border-slate-50 last:border-0">
+                                <div class="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center flex-shrink-0"><i data-lucide="package" class="w-5 h-5 text-emerald-600"></i></div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-bold text-slate-800 truncate">${r.name}</p>
+                                    <p class="text-[10px] text-slate-400 truncate">${r.sub}</p>
+                                </div>
+                                <div class="text-right flex-shrink-0">
+                                    <span class="text-xs font-bold ${stockColor} px-2 py-0.5 rounded-full">${r.qty} ${r.unit}</span>
+                                    <p class="text-[9px] text-slate-300 mt-0.5">📦 Magazzino</p>
+                                </div>
+                            </button>`;
+                        }
+                    }).join('');
+                }
+                container.classList.remove('hidden');
+                lucide.createIcons();
+            }, 200);
+        };
+        window.smartSearchGo = () => {
             const term = document.getElementById('inp-manual-code').value.trim();
             if (!term) return;
-
-            const lowerTerm = term.toLowerCase();
-
-            // 1. Check exact ID match
-            const exactIdMatch = window.allInventoryCache.find(i => i.id.toLowerCase() === lowerTerm);
-            const resourceIdMatch = window.resourcesCache.find(r => r.id.toLowerCase() === lowerTerm);
-
-            if (exactIdMatch) {
-                handleScannedCode(exactIdMatch.id);
+            // If dropdown has exactly one result, navigate to it
+            const container = document.getElementById('smart-search-results');
+            const buttons = container.querySelectorAll('button');
+            if (buttons.length === 1) {
+                buttons[0].click();
                 return;
             }
-            if (resourceIdMatch) {
-                handleScannedCode(resourceIdMatch.id);
-                return;
-            }
-
-            // 2. Check Name/Brand partial matches
-            const matches = window.allInventoryCache.filter(i =>
-                i.name.toLowerCase().includes(lowerTerm) ||
-                (i.brand && i.brand.toLowerCase().includes(lowerTerm))
-            );
-
-            if (matches.length === 1) {
-                handleScannedCode(matches[0].id);
-            } else if (matches.length > 1) {
-                // Open public list filtered
-                showPublicInventoryList();
-                const searchInput = document.querySelector('#view-inventory-list input[type="text"]');
-                if (searchInput) {
-                    searchInput.value = term;
-                    filterInventoryList(term);
-                }
-            } else {
-                // Try fallback logic (e.g. create new)
-                handleScannedCode(term);
-            }
+            // Otherwise fallback to old handleScannedCode
+            handleScannedCode(term);
+            container.classList.add('hidden');
         };
+        window.navigateToInstrument = (id) => {
+            document.getElementById('smart-search-results').classList.add('hidden');
+            document.getElementById('inp-manual-code').value = '';
+            handleScannedCode(id);
+        };
+        window.navigateToInventory = (id) => {
+            document.getElementById('smart-search-results').classList.add('hidden');
+            document.getElementById('inp-manual-code').value = '';
+            handleScannedCode(id);
+        };
+        // Close dropdown on click outside
+        document.addEventListener('click', (e) => {
+            const container = document.getElementById('smart-search-results');
+            const input = document.getElementById('inp-manual-code');
+            if (container && !container.contains(e.target) && e.target !== input) {
+                container.classList.add('hidden');
+            }
+        });
 
         // --- ADMIN TABS (UPDATED) ---
         window.switchAdminTab = (tab) => {
