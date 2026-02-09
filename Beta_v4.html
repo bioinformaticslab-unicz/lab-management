@@ -1,13 +1,14 @@
 <!DOCTYPE html>
 <html lang="it">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>UniScan v4.9 (Lab + Magazzino Pro)</title>
-    
+    <title>UniScan v5.0 (Lab + Magazzino Pro)</title>
+
     <!-- Stili: Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
+
     <!-- Libreria Scanner -->
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 
@@ -17,30 +18,91 @@
     <!-- Grafici -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
+    <!-- EmailJS -->
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+
     <style>
-        .fade-in { animation: fadeIn 0.3s ease-in-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        
+        .fade-in {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
         /* Animazione Marquee per Totem */
         @keyframes marquee {
-            0% { transform: translateX(100%); }
-            100% { transform: translateX(-100%); }
+            0% {
+                transform: translateX(100%);
+            }
+
+            100% {
+                transform: translateX(-100%);
+            }
         }
-        .animate-marquee { animation: marquee 30s linear infinite; }
-        
-        body { -webkit-tap-highlight-color: transparent; }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        
+
+        .animate-marquee {
+            animation: marquee 30s linear infinite;
+        }
+
+        body {
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
         @media print {
-            body * { visibility: hidden; }
-            #print-area, #print-area * { visibility: visible; }
-            #print-area { position: absolute; left: 0; top: 0; width: 100%; display: block !important; }
-            .label-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; page-break-inside: avoid; }
-            .label-item { border: 2px solid #000; padding: 10px; text-align: center; page-break-inside: avoid; border-radius: 8px; break-inside: avoid; }
+            body * {
+                visibility: hidden;
+            }
+
+            #print-area,
+            #print-area * {
+                visibility: visible;
+            }
+
+            #print-area {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                display: block !important;
+            }
+
+            .label-grid {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 15px;
+                page-break-inside: avoid;
+            }
+
+            .label-item {
+                border: 2px solid #000;
+                padding: 10px;
+                text-align: center;
+                page-break-inside: avoid;
+                border-radius: 8px;
+                break-inside: avoid;
+            }
         }
     </style>
 </head>
+
 <body class="bg-slate-50 text-slate-800 font-sans min-h-screen pb-24">
 
     <!-- HEADER -->
@@ -50,31 +112,41 @@
                 <h1 class="text-xl font-black italic tracking-tighter flex items-center gap-2">
                     <i data-lucide="scan-line" class="w-5 h-5 text-emerald-400"></i> UNISCAN
                 </h1>
-                <p class="text-slate-400 text-[10px] font-medium uppercase tracking-widest">Lab & Stock v4.9</p>
+                <p class="text-slate-400 text-[10px] font-medium uppercase tracking-widest">Lab & Stock v5.0</p>
             </div>
-            <div class="flex gap-3">
-                <button onclick="showAdminLogin()" class="p-2 bg-slate-800 rounded-full hover:bg-slate-700 transition" title="Admin">
+            <div class="flex gap-3 items-center">
+                <span id="user-display-name" class="text-[10px] text-slate-400 font-mono hidden"></span>
+                <button onclick="showAdminLogin()" class="p-2 bg-slate-800 rounded-full hover:bg-slate-700 transition"
+                    title="Admin">
                     <i data-lucide="shield" class="w-4 h-4"></i>
                 </button>
-                <div id="user-status" class="w-3 h-3 bg-red-500 rounded-full animate-pulse self-center" title="Stato Connessione"></div>
+                <button id="btn-logout" onclick="logoutUser()"
+                    class="hidden p-2 bg-slate-800 rounded-full hover:bg-red-700 transition" title="Logout">
+                    <i data-lucide="log-out" class="w-4 h-4"></i>
+                </button>
+                <div id="user-status" class="w-3 h-3 bg-red-500 rounded-full animate-pulse self-center"
+                    title="Stato Connessione"></div>
             </div>
         </div>
     </header>
 
     <!-- MAIN CONTENT -->
     <main id="main-container" class="p-5 max-w-md mx-auto relative">
-        
+
         <!-- MENU PRINCIPALE -->
         <div id="main-menu" class="grid grid-cols-3 gap-3 mb-6 fade-in">
-            <button onclick="resetApp()" class="py-3 bg-white border border-slate-200 shadow-sm rounded-xl flex flex-col items-center gap-1 active:scale-95 transition hover:border-indigo-300">
+            <button onclick="resetApp()"
+                class="py-3 bg-white border border-slate-200 shadow-sm rounded-xl flex flex-col items-center gap-1 active:scale-95 transition hover:border-indigo-300">
                 <i data-lucide="qr-code" class="w-5 h-5 text-indigo-600"></i>
                 <span class="text-[10px] font-bold uppercase text-slate-500">Scanner</span>
             </button>
-            <button onclick="showMyBookingSearch()" class="py-3 bg-white border border-slate-200 shadow-sm rounded-xl flex flex-col items-center gap-1 active:scale-95 transition hover:border-indigo-300">
+            <button onclick="showMyBookingSearch()"
+                class="py-3 bg-white border border-slate-200 shadow-sm rounded-xl flex flex-col items-center gap-1 active:scale-95 transition hover:border-indigo-300">
                 <i data-lucide="ticket" class="w-5 h-5 text-indigo-600"></i>
                 <span class="text-[10px] font-bold uppercase text-slate-500">Prenotazioni</span>
             </button>
-            <button onclick="showPublicInventoryList()" class="py-3 bg-white border border-slate-200 shadow-sm rounded-xl flex flex-col items-center gap-1 active:scale-95 transition hover:border-emerald-300">
+            <button onclick="showPublicInventoryList()"
+                class="py-3 bg-white border border-slate-200 shadow-sm rounded-xl flex flex-col items-center gap-1 active:scale-95 transition hover:border-emerald-300">
                 <i data-lucide="package" class="w-5 h-5 text-emerald-600"></i>
                 <span class="text-[10px] font-bold uppercase text-slate-500">Magazzino</span>
             </button>
@@ -82,23 +154,32 @@
 
         <!-- VISTA 1: SCANNER (Router Intelligente) -->
         <div id="view-scanner" class="fade-in space-y-6">
-            <div class="relative bg-black rounded-3xl overflow-hidden shadow-2xl aspect-square border-4 border-indigo-500/30">
+            <div
+                class="relative bg-black rounded-3xl overflow-hidden shadow-2xl aspect-square border-4 border-indigo-500/30">
                 <div id="reader" class="w-full h-full object-cover"></div>
-                <div id="camera-overlay" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-900 text-white z-10">
+                <div id="camera-overlay"
+                    class="absolute inset-0 flex flex-col items-center justify-center bg-slate-900 text-white z-10">
                     <i data-lucide="camera" class="w-12 h-12 mb-4 text-indigo-400"></i>
                     <p class="font-bold">Scannerizza Codice</p>
                     <p class="text-xs text-slate-400 mt-1">Strumenti o Magazzino</p>
-                    <button onclick="startScanner()" class="mt-4 px-6 py-2 bg-indigo-600 rounded-full font-bold text-sm hover:bg-indigo-500 transition shadow-lg shadow-indigo-500/50">
+                    <button onclick="startScanner()"
+                        class="mt-4 px-6 py-2 bg-indigo-600 rounded-full font-bold text-sm hover:bg-indigo-500 transition shadow-lg shadow-indigo-500/50">
                         AVVIA CAMERA
                     </button>
                 </div>
-                <div id="laser-line" class="hidden absolute top-1/2 left-0 w-full h-0.5 bg-red-500 shadow-[0_0_15px_red] animate-pulse z-20"></div>
-                <button id="btn-stop" onclick="stopScanner()" class="hidden absolute bottom-4 left-1/2 -translate-x-1/2 bg-white/20 backdrop-blur-md border border-white/30 text-white px-4 py-1 rounded-full text-xs font-bold z-30">Chiudi</button>
+                <div id="laser-line"
+                    class="hidden absolute top-1/2 left-0 w-full h-0.5 bg-red-500 shadow-[0_0_15px_red] animate-pulse z-20">
+                </div>
+                <button id="btn-stop" onclick="stopScanner()"
+                    class="hidden absolute bottom-4 left-1/2 -translate-x-1/2 bg-white/20 backdrop-blur-md border border-white/30 text-white px-4 py-1 rounded-full text-xs font-bold z-30">Chiudi</button>
             </div>
-            
+
             <div class="flex gap-2">
-                <input type="text" id="inp-manual-code" placeholder="Cerca nome, codice o marchio..." class="flex-1 px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-mono shadow-sm" onkeypress="if(event.key === 'Enter') manualSearch()">
-                <button onclick="manualSearch()" class="px-4 py-3 bg-slate-800 text-white rounded-xl font-bold shadow-lg hover:bg-slate-700 transition flex items-center justify-center">
+                <input type="text" id="inp-manual-code" placeholder="Cerca nome, codice o marchio..."
+                    class="flex-1 px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-mono shadow-sm"
+                    onkeypress="if(event.key === 'Enter') manualSearch()">
+                <button onclick="manualSearch()"
+                    class="px-4 py-3 bg-slate-800 text-white rounded-xl font-bold shadow-lg hover:bg-slate-700 transition flex items-center justify-center">
                     <i data-lucide="search" class="w-5 h-5"></i>
                 </button>
             </div>
@@ -108,20 +189,26 @@
         <div id="view-details" class="hidden fade-in space-y-5">
             <!-- Header Strumento -->
             <div class="bg-white p-5 rounded-3xl shadow-lg border-l-8 border-indigo-600 relative overflow-hidden">
-                <div class="absolute top-0 right-0 p-4 opacity-10"><i data-lucide="microscope" class="w-24 h-24"></i></div>
+                <div class="absolute top-0 right-0 p-4 opacity-10"><i data-lucide="microscope" class="w-24 h-24"></i>
+                </div>
                 <div class="flex justify-between items-start relative z-10">
                     <div>
                         <div class="flex items-center gap-2 mb-1">
                             <p class="text-xs font-bold text-indigo-600 uppercase">Strumento Lab</p>
-                            <span id="badge-status" class="hidden text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-black uppercase">NON PRENOTABILE</span>
+                            <span id="badge-status"
+                                class="hidden text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-black uppercase">NON
+                                PRENOTABILE</span>
                         </div>
                         <h2 id="item-title" class="text-2xl font-black text-slate-800 break-all leading-tight">---</h2>
                         <p id="item-subtitle" class="text-sm font-mono text-slate-400 mt-1">ID: ---</p>
                     </div>
-                    <button onclick="reportIssue()" class="text-amber-500 p-2 hover:bg-amber-50 rounded-full" title="Segnala Guasto"><i data-lucide="alert-triangle" class="w-5 h-5"></i></button>
+                    <button onclick="reportIssue()" class="text-amber-500 p-2 hover:bg-amber-50 rounded-full"
+                        title="Segnala Guasto"><i data-lucide="alert-triangle" class="w-5 h-5"></i></button>
                 </div>
-                <div id="ip-actions" class="hidden mt-3 pt-3 border-t border-slate-100 flex flex-wrap gap-2 relative z-10">
-                    <a id="btn-open-ip" href="#" target="_blank" class="inline-flex items-center gap-2 px-3 py-2 bg-blue-100 text-blue-700 rounded-lg text-xs font-bold hover:bg-blue-200 transition">
+                <div id="ip-actions"
+                    class="hidden mt-3 pt-3 border-t border-slate-100 flex flex-wrap gap-2 relative z-10">
+                    <a id="btn-open-ip" href="#" target="_blank"
+                        class="inline-flex items-center gap-2 px-3 py-2 bg-blue-100 text-blue-700 rounded-lg text-xs font-bold hover:bg-blue-200 transition">
                         <i data-lucide="globe" class="w-4 h-4"></i> APRI IP
                     </a>
                 </div>
@@ -130,13 +217,16 @@
             <!-- Calendario & Bottoni -->
             <div class="space-y-3">
                 <div class="flex justify-between items-center px-2">
-                    <h3 class="text-sm font-bold text-slate-700 flex items-center gap-2"><i data-lucide="calendar-days" class="w-4 h-4"></i> Stato Prenotazioni</h3>
+                    <h3 class="text-sm font-bold text-slate-700 flex items-center gap-2"><i data-lucide="calendar-days"
+                            class="w-4 h-4"></i> Stato Prenotazioni</h3>
                 </div>
                 <div class="flex gap-2">
-                    <button onclick="openCalendarModal()" class="flex-1 py-3 bg-white border border-slate-200 text-slate-700 rounded-xl text-xs font-bold shadow-sm hover:bg-slate-50 transition flex items-center justify-center gap-2">
+                    <button onclick="openCalendarModal()"
+                        class="flex-1 py-3 bg-white border border-slate-200 text-slate-700 rounded-xl text-xs font-bold shadow-sm hover:bg-slate-50 transition flex items-center justify-center gap-2">
                         <i data-lucide="calendar" class="w-4 h-4"></i> Disponibilità
                     </button>
-                    <button id="btn-main-book" onclick="showBookingForm()" class="flex-1 py-3 bg-emerald-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-emerald-200 hover:bg-emerald-600 transition flex items-center justify-center gap-2">
+                    <button id="btn-main-book" onclick="showBookingForm()"
+                        class="flex-1 py-3 bg-emerald-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-emerald-200 hover:bg-emerald-600 transition flex items-center justify-center gap-2">
                         <i data-lucide="plus"></i> PRENOTA
                     </button>
                 </div>
@@ -151,18 +241,21 @@
                 <div class="absolute top-0 right-0 p-4 opacity-10"><i data-lucide="package" class="w-24 h-24"></i></div>
                 <div class="relative z-10">
                     <div class="flex justify-between items-start">
-                         <p class="text-xs font-bold text-emerald-400 uppercase mb-1">Articolo Magazzino</p>
-                         <p id="inv-item-category-view" class="text-[10px] bg-slate-700 px-2 py-0.5 rounded text-slate-300 font-bold uppercase">---</p>
+                        <p class="text-xs font-bold text-emerald-400 uppercase mb-1">Articolo Magazzino</p>
+                        <p id="inv-item-category-view"
+                            class="text-[10px] bg-slate-700 px-2 py-0.5 rounded text-slate-300 font-bold uppercase">---
+                        </p>
                     </div>
-                    
+
                     <!-- FOTO PRODOTTO -->
                     <div class="mb-4 flex justify-center">
-                         <img id="inv-item-img-display" src="" class="h-32 w-32 object-contain rounded-xl bg-white p-2 hidden shadow-lg" alt="Prodotto">
+                        <img id="inv-item-img-display" src=""
+                            class="h-32 w-32 object-contain rounded-xl bg-white p-2 hidden shadow-lg" alt="Prodotto">
                     </div>
 
                     <h2 id="inv-item-name" class="text-2xl font-black break-all leading-tight mb-1">---</h2>
                     <p id="inv-item-brand" class="text-sm text-slate-300 italic mb-2">---</p>
-                    
+
                     <div class="flex items-end gap-2 mt-4 border-t border-slate-600 pt-2">
                         <div>
                             <p class="text-[10px] text-slate-400 uppercase font-bold">Disponibile</p>
@@ -173,32 +266,40 @@
                             <p id="inv-item-pack-detail" class="text-[10px] text-emerald-400 font-bold hidden">---</p>
                         </div>
                         <div class="ml-auto mb-1 text-right">
-                             <p class="text-[10px] text-slate-400 uppercase font-bold">Soglia Minima</p>
-                             <p id="inv-item-threshold" class="text-lg font-mono font-bold text-slate-300">0</p>
+                            <p class="text-[10px] text-slate-400 uppercase font-bold">Soglia Minima</p>
+                            <p id="inv-item-threshold" class="text-lg font-mono font-bold text-slate-300">0</p>
                         </div>
                     </div>
-                    
+
                     <!-- STATUS ALERTS -->
-                    <div id="inv-alert-restock" class="hidden mt-3 text-xs font-bold text-red-400 bg-red-900/30 p-2 rounded border border-red-800/50 flex justify-between items-center">
-                        <span class="flex items-center gap-2"><i data-lucide="alert-triangle" class="w-4 h-4"></i> SCORTA BASSA</span>
-                        <button onclick="openOrderModal()" class="bg-red-600 text-white px-2 py-1 rounded text-[10px] hover:bg-red-500">SEGNA ORDINATO</button>
+                    <div id="inv-alert-restock"
+                        class="hidden mt-3 text-xs font-bold text-red-400 bg-red-900/30 p-2 rounded border border-red-800/50 flex justify-between items-center">
+                        <span class="flex items-center gap-2"><i data-lucide="alert-triangle" class="w-4 h-4"></i>
+                            SCORTA BASSA</span>
+                        <button onclick="openOrderModal()"
+                            class="bg-red-600 text-white px-2 py-1 rounded text-[10px] hover:bg-red-500">SEGNA
+                            ORDINATO</button>
                     </div>
 
-                    <div id="inv-alert-ordered" class="hidden mt-3 text-xs font-bold text-amber-400 bg-amber-900/30 p-2 rounded border border-amber-800/50 flex items-center gap-2">
+                    <div id="inv-alert-ordered"
+                        class="hidden mt-3 text-xs font-bold text-amber-400 bg-amber-900/30 p-2 rounded border border-amber-800/50 flex items-center gap-2">
                         <i data-lucide="truck" class="w-4 h-4"></i> <span id="inv-ordered-text">Ordinato</span>
                     </div>
 
-                    <p id="inv-item-loc" class="text-xs text-slate-400 mt-3 flex items-center gap-1"><i data-lucide="map-pin" class="w-3 h-3"></i> ---</p>
+                    <p id="inv-item-loc" class="text-xs text-slate-400 mt-3 flex items-center gap-1"><i
+                            data-lucide="map-pin" class="w-3 h-3"></i> ---</p>
                 </div>
             </div>
 
             <!-- Azioni Magazzino -->
             <div class="grid grid-cols-2 gap-3">
-                <button onclick="openStockModal('remove')" class="py-4 bg-red-100 text-red-700 rounded-2xl flex flex-col items-center justify-center gap-1 shadow-sm active:scale-95 transition hover:bg-red-200">
+                <button onclick="openStockModal('remove')"
+                    class="py-4 bg-red-100 text-red-700 rounded-2xl flex flex-col items-center justify-center gap-1 shadow-sm active:scale-95 transition hover:bg-red-200">
                     <i data-lucide="minus-circle" class="w-8 h-8"></i>
                     <span class="text-xs font-black uppercase">Preleva (Scarico)</span>
                 </button>
-                <button onclick="openStockModal('add')" class="py-4 bg-emerald-100 text-emerald-700 rounded-2xl flex flex-col items-center justify-center gap-1 shadow-sm active:scale-95 transition hover:bg-emerald-200">
+                <button onclick="openStockModal('add')"
+                    class="py-4 bg-emerald-100 text-emerald-700 rounded-2xl flex flex-col items-center justify-center gap-1 shadow-sm active:scale-95 transition hover:bg-emerald-200">
                     <i data-lucide="plus-circle" class="w-8 h-8"></i>
                     <span class="text-xs font-black uppercase">Rifornisci (Carico)</span>
                 </button>
@@ -219,7 +320,9 @@
             </h2>
             <div class="relative">
                 <i data-lucide="search" class="absolute left-3 top-2.5 w-4 h-4 text-slate-400"></i>
-                <input type="text" onkeyup="filterInventoryList(this.value)" placeholder="Cerca materiale, marchio o cat..." class="w-full pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                <input type="text" onkeyup="filterInventoryList(this.value)"
+                    placeholder="Cerca materiale, marchio o cat..."
+                    class="w-full pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
             </div>
             <div id="public-inventory-container" class="space-y-2 pb-10">
                 <p class="text-center text-xs text-slate-400 mt-10">Caricamento...</p>
@@ -231,44 +334,72 @@
             <h2 class="text-lg font-black text-slate-800 flex items-center gap-2 border-b pb-2">
                 <i data-lucide="layout-dashboard" class="w-5 h-5 text-indigo-600"></i> Dashboard Admin
             </h2>
-            
+
             <div class="flex gap-1 text-xs font-bold bg-slate-200 p-1 rounded-lg overflow-x-auto no-scrollbar">
-                <button onclick="switchAdminTab('bookings')" id="tab-btn-bookings" class="admin-tab-btn flex-1 py-2 px-3 rounded-md transition whitespace-nowrap">Prenotazioni</button>
-                <button onclick="switchAdminTab('inventory')" id="tab-btn-inventory" class="admin-tab-btn flex-1 py-2 px-3 rounded-md transition whitespace-nowrap">Magazzino</button>
-                <button onclick="switchAdminTab('instruments')" id="tab-btn-instruments" class="admin-tab-btn flex-1 py-2 px-3 rounded-md transition whitespace-nowrap">Strumenti</button>
-                <button onclick="switchAdminTab('settings')" id="tab-btn-settings" class="admin-tab-btn flex-1 py-2 px-3 rounded-md transition whitespace-nowrap">Settings</button>
+                <button onclick="switchAdminTab('bookings')" id="tab-btn-bookings"
+                    class="admin-tab-btn flex-1 py-2 px-3 rounded-md transition whitespace-nowrap">Prenotazioni</button>
+                <button onclick="switchAdminTab('inventory')" id="tab-btn-inventory"
+                    class="admin-tab-btn flex-1 py-2 px-3 rounded-md transition whitespace-nowrap">Magazzino</button>
+                <button onclick="switchAdminTab('instruments')" id="tab-btn-instruments"
+                    class="admin-tab-btn flex-1 py-2 px-3 rounded-md transition whitespace-nowrap">Strumenti</button>
+                <button onclick="switchAdminTab('settings')" id="tab-btn-settings"
+                    class="admin-tab-btn flex-1 py-2 px-3 rounded-md transition whitespace-nowrap">Settings</button>
             </div>
 
             <!-- Content: Prenotazioni -->
             <div id="admin-content-bookings" class="space-y-3">
-                <button onclick="exportBookingsCSV()" class="w-full py-2 bg-emerald-600 text-white rounded-lg text-xs font-bold shadow flex items-center justify-center gap-2"><i data-lucide="download" class="w-4 h-4"></i> SCARICA CSV</button>
+                <div class="flex gap-2">
+                    <button onclick="openAdminBookingModal()"
+                        class="flex-1 py-2 bg-indigo-600 text-white rounded-lg text-xs font-bold shadow flex items-center justify-center gap-2"><i
+                            data-lucide="plus" class="w-4 h-4"></i> NUOVA PRENOTAZIONE</button>
+                    <button onclick="exportBookingsCSV()"
+                        class="flex-1 py-2 bg-emerald-600 text-white rounded-lg text-xs font-bold shadow flex items-center justify-center gap-2"><i
+                            data-lucide="download" class="w-4 h-4"></i> SCARICA CSV</button>
+                </div>
                 <div id="admin-list" class="space-y-3"></div>
             </div>
 
             <!-- Content: Magazzino (ADMIN) -->
             <div id="admin-content-inventory" class="hidden space-y-4">
                 <div class="flex gap-2">
-                    <button onclick="downloadInventoryTemplate()" class="flex-1 py-2 bg-indigo-50 text-indigo-700 rounded-lg text-xs font-bold flex items-center justify-center gap-1 border border-indigo-200"><i data-lucide="file-text" class="w-3 h-3"></i> TEMPLATE</button>
-                    <button onclick="exportInventoryCSV()" class="flex-1 py-2 bg-indigo-100 text-indigo-700 rounded-lg text-xs font-bold flex items-center justify-center gap-1"><i data-lucide="download" class="w-3 h-3"></i> EXPORT CSV</button>
-                    <label class="flex-1 py-2 bg-slate-800 text-white rounded-lg text-xs font-bold flex items-center justify-center gap-1 cursor-pointer hover:bg-slate-700 transition">
+                    <button onclick="downloadInventoryTemplate()"
+                        class="flex-1 py-2 bg-indigo-50 text-indigo-700 rounded-lg text-xs font-bold flex items-center justify-center gap-1 border border-indigo-200"><i
+                            data-lucide="file-text" class="w-3 h-3"></i> TEMPLATE</button>
+                    <button onclick="exportInventoryCSV()"
+                        class="flex-1 py-2 bg-indigo-100 text-indigo-700 rounded-lg text-xs font-bold flex items-center justify-center gap-1"><i
+                            data-lucide="download" class="w-3 h-3"></i> EXPORT CSV</button>
+                    <label
+                        class="flex-1 py-2 bg-slate-800 text-white rounded-lg text-xs font-bold flex items-center justify-center gap-1 cursor-pointer hover:bg-slate-700 transition">
                         <i data-lucide="upload" class="w-3 h-3"></i> IMPORT CSV
-                        <input type="file" id="inp-csv-import" accept=".csv" class="hidden" onchange="importInventoryCSV(this)">
+                        <input type="file" id="inp-csv-import" accept=".csv" class="hidden"
+                            onchange="importInventoryCSV(this)">
                     </label>
                 </div>
 
                 <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
                     <div class="flex justify-between items-center mb-3">
-                        <h3 class="text-sm font-bold text-slate-700 flex items-center gap-2"><i data-lucide="package-plus" class="w-4 h-4"></i> Gestione Articolo</h3>
-                        <button onclick="clearInventoryForm()" class="text-[10px] text-indigo-600 font-bold hover:underline">NUOVO</button>
+                        <h3 class="text-sm font-bold text-slate-700 flex items-center gap-2"><i
+                                data-lucide="package-plus" class="w-4 h-4"></i> Gestione Articolo</h3>
+                        <button onclick="clearInventoryForm()"
+                            class="text-[10px] text-indigo-600 font-bold hover:underline">NUOVO</button>
                     </div>
                     <form onsubmit="saveInventoryItem(event)" class="space-y-3">
-                        <input type="text" id="inp-inv-id" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-mono" placeholder="Codice a Barre / ID">
-                        <input type="text" id="inp-inv-name" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs" placeholder="Nome Articolo (es. Etanolo)">
-                        <input type="text" id="inp-inv-image" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs" placeholder="URL Immagine Prodotto (http://...)">
+                        <input type="text" id="inp-inv-id" required
+                            class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-mono"
+                            placeholder="Codice a Barre / ID">
+                        <input type="text" id="inp-inv-name" required
+                            class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs"
+                            placeholder="Nome Articolo (es. Etanolo)">
+                        <input type="text" id="inp-inv-image"
+                            class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs"
+                            placeholder="URL Immagine Prodotto (http://...)">
                         <div class="grid grid-cols-2 gap-2">
-                            <input type="text" id="inp-inv-brand" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs" placeholder="Marchio / Produttore">
+                            <input type="text" id="inp-inv-brand"
+                                class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs"
+                                placeholder="Marchio / Produttore">
                             <div class="relative">
-                                <select id="inp-inv-category" onchange="checkNewCategory(this)" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs appearance-none">
+                                <select id="inp-inv-category" onchange="checkNewCategory(this)"
+                                    class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs appearance-none">
                                     <option value="" disabled selected>Seleziona Categoria...</option>
                                     <option value="Reagenti">Reagenti</option>
                                     <option value="Vetreria">Vetreria</option>
@@ -276,43 +407,69 @@
                                     <option value="Cancelleria">Cancelleria</option>
                                     <option value="new">+ Nuova Categoria...</option>
                                 </select>
-                                <input type="text" id="inp-inv-category-new" class="hidden w-full absolute top-0 left-0 px-3 py-2 bg-white border border-indigo-500 rounded-lg text-xs" placeholder="Nome Nuova Categoria">
+                                <input type="text" id="inp-inv-category-new"
+                                    class="hidden w-full absolute top-0 left-0 px-3 py-2 bg-white border border-indigo-500 rounded-lg text-xs"
+                                    placeholder="Nome Nuova Categoria">
                             </div>
                         </div>
-                        
+
                         <div class="grid grid-cols-2 gap-2">
                             <!-- Select Unità -->
                             <div>
                                 <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Unità</label>
-                                <select id="inp-inv-unit" onchange="togglePackSize()" class="w-full px-2 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs outline-none">
+                                <select id="inp-inv-unit" onchange="togglePackSize()"
+                                    class="w-full px-2 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs outline-none">
                                     <option value="pz">Pezzi (pz)</option>
                                     <option value="ml">Millilitri (ml)</option>
                                     <option value="pacco">Pacco/Conf.</option>
                                 </select>
                             </div>
                             <div>
-                                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Soglia Min.</label>
-                                <input type="number" id="inp-inv-threshold" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs" placeholder="0">
+                                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Soglia
+                                    Min.</label>
+                                <input type="number" id="inp-inv-threshold"
+                                    class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs"
+                                    placeholder="0">
                             </div>
                         </div>
-                        
-                        <!-- Pack Size (Condizionale) -->
-                        <div id="div-inv-packsize" class="hidden">
-                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Pezzi per Pacco</label>
-                            <input type="number" id="inp-inv-packsize" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs" placeholder="Es. 12">
-                        </div>
-                        
-                        <!-- Modifica Quantità Admin -->
-                         <div>
-                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Quantità Disponibile (Rettifica)</label>
-                            <input type="number" step="0.01" id="inp-inv-qty" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs" placeholder="Quantità attuale">
+
+                        <!-- Email Responsabile Riordino -->
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Email Responsabile
+                                Riordino</label>
+                            <input type="email" id="inp-inv-restock-email"
+                                class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs"
+                                placeholder="email@esempio.com (alert scorta bassa)">
                         </div>
 
-                        <input type="text" id="inp-inv-loc" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs" placeholder="Posizione (es. Armadio A)">
-                        <button type="submit" class="w-full py-2 bg-slate-800 text-white rounded-lg font-bold text-xs">SALVA ARTICOLO</button>
+                        <!-- Pack Size (Condizionale) -->
+                        <div id="div-inv-packsize" class="hidden">
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Pezzi per
+                                Pacco</label>
+                            <input type="number" id="inp-inv-packsize"
+                                class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs"
+                                placeholder="Es. 12">
+                        </div>
+
+                        <!-- Modifica Quantità Admin -->
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Quantità
+                                Disponibile
+                                (Rettifica)</label>
+                            <input type="number" step="0.01" id="inp-inv-qty"
+                                class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs"
+                                placeholder="Quantità attuale">
+                        </div>
+
+                        <input type="text" id="inp-inv-loc"
+                            class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs"
+                            placeholder="Posizione (es. Armadio A)">
+                        <button type="submit"
+                            class="w-full py-2 bg-slate-800 text-white rounded-lg font-bold text-xs">SALVA
+                            ARTICOLO</button>
                     </form>
                 </div>
-                
+
                 <h3 class="text-xs font-bold text-slate-500 uppercase px-1">Giacenze Attuali</h3>
                 <div id="inventory-list" class="space-y-2"></div>
             </div>
@@ -321,18 +478,31 @@
             <div id="admin-content-instruments" class="hidden space-y-4">
                 <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm relative">
                     <div class="flex justify-between items-center mb-3">
-                        <h3 class="text-sm font-bold text-slate-700 flex items-center gap-2"><i data-lucide="settings-2" class="w-4 h-4"></i> Configura</h3>
-                        <button onclick="clearInstrumentForm()" class="text-[10px] text-indigo-600 font-bold hover:underline">NUOVO</button>
+                        <h3 class="text-sm font-bold text-slate-700 flex items-center gap-2"><i data-lucide="settings-2"
+                                class="w-4 h-4"></i> Configura</h3>
+                        <button onclick="clearInstrumentForm()"
+                            class="text-[10px] text-indigo-600 font-bold hover:underline">NUOVO</button>
                     </div>
                     <form onsubmit="saveInstrument(event)" class="space-y-3">
-                        <input type="text" id="inp-inst-id" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-mono" placeholder="ID Strumento">
-                        <input type="text" id="inp-inst-desc" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs" placeholder="Nome Strumento">
-                        <input type="text" id="inp-inst-contact" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs" placeholder="Referente">
-                        <div class="flex items-center gap-2"><input type="checkbox" id="inp-inst-bookable" checked> <label class="text-xs">Prenotabile</label></div>
-                        <button type="submit" class="w-full py-2 bg-indigo-600 text-white rounded-lg font-bold text-xs">SALVA</button>
+                        <input type="text" id="inp-inst-id" required
+                            class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-mono"
+                            placeholder="ID Strumento">
+                        <input type="text" id="inp-inst-desc" required
+                            class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs"
+                            placeholder="Nome Strumento">
+                        <input type="text" id="inp-inst-contact"
+                            class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs"
+                            placeholder="Referente">
+                        <div class="flex items-center gap-2"><input type="checkbox" id="inp-inst-bookable" checked>
+                            <label class="text-xs">Prenotabile</label>
+                        </div>
+                        <button type="submit"
+                            class="w-full py-2 bg-indigo-600 text-white rounded-lg font-bold text-xs">SALVA</button>
                     </form>
                 </div>
-                <button onclick="printLabels()" class="text-xs bg-slate-800 text-white px-3 py-2 rounded w-full flex items-center justify-center gap-2"><i data-lucide="printer" class="w-3 h-3"></i> STAMPA QR STRUMENTI</button>
+                <button onclick="printLabels()"
+                    class="text-xs bg-slate-800 text-white px-3 py-2 rounded w-full flex items-center justify-center gap-2"><i
+                        data-lucide="printer" class="w-3 h-3"></i> STAMPA QR STRUMENTI</button>
                 <div id="instruments-list" class="space-y-2 mt-2"></div>
             </div>
 
@@ -340,13 +510,19 @@
             <div id="admin-content-settings" class="hidden space-y-4">
                 <div class="bg-amber-50 p-4 rounded-xl border border-amber-200 shadow-sm">
                     <h3 class="text-sm font-bold text-amber-800 mb-2">Manutenzione</h3>
-                    <div class="flex items-center gap-2 mb-2"><input type="checkbox" id="inp-maint-active"> <label class="text-xs font-bold">Attiva Manutenzione</label></div>
-                    <input type="text" id="inp-maint-name" class="w-full mb-2 text-xs p-2 border rounded" placeholder="Nome Referente">
-                    <input type="email" id="inp-maint-email" class="w-full mb-2 text-xs p-2 border rounded" placeholder="Email">
-                    <button onclick="saveGlobalSettings()" class="w-full py-2 bg-amber-600 text-white rounded text-xs font-bold">AGGIORNA</button>
+                    <div class="flex items-center gap-2 mb-2"><input type="checkbox" id="inp-maint-active"> <label
+                            class="text-xs font-bold">Attiva Manutenzione</label></div>
+                    <input type="text" id="inp-maint-name" class="w-full mb-2 text-xs p-2 border rounded"
+                        placeholder="Nome Referente">
+                    <input type="email" id="inp-maint-email" class="w-full mb-2 text-xs p-2 border rounded"
+                        placeholder="Email">
+                    <button onclick="saveGlobalSettings()"
+                        class="w-full py-2 bg-amber-600 text-white rounded text-xs font-bold">AGGIORNA</button>
                 </div>
                 <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-200 shadow-sm text-center">
-                    <a href="?mode=totem" target="_blank" class="block w-full py-2 bg-indigo-600 text-white rounded font-bold text-xs">APRI DASHBOARD TOTEM</a>
+                    <a href="?mode=totem" target="_blank"
+                        class="block w-full py-2 bg-indigo-600 text-white rounded font-bold text-xs">APRI DASHBOARD
+                        TOTEM</a>
                 </div>
             </div>
         </div>
@@ -354,156 +530,382 @@
         <!-- VISTA 5: RICERCA -->
         <div id="view-my-booking" class="hidden fade-in flex flex-col items-center justify-center py-10 space-y-4">
             <h2 class="text-lg font-bold text-slate-800">Gestione Prenotazione</h2>
-            <input type="text" id="inp-pnr-search" placeholder="Codice PNR" class="w-full max-w-xs text-center text-xl font-mono uppercase px-4 py-3 border-2 border-slate-200 rounded-xl">
-            <button onclick="searchBookingByPNR()" class="w-full max-w-xs py-3 bg-emerald-600 text-white rounded-xl font-bold shadow-lg">CERCA</button>
+            <input type="text" id="inp-pnr-search" placeholder="Codice PNR"
+                class="w-full max-w-xs text-center text-xl font-mono uppercase px-4 py-3 border-2 border-slate-200 rounded-xl">
+            <button onclick="searchBookingByPNR()"
+                class="w-full max-w-xs py-3 bg-emerald-600 text-white rounded-xl font-bold shadow-lg">CERCA</button>
             <div id="pnr-result" class="w-full max-w-xs mt-6"></div>
         </div>
 
     </main>
 
     <!-- MODALE MOVIMENTO MAGAZZINO (Nuovo) -->
-    <div id="modal-stock" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+    <div id="modal-stock"
+        class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
         <div class="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl">
             <h3 id="stock-modal-title" class="text-lg font-bold text-slate-800 mb-4">Movimento</h3>
             <form onsubmit="confirmStockMovement(event)" class="space-y-4">
                 <div>
-                    <label class="block text-xs font-bold text-slate-500 mb-1">Quantità (<span id="stock-modal-unit">pz</span>)</label>
-                    <input type="number" step="0.01" id="inp-stock-qty" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-2xl font-mono font-bold text-center" placeholder="0">
+                    <label class="block text-xs font-bold text-slate-500 mb-1">Quantità (<span
+                            id="stock-modal-unit">pz</span>)</label>
+                    <input type="number" step="0.01" id="inp-stock-qty" required
+                        class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-2xl font-mono font-bold text-center"
+                        placeholder="0">
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-slate-500 mb-1">Identificativo Operatore (Opzionale)</label>
-                    <input type="text" id="inp-stock-user-id" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm" placeholder="Nome, PI o Codice...">
+                    <label class="block text-xs font-bold text-slate-500 mb-1">Identificativo Operatore
+                        (Opzionale)</label>
+                    <input type="text" id="inp-stock-user-id"
+                        class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm"
+                        placeholder="Nome, PI o Codice...">
                 </div>
                 <!-- Checkbox rimozione stato ordine (visibile solo se articolo ordinato e azione add) -->
-                <div id="div-remove-order" class="hidden flex items-center gap-2 bg-amber-50 p-2 rounded border border-amber-200">
+                <div id="div-remove-order"
+                    class="hidden flex items-center gap-2 bg-amber-50 p-2 rounded border border-amber-200">
                     <input type="checkbox" id="inp-remove-order" checked class="h-4 w-4 text-amber-600 rounded">
-                    <label for="inp-remove-order" class="text-xs font-bold text-amber-800">Merce arrivata: rimuovi stato "Ordinato"</label>
+                    <label for="inp-remove-order" class="text-xs font-bold text-amber-800">Merce arrivata: rimuovi stato
+                        "Ordinato"</label>
                 </div>
-                <button type="submit" class="w-full py-3 bg-slate-800 text-white rounded-xl font-bold shadow-lg">CONFERMA</button>
-                <button type="button" onclick="document.getElementById('modal-stock').classList.add('hidden')" class="w-full py-2 text-slate-400 text-xs font-bold">ANNULLA</button>
+                <button type="submit"
+                    class="w-full py-3 bg-slate-800 text-white rounded-xl font-bold shadow-lg">CONFERMA</button>
+                <button type="button" onclick="document.getElementById('modal-stock').classList.add('hidden')"
+                    class="w-full py-2 text-slate-400 text-xs font-bold">ANNULLA</button>
             </form>
         </div>
     </div>
 
     <!-- MODALE ORDINE MAGAZZINO (Nuovo) -->
-    <div id="modal-order" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+    <div id="modal-order"
+        class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
         <div class="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl">
             <h3 class="text-lg font-bold text-slate-800 mb-4">Segna come Ordinato</h3>
             <form onsubmit="confirmOrder(event)" class="space-y-4">
                 <div>
                     <label class="block text-xs font-bold text-slate-500 mb-1">Ordinato da (Nome)</label>
-                    <input type="text" id="inp-order-by" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm" placeholder="Nome...">
+                    <input type="text" id="inp-order-by" required
+                        class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm"
+                        placeholder="Nome...">
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-slate-500 mb-1">Data Ordine</label>
-                    <input type="date" id="inp-order-date" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+                    <input type="date" id="inp-order-date" required
+                        class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm">
                 </div>
-                <button type="submit" class="w-full py-3 bg-amber-500 text-white rounded-xl font-bold shadow-lg">CONFERMA ORDINE</button>
-                <button type="button" onclick="document.getElementById('modal-order').classList.add('hidden')" class="w-full py-2 text-slate-400 text-xs font-bold">ANNULLA</button>
+                <button type="submit"
+                    class="w-full py-3 bg-amber-500 text-white rounded-xl font-bold shadow-lg">CONFERMA ORDINE</button>
+                <button type="button" onclick="document.getElementById('modal-order').classList.add('hidden')"
+                    class="w-full py-2 text-slate-400 text-xs font-bold">ANNULLA</button>
             </form>
         </div>
     </div>
 
     <!-- MODALE PRENOTAZIONE -->
-    <div id="modal-booking" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-end sm:items-center justify-center p-4">
+    <div id="modal-booking"
+        class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-end sm:items-center justify-center p-4">
         <div class="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl flex flex-col max-h-[90vh]">
-            <div class="flex justify-between items-center mb-4"><h3 class="text-lg font-bold">Prenotazione</h3><button onclick="hideBookingForm()" class="p-2"><i data-lucide="x" class="w-4 h-4"></i></button></div>
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold">Prenotazione</h3><button onclick="hideBookingForm()" class="p-2"><i
+                        data-lucide="x" class="w-4 h-4"></i></button>
+            </div>
             <form id="booking-form" onsubmit="handleBooking(event)" class="space-y-3 flex-1 overflow-y-auto">
                 <input type="text" id="inp-name" required class="w-full p-2 border rounded text-sm" placeholder="Nome">
-                <select id="inp-reason" class="w-full p-2 border rounded text-sm"><option>Manutenzione</option><option>Ricerca</option><option>Altro</option></select>
-                <div class="grid grid-cols-2 gap-2"><input type="datetime-local" id="inp-start" required class="border rounded p-2 text-xs"><input type="datetime-local" id="inp-end" required class="border rounded p-2 text-xs"></div>
-                <button type="submit" class="w-full py-3 bg-indigo-600 text-white rounded font-bold text-sm">CONFERMA</button>
+                <input type="email" id="inp-booking-email" class="w-full p-2 border rounded text-sm"
+                    placeholder="Email per promemoria (opzionale)">
+                <select id="inp-reason" class="w-full p-2 border rounded text-sm">
+                    <option>Manutenzione</option>
+                    <option>Ricerca</option>
+                    <option>Altro</option>
+                </select>
+                <div class="grid grid-cols-2 gap-2"><input type="datetime-local" id="inp-start" required
+                        class="border rounded p-2 text-xs"><input type="datetime-local" id="inp-end" required
+                        class="border rounded p-2 text-xs"></div>
+                <button type="submit"
+                    class="w-full py-3 bg-indigo-600 text-white rounded font-bold text-sm">CONFERMA</button>
             </form>
             <div class="mt-4 pt-4 border-t border-slate-100 bg-slate-50 -mx-6 -mb-6 p-4 rounded-b-3xl">
-                <p class="text-[10px] font-bold text-slate-700 uppercase">Referente: <span id="booking-contact-info" class="font-normal">---</span></p>
+                <p class="text-[10px] font-bold text-slate-700 uppercase">Referente: <span id="booking-contact-info"
+                        class="font-normal">---</span></p>
             </div>
         </div>
     </div>
-    
+
     <!-- MODALE CALENDARIO -->
-    <div id="modal-calendar" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+    <div id="modal-calendar"
+        class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
         <div class="bg-white w-full max-w-sm rounded-3xl p-6 h-[80vh] flex flex-col">
-            <div class="flex justify-between mb-4"><h3 class="text-lg font-bold">Calendario</h3><button onclick="document.getElementById('modal-calendar').classList.add('hidden')"><i data-lucide="x" class="w-4 h-4"></i></button></div>
-            <div id="calendar-admin-actions" class="hidden mb-2"><button onclick="document.getElementById('modal-calendar').classList.add('hidden'); showBookingForm()" class="w-full py-2 bg-indigo-600 text-white rounded text-xs font-bold">NUOVA PRENOTAZIONE (ADMIN)</button></div>
+            <div class="flex justify-between mb-4">
+                <h3 class="text-lg font-bold">Calendario</h3><button
+                    onclick="document.getElementById('modal-calendar').classList.add('hidden')"><i data-lucide="x"
+                        class="w-4 h-4"></i></button>
+            </div>
+            <div id="calendar-admin-actions" class="hidden mb-2"><button
+                    onclick="document.getElementById('modal-calendar').classList.add('hidden'); showBookingForm()"
+                    class="w-full py-2 bg-indigo-600 text-white rounded text-xs font-bold">NUOVA PRENOTAZIONE
+                    (ADMIN)</button></div>
             <div id="calendar-container" class="flex-1 overflow-y-auto"></div>
         </div>
     </div>
 
     <!-- MODALE TOTEM -->
     <div id="view-totem" class="hidden fixed inset-0 bg-slate-900 text-white z-[200] p-6 flex flex-col">
-        <div class="flex justify-between border-b border-slate-700 pb-4 mb-6"><h1 class="text-3xl font-black">UNISCAN LIVE</h1><div class="text-right"><div id="totem-clock" class="text-3xl font-mono">00:00</div></div></div>
-        <div class="flex gap-8 flex-1 overflow-hidden"><div class="w-1/2"><h2 class="text-emerald-400 font-bold mb-4">IN CORSO</h2><div id="totem-active-list" class="space-y-4"></div></div><div class="w-1/2 border-l border-slate-700 pl-8"><h2 class="text-indigo-400 font-bold mb-4">PROSSIME</h2><div id="totem-upcoming-list" class="space-y-4"></div></div></div>
+        <div class="flex justify-between border-b border-slate-700 pb-4 mb-6">
+            <h1 class="text-3xl font-black">UNISCAN LIVE</h1>
+            <div class="text-right">
+                <div id="totem-clock" class="text-3xl font-mono">00:00</div>
+            </div>
+        </div>
+        <div class="flex gap-8 flex-1 overflow-hidden">
+            <div class="w-1/2">
+                <h2 class="text-emerald-400 font-bold mb-4">IN CORSO</h2>
+                <div id="totem-active-list" class="space-y-4"></div>
+            </div>
+            <div class="w-1/2 border-l border-slate-700 pl-8">
+                <h2 class="text-indigo-400 font-bold mb-4">PROSSIME</h2>
+                <div id="totem-upcoming-list" class="space-y-4"></div>
+            </div>
+        </div>
         <!-- Totem Footer Stock Alert (Nuovo) -->
         <div id="totem-stock-alerts" class="mt-4 pt-4 border-t border-slate-700 h-16 overflow-hidden relative">
-            <div class="absolute flex gap-8 animate-marquee whitespace-nowrap text-red-400 text-sm font-bold uppercase tracking-widest">
+            <div
+                class="absolute flex gap-8 animate-marquee whitespace-nowrap text-red-400 text-sm font-bold uppercase tracking-widest">
                 <!-- Stock alerts injected here -->
             </div>
         </div>
     </div>
 
     <!-- AREA STAMPA -->
-    <div id="print-area" class="hidden bg-white p-5"><h1 class="text-center font-bold text-xl mb-4">QR CODE</h1><div id="print-grid" class="label-grid"></div><div class="no-print text-center mt-10"><button onclick="document.getElementById('print-area').classList.add('hidden')" class="bg-red-500 text-white px-4 py-2 rounded">CHIUDI</button></div></div>
+    <!-- MODALE ADMIN PRENOTAZIONE -->
+    <div id="modal-admin-booking"
+        class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-end sm:items-center justify-center p-4">
+        <div class="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl flex flex-col max-h-[90vh]">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold">Nuova Prenotazione (Admin)</h3><button onclick="closeAdminBookingModal()"
+                    class="p-2"><i data-lucide="x" class="w-4 h-4"></i></button>
+            </div>
+            <form id="admin-booking-form" onsubmit="handleAdminBooking(event)" class="space-y-3 flex-1 overflow-y-auto">
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Strumento</label>
+                    <select id="inp-admin-instrument" required class="w-full p-2 border rounded text-sm">
+                        <option value="" disabled selected>Seleziona strumento...</option>
+                    </select>
+                </div>
+                <input type="text" id="inp-admin-name" required class="w-full p-2 border rounded text-sm"
+                    placeholder="Nome utente">
+                <input type="email" id="inp-admin-booking-email" class="w-full p-2 border rounded text-sm"
+                    placeholder="Email per promemoria (opzionale)">
+                <select id="inp-admin-reason" class="w-full p-2 border rounded text-sm">
+                    <option>Manutenzione</option>
+                    <option>Ricerca</option>
+                    <option>Altro</option>
+                </select>
+                <div class="grid grid-cols-2 gap-2"><input type="datetime-local" id="inp-admin-start" required
+                        class="border rounded p-2 text-xs"><input type="datetime-local" id="inp-admin-end" required
+                        class="border rounded p-2 text-xs"></div>
+                <button type="submit"
+                    class="w-full py-3 bg-indigo-600 text-white rounded font-bold text-sm">CONFERMA</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- LOGIN OVERLAY -->
+    <div id="view-login" class="hidden fixed inset-0 bg-slate-900 z-[300] flex items-center justify-center p-6">
+        <div class="bg-white w-full max-w-sm rounded-3xl p-8 shadow-2xl">
+            <div class="text-center mb-6">
+                <h1 class="text-2xl font-black text-slate-800 flex items-center justify-center gap-2"><i
+                        data-lucide="scan-line" class="w-6 h-6 text-indigo-600"></i> UNISCAN</h1>
+                <p class="text-slate-400 text-xs uppercase tracking-widest mt-1">Lab & Stock v5.0</p>
+            </div>
+            <div id="login-form-container">
+                <div class="space-y-3">
+                    <input type="email" id="inp-login-email"
+                        class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm"
+                        placeholder="Email">
+                    <input type="password" id="inp-login-password"
+                        class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm"
+                        placeholder="Password">
+                    <button onclick="loginWithEmail()"
+                        class="w-full py-3 bg-indigo-600 text-white rounded-xl font-bold text-sm shadow-lg hover:bg-indigo-500 transition">ACCEDI</button>
+                    <button onclick="toggleRegisterMode()" id="btn-toggle-register"
+                        class="w-full py-2 text-indigo-600 text-xs font-bold hover:underline">Non hai un account?
+                        REGISTRATI</button>
+                </div>
+                <div class="relative my-4">
+                    <div class="absolute inset-0 flex items-center">
+                        <div class="w-full border-t border-slate-200"></div>
+                    </div>
+                    <div class="relative flex justify-center text-xs"><span
+                            class="bg-white px-2 text-slate-400">oppure</span></div>
+                </div>
+                <button onclick="loginWithGoogle()"
+                    class="w-full py-3 bg-white border-2 border-slate-200 text-slate-700 rounded-xl font-bold text-sm flex items-center justify-center gap-3 hover:border-indigo-300 transition shadow-sm">
+                    <svg class="w-5 h-5" viewBox="0 0 24 24">
+                        <path
+                            d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"
+                            fill="#4285F4" />
+                        <path
+                            d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                            fill="#34A853" />
+                        <path
+                            d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                            fill="#FBBC05" />
+                        <path
+                            d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                            fill="#EA4335" />
+                    </svg>
+                    Accedi con Google
+                </button>
+            </div>
+            <p id="login-error" class="hidden mt-3 text-xs text-red-500 font-bold text-center"></p>
+        </div>
+    </div>
+
+    <!-- AREA STAMPA -->
+    <div id="print-area" class="hidden bg-white p-5">
+        <h1 class="text-center font-bold text-xl mb-4">QR CODE</h1>
+        <div id="print-grid" class="label-grid"></div>
+        <div class="no-print text-center mt-10"><button
+                onclick="document.getElementById('print-area').classList.add('hidden')"
+                class="bg-red-500 text-white px-4 py-2 rounded">CHIUDI</button></div>
+    </div>
 
     <!-- OVERLAY MANUTENZIONE -->
-    <div id="view-maintenance" class="hidden fixed inset-0 bg-slate-50 z-[60] flex flex-col items-center justify-center p-6 text-center">
-        <div class="w-16 h-16 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mb-4"><i data-lucide="cone" class="w-8 h-8"></i></div>
+    <div id="view-maintenance"
+        class="hidden fixed inset-0 bg-slate-50 z-[60] flex flex-col items-center justify-center p-6 text-center">
+        <div class="w-16 h-16 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mb-4"><i
+                data-lucide="cone" class="w-8 h-8"></i></div>
         <h1 class="text-2xl font-black text-slate-800">Manutenzione</h1>
         <p class="text-slate-500 text-sm mb-4">Contattare: <span id="maint-ref-name" class="font-bold"></span></p>
-        <button onclick="showAdminLogin()" class="text-xs text-slate-400 font-bold flex gap-1"><i data-lucide="lock" class="w-3 h-3"></i> ADMIN</button>
+        <button onclick="showAdminLogin()" class="text-xs text-slate-400 font-bold flex gap-1"><i data-lucide="lock"
+                class="w-3 h-3"></i> ADMIN</button>
     </div>
 
     <!-- LOGICA APP -->
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-        import { getAuth, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
         import { getFirestore, collection, addDoc, query, where, orderBy, onSnapshot, serverTimestamp, deleteDoc, doc, updateDoc, setDoc, getDoc, runTransaction } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 
         // --- INSERISCI QUI LA TUA CONFIGURAZIONE FIREBASE ---
         const firebaseConfig = {
-          apiKey: "AIzaSyAWbSxLJcDbB0bvd4HoMii3Z5CavR8vR-I",
-          authDomain: "unisca-lab.firebaseapp.com",
-          projectId: "unisca-lab",
-          storageBucket: "unisca-lab.firebasestorage.app",
-          messagingSenderId: "775803411857",
-          appId: "1:775803411857:web:1a24be42a1c70482ad8e30",
-          measurementId: "G-3ECHHPDZJZ"
+            apiKey: "AIzaSyAWbSxLJcDbB0bvd4HoMii3Z5CavR8vR-I",
+            authDomain: "unisca-lab.firebaseapp.com",
+            projectId: "unisca-lab",
+            storageBucket: "unisca-lab.firebasestorage.app",
+            messagingSenderId: "775803411857",
+            appId: "1:775803411857:web:1a24be42a1c70482ad8e30",
+            measurementId: "G-3ECHHPDZJZ"
         };
         const appId = 'unisca-lab-v1';
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
+        const googleProvider = new GoogleAuthProvider();
+
+        // --- EMAILJS CONFIG (Replace with your actual IDs) ---
+        const EMAILJS_PUBLIC_KEY = 'YOUR_EMAILJS_PUBLIC_KEY';
+        const EMAILJS_SERVICE_ID = 'YOUR_EMAILJS_SERVICE_ID';
+        const EMAILJS_RESTOCK_TEMPLATE_ID = 'YOUR_RESTOCK_TEMPLATE_ID';
+        const EMAILJS_BOOKING_REMINDER_TEMPLATE_ID = 'YOUR_BOOKING_REMINDER_TEMPLATE_ID';
+        try { emailjs.init(EMAILJS_PUBLIC_KEY); } catch (e) { console.warn('EmailJS init failed:', e); }
 
         let currentUser = null;
-        let currentItem = null; 
+        let currentItem = null;
+        let currentItemName = null;
         let html5QrCode = null;
         let adminMode = false;
+        let isAdmin = false;
+        let isRegisterMode = false;
         let editingBookingId = null;
-        let currentStockAction = null; 
-        
+        let currentStockAction = null;
+
         window.currentFoundBooking = null;
         window.currentInstrumentData = {};
         window.calendarBookingsCache = [];
         window.adminBookingsCache = [];
-        window.allInstrumentsCache = []; 
-        window.allInventoryCache = []; 
-        window.currentInventoryData = {}; 
-        window.resourcesCache = []; // Cache for smart search of instruments
+        window.allInstrumentsCache = [];
+        window.allInventoryCache = [];
+        window.currentInventoryData = {};
+        window.resourcesCache = [];
 
         // AUTH
-        onAuthStateChanged(auth, (user) => {
+        onAuthStateChanged(auth, async (user) => {
             if (user) {
                 currentUser = user;
+                document.getElementById('view-login').classList.add('hidden');
                 document.getElementById('user-status').classList.remove('bg-red-500', 'animate-pulse');
                 document.getElementById('user-status').classList.add('bg-green-500');
+                document.getElementById('btn-logout').classList.remove('hidden');
+                const displayName = user.displayName || user.email || user.uid.slice(0, 8);
+                const nameEl = document.getElementById('user-display-name');
+                nameEl.innerText = displayName;
+                nameEl.classList.remove('hidden');
+                // Check if user is admin
+                try {
+                    const adminSnap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'admins'));
+                    if (adminSnap.exists()) {
+                        const adminEmails = adminSnap.data().emails || [];
+                        isAdmin = adminEmails.includes(user.email);
+                    }
+                } catch (e) { console.warn('Admin check failed:', e); }
                 loadGlobalSettings();
-                loadPublicInventory(); 
-                loadResourcesCache(); // New: Load instruments for smart search
-                checkUrlParams(); 
+                loadPublicInventory();
+                loadResourcesCache();
+                checkUrlParams();
+                // Start booking reminder check
+                checkBookingReminders();
+                setInterval(checkBookingReminders, 60 * 60 * 1000); // Check every hour
             } else {
-                signInAnonymously(auth).catch(console.error);
+                document.getElementById('view-login').classList.remove('hidden');
+                document.getElementById('btn-logout').classList.add('hidden');
+                document.getElementById('user-display-name').classList.add('hidden');
             }
         });
+
+        // --- AUTH FUNCTIONS ---
+        window.loginWithEmail = async () => {
+            const email = document.getElementById('inp-login-email').value.trim();
+            const password = document.getElementById('inp-login-password').value;
+            const errorEl = document.getElementById('login-error');
+            errorEl.classList.add('hidden');
+            if (!email || !password) { errorEl.innerText = 'Inserisci email e password.'; errorEl.classList.remove('hidden'); return; }
+            try {
+                if (isRegisterMode) {
+                    await createUserWithEmailAndPassword(auth, email, password);
+                } else {
+                    await signInWithEmailAndPassword(auth, email, password);
+                }
+            } catch (e) {
+                let msg = 'Errore di autenticazione.';
+                if (e.code === 'auth/user-not-found' || e.code === 'auth/invalid-credential') msg = 'Credenziali non valide.';
+                else if (e.code === 'auth/email-already-in-use') msg = 'Email già registrata.';
+                else if (e.code === 'auth/weak-password') msg = 'Password troppo debole (min 6 caratteri).';
+                else if (e.code === 'auth/invalid-email') msg = 'Email non valida.';
+                errorEl.innerText = msg;
+                errorEl.classList.remove('hidden');
+            }
+        };
+        window.loginWithGoogle = async () => {
+            try { await signInWithPopup(auth, googleProvider); }
+            catch (e) {
+                const errorEl = document.getElementById('login-error');
+                errorEl.innerText = 'Errore Google Sign-In: ' + e.message;
+                errorEl.classList.remove('hidden');
+            }
+        };
+        window.logoutUser = async () => {
+            if (confirm('Sei sicuro di voler uscire?')) {
+                adminMode = false;
+                isAdmin = false;
+                await signOut(auth);
+            }
+        };
+        window.toggleRegisterMode = () => {
+            isRegisterMode = !isRegisterMode;
+            const btn = document.getElementById('btn-toggle-register');
+            btn.innerText = isRegisterMode ? 'Hai già un account? ACCEDI' : 'Non hai un account? REGISTRATI';
+            document.querySelector('#login-form-container .space-y-3 button:first-of-type').innerText = isRegisterMode ? 'REGISTRATI' : 'ACCEDI';
+        };
 
         // --- HELPER LOADERS ---
         function loadResourcesCache() {
@@ -525,12 +927,12 @@
             categories.add("Vetreria");
             categories.add("DPI");
             categories.add("Cancelleria");
-            
+
             const select = document.getElementById('inp-inv-category');
             select.innerHTML = '<option value="" disabled selected>Seleziona Categoria...</option>';
-            
+
             Array.from(categories).sort().forEach(cat => {
-                 select.innerHTML += `<option value="${cat}">${cat}</option>`;
+                select.innerHTML += `<option value="${cat}">${cat}</option>`;
             });
             select.innerHTML += `<option value="new">+ Nuova Categoria...</option>`;
         }
@@ -539,38 +941,38 @@
         const onScanSuccess = (decodedText) => {
             stopScanner();
             let finalCode = decodedText;
-            if(decodedText.includes("?r=")) {
+            if (decodedText.includes("?r=")) {
                 try {
                     const url = new URL(decodedText);
                     const p = new URLSearchParams(url.search);
-                    if(p.get('r')) finalCode = p.get('r');
-                } catch(e){}
+                    if (p.get('r')) finalCode = p.get('r');
+                } catch (e) { }
             }
             handleScannedCode(finalCode);
         };
         // MAKE GLOBAL FOR CLICK EVENTS
-        window.handleScannedCode = async function(code) {
+        window.handleScannedCode = async function (code) {
             currentItem = code;
-            
+
             // 1. Cerca nei Tools (Exact ID)
-            const toolRef = doc(db, 'artifacts', appId, 'public', 'data', 'resources', code.replace(/\//g,'_'));
+            const toolRef = doc(db, 'artifacts', appId, 'public', 'data', 'resources', code.replace(/\//g, '_'));
             const toolSnap = await getDoc(toolRef);
             if (toolSnap.exists()) {
-                showDetails(code); 
+                showDetails(code);
                 return;
             }
 
             // 2. Cerca nel Magazzino (Exact ID)
-            const invRef = doc(db, 'artifacts', appId, 'public', 'data', 'inventory', code.replace(/\//g,'_'));
+            const invRef = doc(db, 'artifacts', appId, 'public', 'data', 'inventory', code.replace(/\//g, '_'));
             const invSnap = await getDoc(invRef);
             if (invSnap.exists()) {
-                showInventoryView(code, invSnap.data()); 
+                showInventoryView(code, invSnap.data());
                 return;
             }
 
             // 3. Sconosciuto
             if (adminMode) {
-                if(confirm(`Codice "${code}" non trovato.\n\nCreare come articolo di MAGAZZINO?\n(OK = Magazzino, Annulla = Strumento)`)) {
+                if (confirm(`Codice "${code}" non trovato.\n\nCreare come articolo di MAGAZZINO?\n(OK = Magazzino, Annulla = Strumento)`)) {
                     switchAdminTab('inventory');
                     document.getElementById('inp-inv-id').value = code;
                     window.switchView('view-admin');
@@ -594,7 +996,7 @@
             document.getElementById('inv-item-brand').innerText = data.brand || "---";
             document.getElementById('inv-item-threshold').innerText = data.threshold || 0;
             document.getElementById('inv-item-category-view').innerText = data.category || "---";
-            
+
             // Set Image
             const imgEl = document.getElementById('inv-item-img-display');
             if (data.image) {
@@ -604,7 +1006,7 @@
                 imgEl.src = '';
                 imgEl.classList.add('hidden');
             }
-            
+
             let unitLabel = data.unit || "pz";
             if (data.unit === 'pacco') {
                 document.getElementById('inv-item-unit').innerText = "pacchi";
@@ -617,7 +1019,7 @@
             }
 
             document.getElementById('inv-item-loc').innerHTML = `<i data-lucide="map-pin" class="w-3 h-3"></i> ${data.location || "N/D"}`;
-            
+
             const qtyEl = document.getElementById('inv-item-qty');
             const alertEl = document.getElementById('inv-alert-restock');
             if (data.quantity <= (data.threshold || 0)) {
@@ -627,9 +1029,9 @@
                 qtyEl.classList.replace('text-red-400', 'text-white');
                 alertEl.classList.add('hidden');
             }
-            
+
             // Show Order Status Banner
-            if(data.isOrdered) {
+            if (data.isOrdered) {
                 document.getElementById('inv-alert-ordered').classList.remove('hidden');
                 document.getElementById('inv-ordered-text').innerText = `Ordinato il ${data.orderDate || '?'} da ${data.orderBy || '?'}`;
             } else {
@@ -643,35 +1045,35 @@
             currentStockAction = action;
             const title = action === 'add' ? "Rifornimento (+)" : "Prelievo (-)";
             const unit = window.currentInventoryData.unit === 'pacco' ? 'pacchi' : window.currentInventoryData.unit;
-            
+
             document.getElementById('stock-modal-title').innerText = title;
             document.getElementById('stock-modal-unit').innerText = unit;
             document.getElementById('inp-stock-qty').value = '';
             document.getElementById('inp-stock-user-id').value = ''; // Reset user ID
-            
+
             // Gestione Checkbox rimuovi ordine
             if (action === 'add' && window.currentInventoryData.isOrdered) {
                 document.getElementById('div-remove-order').classList.remove('hidden');
             } else {
                 document.getElementById('div-remove-order').classList.add('hidden');
             }
-            
+
             document.getElementById('modal-stock').classList.remove('hidden');
             document.getElementById('inp-stock-qty').focus();
         };
-        
+
         window.openOrderModal = () => {
             document.getElementById('inp-order-by').value = '';
             document.getElementById('inp-order-date').valueAsDate = new Date();
             document.getElementById('modal-order').classList.remove('hidden');
         };
-        
+
         window.confirmOrder = async (e) => {
             e.preventDefault();
             const by = document.getElementById('inp-order-by').value;
             const date = document.getElementById('inp-order-date').value;
-            const safeId = currentItem.replace(/\//g,'_');
-            
+            const safeId = currentItem.replace(/\//g, '_');
+
             try {
                 await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'inventory', safeId), {
                     isOrdered: true,
@@ -683,7 +1085,7 @@
                 // Refresh view
                 const snap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'inventory', safeId));
                 showInventoryView(currentItem, snap.data());
-            } catch(e) { alert(e); }
+            } catch (e) { alert(e); }
         };
 
         window.confirmStockMovement = async (e) => {
@@ -693,33 +1095,33 @@
             const operatorName = document.getElementById('inp-stock-user-id').value.trim();
             const removeOrder = document.getElementById('inp-remove-order').checked;
 
-            const safeId = currentItem.replace(/\//g,'_');
+            const safeId = currentItem.replace(/\//g, '_');
             const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'inventory', safeId);
-            
+
             try {
                 await runTransaction(db, async (transaction) => {
                     const sfDoc = await transaction.get(docRef);
                     if (!sfDoc.exists()) throw "Non trovato!";
-                    
+
                     const currentQty = parseFloat(sfDoc.data().quantity || 0);
                     let newQty = currentQty;
                     let updates = {};
-                    
+
                     if (currentStockAction === 'add') {
-                         newQty += qty;
-                         if (removeOrder && sfDoc.data().isOrdered) {
-                             updates.isOrdered = false;
-                             updates.orderBy = null;
-                             updates.orderDate = null;
-                         }
+                        newQty += qty;
+                        if (removeOrder && sfDoc.data().isOrdered) {
+                            updates.isOrdered = false;
+                            updates.orderBy = null;
+                            updates.orderDate = null;
+                        }
                     } else {
                         if (currentQty < qty) throw "Quantità insufficiente!";
                         newQty -= qty;
                     }
-                    
+
                     updates.quantity = newQty;
                     transaction.update(docRef, updates);
-                    
+
                     const movementRef = doc(collection(db, 'artifacts', appId, 'public', 'data', 'stock_movements'));
                     transaction.set(movementRef, {
                         itemId: currentItem,
@@ -735,25 +1137,41 @@
 
                 document.getElementById('modal-stock').classList.add('hidden');
                 const updatedSnap = await getDoc(docRef);
-                showInventoryView(currentItem, updatedSnap.data());
-                
+                const updatedData = updatedSnap.data();
+                showInventoryView(currentItem, updatedData);
+
+                // --- RESTOCK ALERT EMAIL ---
+                if (updatedData.quantity <= (updatedData.threshold || 0) && updatedData.restockEmail) {
+                    try {
+                        await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_RESTOCK_TEMPLATE_ID, {
+                            to_email: updatedData.restockEmail,
+                            product_name: updatedData.name,
+                            current_qty: updatedData.quantity,
+                            threshold: updatedData.threshold,
+                            unit: updatedData.unit === 'pacco' ? 'pacchi' : (updatedData.unit || 'pz'),
+                            from_name: 'UniScan Lab'
+                        });
+                        console.log('Restock alert email sent to', updatedData.restockEmail);
+                    } catch (emailErr) { console.warn('Restock email failed:', emailErr); }
+                }
+
             } catch (err) { alert("Errore: " + err); }
         };
 
         function loadStockHistory(itemId) {
             const listEl = document.getElementById('stock-history-list');
             listEl.innerHTML = '<p class="text-xs text-center text-slate-400">Caricamento...</p>';
-            
-            const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'stock_movements'), 
-                            where("itemId", "==", itemId)); 
-            
+
+            const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'stock_movements'),
+                where("itemId", "==", itemId));
+
             onSnapshot(q, (snapshot) => {
                 const moves = [];
                 snapshot.forEach(d => moves.push(d.data()));
-                moves.sort((a,b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+                moves.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
                 const recent = moves.slice(0, 5);
 
-                if(recent.length === 0) {
+                if (recent.length === 0) {
                     listEl.innerHTML = '<p class="text-xs italic text-slate-400 text-center">Nessun movimento recente.</p>';
                     return;
                 }
@@ -783,11 +1201,11 @@
         window.loadPublicInventory = () => {
             const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'inventory'));
             onSnapshot(q, (snapshot) => {
-                window.allInventoryCache = []; 
+                window.allInventoryCache = [];
                 snapshot.forEach(doc => window.allInventoryCache.push(doc.data()));
                 loadInventoryCategories(); // Update options for Admin form when cache updates
                 // If view is active, rerender
-                if(!document.getElementById('view-inventory-list').classList.contains('hidden')) {
+                if (!document.getElementById('view-inventory-list').classList.contains('hidden')) {
                     renderInventoryList(window.allInventoryCache, document.getElementById('public-inventory-container'), false);
                 }
             });
@@ -795,9 +1213,9 @@
 
         window.filterInventoryList = (term) => {
             term = term.toLowerCase();
-            const filtered = window.allInventoryCache.filter(i => 
-                i.name.toLowerCase().includes(term) || 
-                i.id.toLowerCase().includes(term) || 
+            const filtered = window.allInventoryCache.filter(i =>
+                i.name.toLowerCase().includes(term) ||
+                i.id.toLowerCase().includes(term) ||
                 (i.brand && i.brand.toLowerCase().includes(term)) ||
                 (i.category && i.category.toLowerCase().includes(term))
             );
@@ -807,21 +1225,21 @@
         }
 
         function renderInventoryList(items, container, isAdmin) {
-            if(items.length === 0) {
+            if (items.length === 0) {
                 container.innerHTML = '<p class="text-center text-xs text-slate-400">Nessun articolo trovato.</p>';
                 return;
             }
-            
+
             container.innerHTML = items.map(i => {
                 const isLow = (i.quantity || 0) <= (i.threshold || 0);
                 // clickAction logic: if admin view (Admin tab) -> edit, if public list view -> handleScannedCode (view details)
                 // Need to pass image param now
-                const clickAction = isAdmin 
-                    ? `editInventoryItem('${i.id}', '${i.name.replace(/'/g, "\\'")}', '${i.unit}', '${i.threshold}', '${(i.location||'').replace(/'/g, "\\'")}', '${i.packSize || ''}', '${(i.brand||'').replace(/'/g, "\\'")}', '${(i.category||'').replace(/'/g, "\\'")}', '${(i.image||'').replace(/'/g, "\\'")}', '${i.quantity}')` 
+                const clickAction = isAdmin
+                    ? `editInventoryItem('${i.id}', '${i.name.replace(/'/g, "\\'")}', '${i.unit}', '${i.threshold}', '${(i.location || '').replace(/'/g, "\\'")}', '${i.packSize || ''}', '${(i.brand || '').replace(/'/g, "\\'")}', '${(i.category || '').replace(/'/g, "\\'")}', '${(i.image || '').replace(/'/g, "\\'")}', '${i.quantity}', '${(i.restockEmail || '').replace(/'/g, "\\'")}')`
                     : `handleScannedCode('${i.id}')`;
-                
+
                 let quantityDisplay = `${i.quantity} <span class="text-[10px] text-slate-400">${i.unit}</span>`;
-                if(i.unit === 'pacco') {
+                if (i.unit === 'pacco') {
                     const total = (i.quantity || 0) * (i.packSize || 1);
                     quantityDisplay = `${i.quantity} pacchi <span class="block text-[9px] text-slate-400">(${total} pz tot)</span>`;
                 }
@@ -851,7 +1269,7 @@
         // --- ADMIN INVENTORY ---
         window.checkNewCategory = (select) => {
             const input = document.getElementById('inp-inv-category-new');
-            if(select.value === 'new') {
+            if (select.value === 'new') {
                 input.classList.remove('hidden');
                 input.required = true;
             } else {
@@ -864,8 +1282,8 @@
             const unit = document.getElementById('inp-inv-unit').value;
             const packDiv = document.getElementById('div-inv-packsize');
             const packInput = document.getElementById('inp-inv-packsize');
-            
-            if(unit === 'pacco') {
+
+            if (unit === 'pacco') {
                 packDiv.classList.remove('hidden');
                 packInput.required = true;
             } else {
@@ -884,21 +1302,21 @@
             const loc = document.getElementById('inp-inv-loc').value.trim();
             const image = document.getElementById('inp-inv-image').value.trim();
             const qtyInput = document.getElementById('inp-inv-qty');
-            
+
             let category = document.getElementById('inp-inv-category').value;
-            if(category === 'new') category = document.getElementById('inp-inv-category-new').value.trim();
+            if (category === 'new') category = document.getElementById('inp-inv-category-new').value.trim();
 
             let packSize = 1;
-            if(unit === 'pacco') {
+            if (unit === 'pacco') {
                 packSize = parseFloat(document.getElementById('inp-inv-packsize').value);
-                if(!packSize || packSize <= 0) return alert("Inserire numero pezzi per pacco.");
+                if (!packSize || packSize <= 0) return alert("Inserire numero pezzi per pacco.");
             }
 
-            if(!id || !name) return alert("Dati obbligatori.");
+            if (!id || !name) return alert("Dati obbligatori.");
 
             try {
-                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'inventory', id.replace(/\//g,'_'));
-                
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'inventory', id.replace(/\//g, '_'));
+
                 // Determine quantity: use admin input if valid number, else preserve/init
                 let finalQty = 0;
                 if (qtyInput.value !== "") {
@@ -908,71 +1326,74 @@
                     finalQty = snap.exists() ? snap.data().quantity : 0;
                 }
 
+                const restockEmail = document.getElementById('inp-inv-restock-email').value.trim();
                 await setDoc(docRef, {
-                    id, name, brand, unit, threshold, location: loc, quantity: finalQty, packSize: packSize, category: category || '', image: image || ''
+                    id, name, brand, unit, threshold, location: loc, quantity: finalQty, packSize: packSize, category: category || '', image: image || '', restockEmail: restockEmail || ''
                 });
                 alert("Articolo salvato!");
                 clearInventoryForm();
-            } catch(e) { alert(e.message); }
+            } catch (e) { alert(e.message); }
         };
-        
+
         window.deleteInventoryItem = async (id) => {
-            if(confirm("Sei sicuro di voler eliminare questo articolo dal magazzino?")) {
+            if (confirm("Sei sicuro di voler eliminare questo articolo dal magazzino?")) {
                 try {
-                    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'inventory', id.replace(/\//g,'_')));
-                } catch(e) { alert("Errore: " + e.message); }
+                    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'inventory', id.replace(/\//g, '_')));
+                } catch (e) { alert("Errore: " + e.message); }
             }
         };
-        
+
         window.clearInventoryForm = () => {
-             document.getElementById('inp-inv-id').value = '';
-             document.getElementById('inp-inv-name').value = '';
-             document.getElementById('inp-inv-brand').value = '';
-             document.getElementById('inp-inv-unit').value = 'pz';
-             document.getElementById('inp-inv-threshold').value = '';
-             document.getElementById('inp-inv-loc').value = '';
-             document.getElementById('inp-inv-packsize').value = '';
-             document.getElementById('inp-inv-category').value = '';
-             document.getElementById('inp-inv-image').value = '';
-             document.getElementById('inp-inv-qty').value = ''; // Clear qty
-             document.getElementById('inp-inv-category-new').classList.add('hidden');
-             togglePackSize();
-             document.getElementById('inp-inv-id').readOnly = false;
+            document.getElementById('inp-inv-id').value = '';
+            document.getElementById('inp-inv-name').value = '';
+            document.getElementById('inp-inv-brand').value = '';
+            document.getElementById('inp-inv-unit').value = 'pz';
+            document.getElementById('inp-inv-threshold').value = '';
+            document.getElementById('inp-inv-loc').value = '';
+            document.getElementById('inp-inv-packsize').value = '';
+            document.getElementById('inp-inv-category').value = '';
+            document.getElementById('inp-inv-image').value = '';
+            document.getElementById('inp-inv-qty').value = '';
+            document.getElementById('inp-inv-restock-email').value = '';
+            document.getElementById('inp-inv-category-new').classList.add('hidden');
+            togglePackSize();
+            document.getElementById('inp-inv-id').readOnly = false;
         }
-        
-        window.editInventoryItem = (id, name, unit, threshold, loc, packSize, brand, category, image, qty) => {
-             document.getElementById('inp-inv-id').value = id;
-             document.getElementById('inp-inv-name').value = name;
-             document.getElementById('inp-inv-brand').value = brand || '';
-             document.getElementById('inp-inv-unit').value = unit;
-             document.getElementById('inp-inv-threshold').value = threshold;
-             document.getElementById('inp-inv-loc').value = loc;
-             document.getElementById('inp-inv-image').value = image || '';
-             document.getElementById('inp-inv-qty').value = qty !== 'undefined' ? qty : 0; // Populate qty
-             
-             // Handle Category select
-             const catSelect = document.getElementById('inp-inv-category');
-             let catFound = false;
-             for (let i = 0; i < catSelect.options.length; i++) {
+
+        window.editInventoryItem = (id, name, unit, threshold, loc, packSize, brand, category, image, qty, restockEmail) => {
+            document.getElementById('inp-inv-id').value = id;
+            document.getElementById('inp-inv-name').value = name;
+            document.getElementById('inp-inv-brand').value = brand || '';
+            document.getElementById('inp-inv-unit').value = unit;
+            document.getElementById('inp-inv-threshold').value = threshold;
+            document.getElementById('inp-inv-loc').value = loc;
+            document.getElementById('inp-inv-image').value = image || '';
+            document.getElementById('inp-inv-qty').value = qty !== 'undefined' ? qty : 0;
+            document.getElementById('inp-inv-restock-email').value = restockEmail || '';
+
+            // Handle Category select
+            const catSelect = document.getElementById('inp-inv-category');
+            let catFound = false;
+            for (let i = 0; i < catSelect.options.length; i++) {
                 if (catSelect.options[i].value === category) {
                     catSelect.selectedIndex = i;
                     catFound = true;
                     break;
                 }
-             }
-             if(!catFound && category) {
-                 catSelect.value = 'new';
-                 document.getElementById('inp-inv-category-new').classList.remove('hidden');
-                 document.getElementById('inp-inv-category-new').value = category;
-             } else {
-                 document.getElementById('inp-inv-category-new').classList.add('hidden');
-             }
-             
-             if(packSize && packSize !== 'undefined') document.getElementById('inp-inv-packsize').value = packSize;
-             
-             togglePackSize();
-             document.getElementById('inp-inv-id').readOnly = true;
-             document.querySelector('.bg-white').scrollIntoView({behavior:'smooth'});
+            }
+            if (!catFound && category) {
+                catSelect.value = 'new';
+                document.getElementById('inp-inv-category-new').classList.remove('hidden');
+                document.getElementById('inp-inv-category-new').value = category;
+            } else {
+                document.getElementById('inp-inv-category-new').classList.add('hidden');
+            }
+
+            if (packSize && packSize !== 'undefined') document.getElementById('inp-inv-packsize').value = packSize;
+
+            togglePackSize();
+            document.getElementById('inp-inv-id').readOnly = true;
+            document.querySelector('.bg-white').scrollIntoView({ behavior: 'smooth' });
         }
 
         window.loadInventoryListAdmin = () => {
@@ -984,7 +1405,7 @@
 
         // --- IMPORT/EXPORT ---
         window.exportInventoryCSV = () => {
-            if(window.allInventoryCache.length === 0) return alert("Nessun dato.");
+            if (window.allInventoryCache.length === 0) return alert("Nessun dato.");
             const headers = ["ID", "Nome", "Marchio", "Categoria", "Unita", "Quantita", "Pezzi_Pacco", "Soglia", "Posizione"];
             const rows = window.allInventoryCache.map(i => [
                 i.id, i.name, i.brand || '', i.category || '', i.unit, i.quantity, i.packSize || 1, i.threshold, i.location || ''
@@ -992,10 +1413,10 @@
             const csvContent = "data:text/csv;charset=utf-8," + headers.join(",") + "\n" + rows.map(e => e.join(",")).join("\n");
             const link = document.createElement("a");
             link.href = encodeURI(csvContent);
-            link.download = `inventory_${new Date().toISOString().slice(0,10)}.csv`;
+            link.download = `inventory_${new Date().toISOString().slice(0, 10)}.csv`;
             document.body.appendChild(link); link.click(); document.body.removeChild(link);
         };
-        
+
         window.downloadInventoryTemplate = () => {
             const headers = ["ID", "Nome", "Marchio", "Categoria", "Unita", "Quantita", "Pezzi_Pacco", "Soglia", "Posizione", "Immagine"];
             const csvContent = "data:text/csv;charset=utf-8," + headers.join(",");
@@ -1013,20 +1434,20 @@
                 const text = e.target.result;
                 const rows = text.split('\n').slice(1); // skip header
                 let count = 0;
-                for(let row of rows) {
+                for (let row of rows) {
                     const cols = row.split(',');
-                    if(cols.length < 2) continue;
-                    // Format: ID, Name, Brand, Category, Unit, Qty, PackSize, Threshold, Loc, Image
-                    const [id, name, brand, category, unit, qty, packSize, threshold, loc, image] = cols;
-                    if(id && name) {
+                    if (cols.length < 2) continue;
+                    // Format: ID, Name, Brand, Category, Unit, Qty, PackSize, Threshold, Loc, Image, RestockEmail
+                    const [id, name, brand, category, unit, qty, packSize, threshold, loc, image, restockEmail] = cols;
+                    if (id && name) {
                         try {
-                            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'inventory', id.trim().replace(/\//g,'_')), {
+                            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'inventory', id.trim().replace(/\//g, '_')), {
                                 id: id.trim(), name: name.trim(), brand: brand?.trim() || '', category: category?.trim() || '', unit: unit?.trim() || 'pz',
                                 quantity: parseFloat(qty) || 0, packSize: parseFloat(packSize) || 1,
-                                threshold: parseFloat(threshold) || 0, location: loc?.trim() || '', image: image?.trim() || ''
-                            }, {merge:true});
+                                threshold: parseFloat(threshold) || 0, location: loc?.trim() || '', image: image?.trim() || '', restockEmail: restockEmail?.trim() || ''
+                            }, { merge: true });
                             count++;
-                        } catch(err) { console.error("Import error row", row, err); }
+                        } catch (err) { console.error("Import error row", row, err); }
                     }
                 }
                 alert(`Importati/Aggiornati ${count} articoli.`);
@@ -1048,14 +1469,14 @@
                 if (resourceId) handleScannedCode(resourceId);
             }
         }
-        
+
         // --- MANUAL SEARCH SMART (UPDATED) ---
         window.manualSearch = () => {
             const term = document.getElementById('inp-manual-code').value.trim();
-            if(!term) return;
-            
+            if (!term) return;
+
             const lowerTerm = term.toLowerCase();
-            
+
             // 1. Check exact ID match
             const exactIdMatch = window.allInventoryCache.find(i => i.id.toLowerCase() === lowerTerm);
             const resourceIdMatch = window.resourcesCache.find(r => r.id.toLowerCase() === lowerTerm);
@@ -1070,8 +1491,8 @@
             }
 
             // 2. Check Name/Brand partial matches
-            const matches = window.allInventoryCache.filter(i => 
-                i.name.toLowerCase().includes(lowerTerm) || 
+            const matches = window.allInventoryCache.filter(i =>
+                i.name.toLowerCase().includes(lowerTerm) ||
                 (i.brand && i.brand.toLowerCase().includes(lowerTerm))
             );
 
@@ -1081,7 +1502,7 @@
                 // Open public list filtered
                 showPublicInventoryList();
                 const searchInput = document.querySelector('#view-inventory-list input[type="text"]');
-                if(searchInput) {
+                if (searchInput) {
                     searchInput.value = term;
                     filterInventoryList(term);
                 }
@@ -1090,7 +1511,7 @@
                 handleScannedCode(term);
             }
         };
-        
+
         // --- ADMIN TABS (UPDATED) ---
         window.switchAdminTab = (tab) => {
             document.querySelectorAll('.admin-tab-btn').forEach(b => {
@@ -1098,22 +1519,22 @@
                 b.classList.add('text-slate-500');
             });
             document.getElementById('tab-btn-' + tab).classList.add('bg-white', 'text-indigo-700', 'shadow-sm');
-            
+
             ['bookings', 'instruments', 'settings', 'inventory'].forEach(t => {
                 const el = document.getElementById('admin-content-' + t);
-                if(el) el.classList.add('hidden');
+                if (el) el.classList.add('hidden');
             });
             document.getElementById('admin-content-' + tab).classList.remove('hidden');
 
-            if(tab === 'bookings') loadAdminBookings();
-            if(tab === 'instruments') loadInstruments();
-            if(tab === 'inventory') loadInventoryListAdmin();
+            if (tab === 'bookings') loadAdminBookings();
+            if (tab === 'instruments') loadInstruments();
+            if (tab === 'inventory') loadInventoryListAdmin();
         };
 
         // --- COPIED FROM V3.5 (Preserving all previous functionality) ---
         // (Function implementations condensed for brevity but functionally identical)
         window.resetApp = () => {
-            if(window.history.pushState) window.history.pushState({path:window.location.href.split('?')[0]},'',window.location.href.split('?')[0]);
+            if (window.history.pushState) window.history.pushState({ path: window.location.href.split('?')[0] }, '', window.location.href.split('?')[0]);
             window.switchView('view-scanner');
             document.getElementById('camera-overlay').classList.remove('hidden');
             document.getElementById('btn-stop').classList.add('hidden');
@@ -1128,10 +1549,10 @@
         window.startScanner = async () => {
             document.getElementById('camera-overlay').classList.add('hidden');
             html5QrCode = new Html5Qrcode("reader");
-            await html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: {width:250, height:250} }, onScanSuccess);
+            await html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 250 } }, onScanSuccess);
         };
-        window.stopScanner = async () => { if(html5QrCode) await html5QrCode.stop(); resetApp(); };
-        
+        window.stopScanner = async () => { if (html5QrCode) await html5QrCode.stop(); resetApp(); };
+
         async function showDetails(text) {
             window.switchView('view-details');
             document.getElementById('item-title').innerText = text;
@@ -1140,27 +1561,27 @@
             window.currentInstrumentData = { id: text };
             loadBookings(text);
             try {
-                const docSnap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'resources', text.replace(/\//g,'_')));
-                if(docSnap.exists()) {
+                const docSnap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'resources', text.replace(/\//g, '_')));
+                if (docSnap.exists()) {
                     const data = docSnap.data();
                     window.currentInstrumentData = data;
                     document.getElementById('item-title').innerText = data.description || text;
-                    if(data.isBookable === false) {
+                    if (data.isBookable === false) {
                         document.getElementById('btn-main-book').classList.add('hidden');
                         document.getElementById('badge-status').classList.remove('hidden');
                     }
                 }
-            } catch(e){}
+            } catch (e) { }
         }
-        
+
         // --- ADMIN BOOKINGS & INSTRUMENTS ---
         window.loadAdminBookings = () => {
             const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'bookings'));
             onSnapshot(q, (snapshot) => {
                 const bookings = [];
-                snapshot.forEach(doc => bookings.push({id: doc.id, ...doc.data()}));
+                snapshot.forEach(doc => bookings.push({ id: doc.id, ...doc.data() }));
                 window.adminBookingsCache = bookings;
-                document.getElementById('admin-list').innerHTML = bookings.map(b => 
+                document.getElementById('admin-list').innerHTML = bookings.map(b =>
                     `<div class="bg-white p-2 border-b text-xs flex justify-between items-center">
                         <div><span>${b.resourceName || b.resourceId} - ${b.userName}</span><span class="text-slate-400 block text-[10px]">${new Date(b.startDate).toLocaleDateString()}</span></div>
                         <div class="flex gap-2"><button onclick="editBookingFromAdmin('${b.id}')" class="p-1 bg-amber-100 rounded"><i data-lucide="pencil" class="w-3 h-3"></i></button><button onclick="deleteBooking('${b.id}')" class="p-1 bg-red-100 rounded"><i data-lucide="trash-2" class="w-3 h-3"></i></button></div>
@@ -1184,7 +1605,7 @@
                 lucide.createIcons();
             });
         };
-        
+
         window.saveInstrument = async (e) => {
             e.preventDefault();
             const id = document.getElementById('inp-inst-id').value.trim();
@@ -1192,12 +1613,12 @@
             const contact = document.getElementById('inp-inst-contact').value.trim();
             const bookable = document.getElementById('inp-inst-bookable').checked;
             try {
-                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'resources', id.replace(/\//g,'_')), {
+                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'resources', id.replace(/\//g, '_')), {
                     id, description: desc, contact, isBookable: bookable, updatedAt: serverTimestamp()
                 });
                 alert("Salvato!");
                 clearInstrumentForm();
-            } catch(e) { alert(e.message); }
+            } catch (e) { alert(e.message); }
         };
         window.clearInstrumentForm = () => {
             document.getElementById('inp-inst-id').value = '';
@@ -1207,19 +1628,19 @@
         };
         window.editInstrument = (id) => {
             const inst = window.allInstrumentsCache.find(i => i.id === id);
-            if(!inst) return;
+            if (!inst) return;
             document.getElementById('inp-inst-id').value = inst.id;
             document.getElementById('inp-inst-desc').value = inst.description;
             document.getElementById('inp-inst-contact').value = inst.contact || '';
             document.getElementById('inp-inst-bookable').checked = inst.isBookable !== false;
             document.getElementById('inp-inst-id').readOnly = true;
-            document.querySelector('#admin-content-instruments').scrollIntoView({behavior:'smooth'});
+            document.querySelector('#admin-content-instruments').scrollIntoView({ behavior: 'smooth' });
         };
 
         // --- BOOKING LOGIC ---
-        window.showBookingForm = () => { 
-            editingBookingId = null; 
-            document.getElementById('modal-booking').classList.remove('hidden'); 
+        window.showBookingForm = () => {
+            editingBookingId = null;
+            document.getElementById('modal-booking').classList.remove('hidden');
             const info = window.currentInstrumentData?.contact || "Non assegnato";
             document.getElementById('booking-contact-info').innerText = info;
         };
@@ -1228,24 +1649,25 @@
             e.preventDefault();
             if (!currentUser) return alert("No connection");
             const name = document.getElementById('inp-name').value;
+            const email = document.getElementById('inp-booking-email').value.trim();
             const start = document.getElementById('inp-start').value;
             const end = document.getElementById('inp-end').value;
             try {
-                if(editingBookingId) {
+                if (editingBookingId) {
                     await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'bookings', editingBookingId), {
-                        userName: name, startDate: start, endDate: end, updatedAt: serverTimestamp()
+                        userName: name, email: email || '', startDate: start, endDate: end, updatedAt: serverTimestamp()
                     });
                     alert("Modificata!");
                 } else {
                     const pnr = Math.random().toString(36).substring(2, 8).toUpperCase();
                     await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'bookings'), {
                         resourceId: currentItem, resourceName: currentItemName || currentItem,
-                        userName: name, startDate: start, endDate: end, pnr: pnr, bookedBy: currentUser.uid, createdAt: serverTimestamp()
+                        userName: name, email: email || '', startDate: start, endDate: end, pnr: pnr, bookedBy: currentUser.uid, createdAt: serverTimestamp()
                     });
                     alert(`Confermata! PNR: ${pnr}`);
                 }
                 hideBookingForm();
-            } catch(e) { alert(e.message); }
+            } catch (e) { alert(e.message); }
         };
         function loadBookings(itemId) {
             const listEl = document.getElementById('bookings-list');
@@ -1270,7 +1692,7 @@
         }
         function updateTotemClock() {
             const now = new Date();
-            document.getElementById('totem-clock').innerText = now.toLocaleTimeString('it-IT', {hour:'2-digit', minute:'2-digit'});
+            document.getElementById('totem-clock').innerText = now.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
         }
         function loadTotemData() {
             const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'bookings'));
@@ -1278,31 +1700,47 @@
                 const bookings = [];
                 snapshot.forEach(doc => bookings.push({ id: doc.id, ...doc.data() }));
                 const now = new Date();
-                const active = bookings.filter(b => { const s=new Date(b.startDate), e=new Date(b.endDate); return now>=s && now<=e; });
-                const upcoming = bookings.filter(b => new Date(b.startDate) > now).sort((a,b)=>new Date(a.startDate)-new Date(b.startDate));
+                const active = bookings.filter(b => { const s = new Date(b.startDate), e = new Date(b.endDate); return now >= s && now <= e; });
+                const upcoming = bookings.filter(b => new Date(b.startDate) > now).sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
                 document.getElementById('totem-active-list').innerHTML = active.map(b => `<div class="bg-slate-800 p-3 mb-2 rounded border-l-4 border-emerald-500"><h3 class="font-bold text-white">${b.resourceName}</h3><p class="text-emerald-400">${b.userName}</p></div>`).join('') || '<p class="text-slate-500">Nessuna attività</p>';
-                document.getElementById('totem-upcoming-list').innerHTML = upcoming.map(b => `<div class="bg-slate-800 p-2 mb-2 rounded flex justify-between"><span class="text-white">${b.resourceName}</span><span class="text-slate-400">${new Date(b.startDate).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</span></div>`).join('') || '<p class="text-slate-500">Nessuna prenotazione</p>';
-                
+                document.getElementById('totem-upcoming-list').innerHTML = upcoming.map(b => `<div class="bg-slate-800 p-2 mb-2 rounded flex justify-between"><span class="text-white">${b.resourceName}</span><span class="text-slate-400">${new Date(b.startDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span></div>`).join('') || '<p class="text-slate-500">Nessuna prenotazione</p>';
+
                 // Totem Stock Alerts (New v4.8)
                 updateTotemStockAlerts();
             });
         }
-        
+
         function updateTotemStockAlerts() {
             const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'inventory'));
             onSnapshot(q, (snapshot) => {
                 const alerts = [];
                 snapshot.forEach(doc => {
                     const i = doc.data();
-                    if((i.quantity || 0) <= (i.threshold || 0)) alerts.push(`${i.name} (Sotto scorta)`);
+                    if ((i.quantity || 0) <= (i.threshold || 0)) alerts.push(`${i.name} (Sotto scorta)`);
                 });
                 const ticker = document.querySelector('#totem-stock-alerts .animate-marquee');
-                if(ticker) ticker.innerText = alerts.length ? "ATTENZIONE: " + alerts.join(" • ") : "";
+                if (ticker) ticker.innerText = alerts.length ? "ATTENZIONE: " + alerts.join(" • ") : "";
             });
         }
 
         // --- ADMIN LOGIN & EXPORT ---
-        window.showAdminLogin = () => { if(prompt("PIN Admin:") === "1234") { adminMode = true; document.getElementById('view-maintenance').classList.add('hidden'); window.switchView('view-admin'); switchAdminTab('bookings'); } };
+        window.showAdminLogin = () => {
+            if (!currentUser) { alert('Effettua prima il login.'); return; }
+            if (isAdmin) {
+                adminMode = true;
+                document.getElementById('view-maintenance').classList.add('hidden');
+                window.switchView('view-admin');
+                switchAdminTab('bookings');
+            } else {
+                // Fallback PIN for initial setup (before admin list is configured)
+                if (prompt("PIN Admin:") === "1234") {
+                    adminMode = true;
+                    document.getElementById('view-maintenance').classList.add('hidden');
+                    window.switchView('view-admin');
+                    switchAdminTab('bookings');
+                }
+            }
+        };
         window.exportBookingsCSV = () => {
             const bookings = window.adminBookingsCache;
             if (!bookings || bookings.length === 0) return alert("Nessun dato.");
@@ -1311,15 +1749,15 @@
             const link = document.createElement("a"); link.href = encodeURI(csvContent); link.download = "report.csv"; document.body.appendChild(link); link.click();
         };
         window.printLabels = () => {
-            if(window.allInstrumentsCache.length === 0) return alert("Nessuno strumento.");
+            if (window.allInstrumentsCache.length === 0) return alert("Nessuno strumento.");
             const container = document.getElementById('print-grid');
             container.innerHTML = '';
             document.getElementById('print-area').classList.remove('hidden');
             let loaded = 0;
             window.allInstrumentsCache.forEach(inst => {
                 const url = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(window.location.href.split('?')[0] + '?r=' + inst.id)}`;
-                const img = new Image(); img.src = url; img.style.width='100px'; img.style.display='block'; img.style.margin='0 auto';
-                img.onload = () => { if(++loaded === window.allInstrumentsCache.length) setTimeout(() => window.print(), 500); };
+                const img = new Image(); img.src = url; img.style.width = '100px'; img.style.display = 'block'; img.style.margin = '0 auto';
+                img.onload = () => { if (++loaded === window.allInstrumentsCache.length) setTimeout(() => window.print(), 500); };
                 const div = document.createElement('div'); div.className = 'label-item';
                 div.innerHTML = `<h3>${inst.description}</h3>`; div.appendChild(img); div.innerHTML += `<p>${inst.id}</p>`;
                 container.appendChild(div);
@@ -1331,12 +1769,12 @@
         window.openCalendarModal = () => { document.getElementById('modal-calendar').classList.remove('hidden'); document.getElementById('calendar-container').innerHTML = '<p class="text-center mt-10">Funzione Calendario attiva.</p>'; };
         window.openCalendarForInstrument = (id, name) => { window.openCalendarModal(); };
         window.reportIssue = () => alert("Segnalazione inviata.");
-        
+
         function loadGlobalSettings() {
             onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'global'), (doc) => {
-                if(doc.exists() && doc.data().maintenanceMode && !adminMode) document.getElementById('view-maintenance').classList.remove('hidden');
+                if (doc.exists() && doc.data().maintenanceMode && !adminMode) document.getElementById('view-maintenance').classList.remove('hidden');
                 else document.getElementById('view-maintenance').classList.add('hidden');
-                if(doc.exists()) document.getElementById('maint-ref-name').innerText = doc.data().referentName;
+                if (doc.exists()) document.getElementById('maint-ref-name').innerText = doc.data().referentName;
             });
         }
         window.saveGlobalSettings = async () => {
@@ -1344,22 +1782,114 @@
             await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'global'), { maintenanceMode: active, referentName: document.getElementById('inp-maint-name').value, referentEmail: document.getElementById('inp-maint-email').value });
             alert("Settings salvati.");
         };
-        window.deleteBooking = async (id) => { if(confirm("Eliminare?")) await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'bookings', id)); };
-        window.editBookingFromAdmin = (id) => { window.currentFoundBooking = window.adminBookingsCache.find(b=>b.id===id); window.openEditModal(); };
+        window.deleteBooking = async (id) => { if (confirm("Eliminare?")) await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'bookings', id)); };
+        window.editBookingFromAdmin = (id) => { window.currentFoundBooking = window.adminBookingsCache.find(b => b.id === id); window.openEditModal(); };
         window.openEditModal = () => window.showBookingForm();
         window.showMyBookingSearch = () => window.switchView('view-my-booking');
-        window.searchBookingByPNR = () => { 
+        window.searchBookingByPNR = () => {
             const pnr = document.getElementById('inp-pnr-search').value.trim().toUpperCase();
             const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'bookings'), where("pnr", "==", pnr));
             onSnapshot(q, (s) => {
-                if(!s.empty) { 
+                if (!s.empty) {
                     const b = s.docs[0].data(); b.id = s.docs[0].id; window.currentFoundBooking = b;
                     document.getElementById('pnr-result').innerHTML = `<div class="bg-white p-4 rounded border-2 border-emerald-500"><h3>Trovata: ${b.resourceName}</h3><button onclick="window.openEditModal()">Modifica</button></div>`;
                 } else document.getElementById('pnr-result').innerHTML = "Non trovata.";
             });
         };
 
+        // --- ADMIN BOOKING MODAL ---
+        window.openAdminBookingModal = () => {
+            const select = document.getElementById('inp-admin-instrument');
+            select.innerHTML = '<option value="" disabled selected>Seleziona strumento...</option>';
+            window.allInstrumentsCache.forEach(inst => {
+                select.innerHTML += `<option value="${inst.id}" data-desc="${inst.description}">${inst.description} (${inst.id})</option>`;
+            });
+            document.getElementById('inp-admin-name').value = '';
+            document.getElementById('inp-admin-booking-email').value = '';
+            document.getElementById('inp-admin-start').value = '';
+            document.getElementById('inp-admin-end').value = '';
+            document.getElementById('modal-admin-booking').classList.remove('hidden');
+            lucide.createIcons();
+        };
+        window.closeAdminBookingModal = () => {
+            document.getElementById('modal-admin-booking').classList.add('hidden');
+        };
+        window.handleAdminBooking = async (e) => {
+            e.preventDefault();
+            if (!currentUser) return alert('No connection');
+            const select = document.getElementById('inp-admin-instrument');
+            const resourceId = select.value;
+            const resourceName = select.options[select.selectedIndex].dataset.desc || resourceId;
+            const userName = document.getElementById('inp-admin-name').value.trim();
+            const email = document.getElementById('inp-admin-booking-email').value.trim();
+            const start = document.getElementById('inp-admin-start').value;
+            const end = document.getElementById('inp-admin-end').value;
+            if (!resourceId || !userName || !start || !end) return alert('Compilare tutti i campi.');
+            try {
+                const pnr = Math.random().toString(36).substring(2, 8).toUpperCase();
+                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'bookings'), {
+                    resourceId, resourceName,
+                    userName, email: email || '', startDate: start, endDate: end,
+                    pnr, bookedBy: currentUser.uid, createdAt: serverTimestamp()
+                });
+                alert(`Prenotazione creata! PNR: ${pnr}`);
+                closeAdminBookingModal();
+                loadAdminBookings();
+            } catch (err) { alert('Errore: ' + err.message); }
+        };
+
+        // --- BOOKING REMINDER SYSTEM ---
+        async function checkBookingReminders() {
+            try {
+                const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'bookings'));
+                const snapshot = await new Promise((resolve) => {
+                    const unsub = onSnapshot(q, (snap) => { unsub(); resolve(snap); });
+                });
+                const now = new Date();
+                const in24h = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+                snapshot.forEach(async (docSnap) => {
+                    const b = docSnap.data();
+                    const startDate = new Date(b.startDate);
+                    // Send reminder if booking starts within 24h, has email, and reminder not yet sent
+                    if (b.email && !b.reminderSent && startDate > now && startDate <= in24h) {
+                        try {
+                            await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_BOOKING_REMINDER_TEMPLATE_ID, {
+                                to_email: b.email,
+                                user_name: b.userName,
+                                instrument_name: b.resourceName || b.resourceId,
+                                start_date: new Date(b.startDate).toLocaleString('it-IT'),
+                                end_date: new Date(b.endDate).toLocaleString('it-IT'),
+                                pnr: b.pnr || '',
+                                from_name: 'UniScan Lab'
+                            });
+                            // Mark reminder as sent
+                            await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'bookings', docSnap.id), {
+                                reminderSent: true
+                            });
+                            console.log('Booking reminder sent to', b.email, 'for', b.resourceName);
+                        } catch (emailErr) { console.warn('Booking reminder email failed:', emailErr); }
+                    }
+                });
+            } catch (e) { console.warn('Reminder check error:', e); }
+        }
+
+        // --- CSV EXPORT UPDATE (include restockEmail) ---
+        const _origExportCSV = window.exportInventoryCSV;
+        window.exportInventoryCSV = () => {
+            if (window.allInventoryCache.length === 0) return alert("Nessun dato.");
+            const headers = ["ID", "Nome", "Marchio", "Categoria", "Unita", "Quantita", "Pezzi_Pacco", "Soglia", "Posizione", "Immagine", "Email_Riordino"];
+            const rows = window.allInventoryCache.map(i => [
+                i.id, i.name, i.brand || '', i.category || '', i.unit, i.quantity, i.packSize || 1, i.threshold, i.location || '', i.image || '', i.restockEmail || ''
+            ]);
+            const csvContent = "data:text/csv;charset=utf-8," + headers.join(",") + "\n" + rows.map(e => e.join(",")).join("\n");
+            const link = document.createElement("a");
+            link.href = encodeURI(csvContent);
+            link.download = `inventory_${new Date().toISOString().slice(0, 10)}.csv`;
+            document.body.appendChild(link); link.click(); document.body.removeChild(link);
+        };
+
         lucide.createIcons();
     </script>
 </body>
+
 </html>
