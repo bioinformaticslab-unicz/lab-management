@@ -121,33 +121,33 @@ Gli amministratori sono definiti tramite:
 
 ```mermaid
 graph TD
-    A[Utente seleziona strumento] --> B[Clicca PRENOTA]
-    B --> C[Seleziona Data]
-    C --> D[Slot orari mostrati con disponibilità]
-    D --> E{Slot libero?}
-    E -->|Sì ✅| F[Seleziona ora inizio e fine]
-    E -->|No ❌| G[Slot grigio/disabilitato]
-    F --> H[Conferma prenotazione]
-    H --> I[Controllo sovrapposizioni server]
-    I -->|OK| J[Prenotazione salvata + Email + PNR]
-    I -->|Conflitto| K[Errore: orario non disponibile]
+    A["Utente seleziona strumento"] --> B["Clicca PRENOTA"]
+    B --> C["Seleziona Data"]
+    C --> D["Slot orari mostrati con disponibilità"]
+    D --> E{"Slot libero?"}
+    E -->|Sì ✅| F["Seleziona ora inizio e fine"]
+    E -->|No ❌| G["Slot grigio/disabilitato"]
+    F --> H["Conferma prenotazione"]
+    H --> I["Controllo sovrapposizioni server"]
+    I -->|OK| J["Prenotazione salvata + Email + PNR"]
+    I -->|Conflitto| K["Errore: orario non disponibile"]
 ```
 
 ## 📦 Flusso Magazzino
 
 ```mermaid
 graph TD
-    A[Scansione QR Articolo] --> B{Esiste?}
-    B -->|Sì| C[Visualizza Dettagli & Quantità]
-    B -->|No| D[Admin: Crea nuovo articolo?]
-    C --> E[Seleziona Azione]
-    E --> F[Preleva (-)]
-    E --> G[Rifornisci (+)]
-    F --> H[Aggiorna Quantità]
+    A["Scansione QR Articolo"] --> B{"Esiste?"}
+    B -->|Sì| C["Visualizza Dettagli & Quantità"]
+    B -->|No| D["Admin: Crea nuovo articolo?"]
+    C --> E["Seleziona Azione"]
+    E --> F["Preleva (-)"]
+    E --> G["Rifornisci (+)"]
+    F --> H["Aggiorna Quantità"]
     G --> H
-    H --> I[Check Soglia Minima]
-    I -->|Sotto Soglia| J[Email Alert Riordino]
-    I -->|Sopra Soglia| K[OK]
+    H --> I["Check Soglia Minima"]
+    I -->|Sotto Soglia| J["Email Alert Riordino"]
+    I -->|Sopra Soglia| K["OK"]
 ```
 
 ---
