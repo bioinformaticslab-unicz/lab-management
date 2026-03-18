@@ -116,9 +116,9 @@
         <div class="flex justify-between items-center">
             <div onclick="resetApp()" class="cursor-pointer">
                 <h1 class="text-xl font-black italic tracking-tighter flex items-center gap-2">
-                    <i data-lucide="scan-line" class="w-5 h-5 text-emerald-400"></i> UNISCAN
+                    <i data-lucide="scan-line" class="w-5 h-5 text-emerald-400"></i> LABSCAN
                 </h1>
-                <p class="text-slate-400 text-[10px] font-medium uppercase tracking-widest">Lab & Stock v5.0</p>
+                <p class="text-slate-400 text-[10px] font-medium uppercase tracking-widest">Lab & Stock v1.0</p>
             </div>
             <div class="flex gap-3 items-center">
                 <span id="user-display-name" class="text-[10px] text-slate-400 font-mono hidden"></span>
@@ -165,11 +165,12 @@
                     <h2 class="text-sm font-black text-slate-800 tracking-tight">Scannerizza Codice</h2>
                     <p class="text-[10px] text-slate-500 font-medium">Usa la fotocamera o il lettore hardware</p>
                 </div>
-                <button id="btn-toggle-desktop" onclick="toggleDesktopMode()" class="flex items-center gap-1 text-[10px] font-bold px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg border border-indigo-100 shadow-sm hover:bg-indigo-100 transition">
+                <button id="btn-toggle-desktop" onclick="toggleDesktopMode()"
+                    class="flex items-center gap-1 text-[10px] font-bold px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg border border-indigo-100 shadow-sm hover:bg-indigo-100 transition">
                     <i data-lucide="laptop" class="w-3 h-3"></i> <span>MODALITÀ DESKTOP</span>
                 </button>
             </div>
-            
+
             <div id="camera-container"
                 class="relative bg-black rounded-3xl overflow-hidden shadow-2xl aspect-square border-4 border-indigo-500/30 transition-all">
                 <div id="reader" class="w-full h-full object-cover"></div>
@@ -193,16 +194,20 @@
             <div id="desktop-input-container" class="relative">
                 <div class="flex justify-between items-center mb-2">
                     <div class="flex items-center gap-2">
-                        <button id="btn-toggle-batch" onclick="toggleBatchMode()" style="display:none;" class="flex items-center gap-1 text-[10px] font-bold px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-lg border border-emerald-100 shadow-sm hover:bg-emerald-100 transition">
+                        <button id="btn-toggle-batch" onclick="toggleBatchMode()" style="display:none;"
+                            class="flex items-center gap-1 text-[10px] font-bold px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-lg border border-emerald-100 shadow-sm hover:bg-emerald-100 transition">
                             <i data-lucide="layers" class="w-3 h-3"></i> <span id="lbl-batch-mode">SINGOLO</span>
                         </button>
-                        <button id="btn-cart" onclick="showBatchCart()" style="display:none;" class="flex items-center gap-1 text-[10px] font-bold px-3 py-1.5 bg-amber-50 text-amber-600 rounded-lg border border-amber-100 shadow-sm hover:bg-amber-100 transition">
-                            <i data-lucide="shopping-cart" class="w-3 h-3"></i> CARRELLO (<span id="cart-count">0</span>)
+                        <button id="btn-cart" onclick="showBatchCart()" style="display:none;"
+                            class="flex items-center gap-1 text-[10px] font-bold px-3 py-1.5 bg-amber-50 text-amber-600 rounded-lg border border-amber-100 shadow-sm hover:bg-amber-100 transition">
+                            <i data-lucide="shopping-cart" class="w-3 h-3"></i> CARRELLO (<span
+                                id="cart-count">0</span>)
                         </button>
                     </div>
                 </div>
                 <div class="flex gap-2 mt-2">
-                    <input type="text" id="inp-manual-code" placeholder="Cerca strumento o materiale..." autocomplete="off"
+                    <input type="text" id="inp-manual-code" placeholder="Cerca strumento o materiale..."
+                        autocomplete="off"
                         class="flex-1 px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-sm shadow-sm transition-all"
                         oninput="smartSearch(this.value)" onkeypress="if(event.key === 'Enter') smartSearchGo()">
                     <button onclick="smartSearchGo()"
@@ -220,11 +225,14 @@
         <div id="view-details" class="hidden fade-in space-y-5">
             <!-- Header Strumento (Logic come Magazzino) -->
             <div class="bg-slate-800 text-white p-5 rounded-3xl shadow-lg relative overflow-hidden">
-                <div class="absolute top-0 right-0 p-4 opacity-10"><i data-lucide="microscope" class="w-24 h-24"></i></div>
+                <div class="absolute top-0 right-0 p-4 opacity-10"><i data-lucide="microscope" class="w-24 h-24"></i>
+                </div>
                 <div class="relative z-10">
                     <div class="flex justify-between items-start">
                         <p class="text-xs font-bold text-indigo-400 uppercase mb-1">Strumento Lab</p>
-                        <p id="badge-status" class="hidden text-[10px] bg-red-500 text-white px-2 py-0.5 rounded uppercase font-bold">NON PRENOTABILE</p>
+                        <p id="badge-status"
+                            class="hidden text-[10px] bg-red-500 text-white px-2 py-0.5 rounded uppercase font-bold">NON
+                            PRENOTABILE</p>
                     </div>
 
                     <!-- FOTO STRUMENTO COME MAGAZZINO -->
@@ -243,8 +251,10 @@
                                 <i data-lucide="globe" class="w-3 h-3"></i> APRI IP DASHBOARD
                             </a>
                         </div>
-                        <button onclick="reportIssue()" class="ml-auto text-[10px] font-bold flex items-center gap-1 text-amber-400 hover:text-amber-300 transition"
-                            title="Segnala Guasto"><i data-lucide="alert-triangle" class="w-3 h-3"></i> SEGNALA GUASTO</button>
+                        <button onclick="reportIssue()"
+                            class="ml-auto text-[10px] font-bold flex items-center gap-1 text-amber-400 hover:text-amber-300 transition"
+                            title="Segnala Guasto"><i data-lucide="alert-triangle" class="w-3 h-3"></i> SEGNALA
+                            GUASTO</button>
                     </div>
                 </div>
             </div>
@@ -267,14 +277,20 @@
                 </div>
 
                 <!-- CALENDARIO SETTIMANALE (TOGGLE) -->
-                <button onclick="toggleWeekCalendar()" class="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-xs font-bold shadow-sm transition flex items-center justify-center gap-2">
-                    <i data-lucide="calendar-range" class="w-4 h-4"></i> <span id="week-cal-toggle-txt">Mostra Calendario Settimanale</span>
+                <button onclick="toggleWeekCalendar()"
+                    class="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-xs font-bold shadow-sm transition flex items-center justify-center gap-2">
+                    <i data-lucide="calendar-range" class="w-4 h-4"></i> <span id="week-cal-toggle-txt">Mostra
+                        Calendario Settimanale</span>
                 </button>
-                <div id="week-cal-wrapper" class="hidden bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                <div id="week-cal-wrapper"
+                    class="hidden bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                     <div class="flex items-center justify-between bg-slate-50 border-b border-slate-100 px-3 py-2">
-                        <button onclick="shiftWeekCalendar(-1)" class="p-1 hover:bg-slate-200 rounded transition"><i data-lucide="chevron-left" class="w-4 h-4 text-slate-500"></i></button>
-                        <span id="week-cal-title" class="text-[10px] font-bold text-slate-600 uppercase tracking-wider">--</span>
-                        <button onclick="shiftWeekCalendar(1)" class="p-1 hover:bg-slate-200 rounded transition"><i data-lucide="chevron-right" class="w-4 h-4 text-slate-500"></i></button>
+                        <button onclick="shiftWeekCalendar(-1)" class="p-1 hover:bg-slate-200 rounded transition"><i
+                                data-lucide="chevron-left" class="w-4 h-4 text-slate-500"></i></button>
+                        <span id="week-cal-title"
+                            class="text-[10px] font-bold text-slate-600 uppercase tracking-wider">--</span>
+                        <button onclick="shiftWeekCalendar(1)" class="p-1 hover:bg-slate-200 rounded transition"><i
+                                data-lucide="chevron-right" class="w-4 h-4 text-slate-500"></i></button>
                     </div>
                     <div id="week-cal-grid" class="grid grid-cols-7 text-center text-[9px] font-bold text-slate-500">
                         <!-- Rendered by JS -->
@@ -363,46 +379,61 @@
                 <div id="stock-history-list" class="space-y-2"></div>
             </div>
         </div>
-        
+
         <!-- VISTA: CARRELLO (BATCH STOCK) -->
         <div id="view-batch-summary" class="hidden fade-in space-y-4">
             <div class="flex justify-between items-center border-b pb-2">
                 <h2 class="text-lg font-black text-slate-800 flex items-center gap-2">
                     <i data-lucide="shopping-cart" class="w-5 h-5 text-amber-600"></i> Carrello Movimenti
                 </h2>
-                <button onclick="clearBatchCart()" class="text-[10px] text-red-500 font-bold hover:underline">SVUOTA</button>
+                <button onclick="clearBatchCart()"
+                    class="text-[10px] text-red-500 font-bold hover:underline">SVUOTA</button>
             </div>
-            
+
             <div id="batch-items-container" class="space-y-2 max-h-[50vh] overflow-y-auto pr-1">
                 <!-- Items list -->
             </div>
-            
+
             <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 mt-4">
                 <form onsubmit="confirmBatchMovement(event)" class="space-y-3">
                     <div>
                         <label class="block text-xs font-bold text-slate-500 mb-1">Azione Globale</label>
                         <div class="flex gap-2">
-                            <label class="flex-1 flex items-center justify-center p-3 border border-emerald-300 bg-emerald-50 rounded-lg cursor-pointer text-emerald-700 font-bold text-xs hover:bg-emerald-100 transition has-[:checked]:bg-emerald-600 has-[:checked]:text-white gap-2">
-                                <input type="radio" name="batch-action" value="add" class="hidden" checked onchange="toggleBatchRemoveOrder()"> <i data-lucide="plus-circle" class="w-4 h-4"></i> CARICO
+                            <label
+                                class="flex-1 flex items-center justify-center p-3 border border-emerald-300 bg-emerald-50 rounded-lg cursor-pointer text-emerald-700 font-bold text-xs hover:bg-emerald-100 transition has-[:checked]:bg-emerald-600 has-[:checked]:text-white gap-2">
+                                <input type="radio" name="batch-action" value="add" class="hidden" checked
+                                    onchange="toggleBatchRemoveOrder()"> <i data-lucide="plus-circle"
+                                    class="w-4 h-4"></i> CARICO
                             </label>
-                            <label class="flex-1 flex items-center justify-center p-3 border border-red-300 bg-red-50 rounded-lg cursor-pointer text-red-700 font-bold text-xs hover:bg-red-100 transition has-[:checked]:bg-red-600 has-[:checked]:text-white gap-2">
-                                <input type="radio" name="batch-action" value="remove" class="hidden" onchange="toggleBatchRemoveOrder()"> <i data-lucide="minus-circle" class="w-4 h-4"></i> SCARICO
+                            <label
+                                class="flex-1 flex items-center justify-center p-3 border border-red-300 bg-red-50 rounded-lg cursor-pointer text-red-700 font-bold text-xs hover:bg-red-100 transition has-[:checked]:bg-red-600 has-[:checked]:text-white gap-2">
+                                <input type="radio" name="batch-action" value="remove" class="hidden"
+                                    onchange="toggleBatchRemoveOrder()"> <i data-lucide="minus-circle"
+                                    class="w-4 h-4"></i> SCARICO
                             </label>
                         </div>
                     </div>
-                    
-                    <div id="div-batch-remove-order" class="flex items-center gap-2 bg-amber-50 p-2 rounded border border-amber-200">
-                        <input type="checkbox" id="inp-batch-remove-order" checked class="h-4 w-4 text-amber-600 rounded">
-                        <label class="text-xs font-bold text-amber-800 lg:leading-tight cursor-pointer" for="inp-batch-remove-order">Rimuovi stato "Ordinato" per gli articoli</label>
+
+                    <div id="div-batch-remove-order"
+                        class="flex items-center gap-2 bg-amber-50 p-2 rounded border border-amber-200">
+                        <input type="checkbox" id="inp-batch-remove-order" checked
+                            class="h-4 w-4 text-amber-600 rounded">
+                        <label class="text-xs font-bold text-amber-800 lg:leading-tight cursor-pointer"
+                            for="inp-batch-remove-order">Rimuovi stato "Ordinato" per gli articoli</label>
                     </div>
 
                     <div>
                         <label class="block text-xs font-bold text-slate-500 mb-1">Identificativo Operatore</label>
-                        <input type="text" id="inp-batch-operator" required class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm" placeholder="Nome, PI o Codice...">
+                        <input type="text" id="inp-batch-operator" required
+                            class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm"
+                            placeholder="Nome, PI o Codice...">
                     </div>
-                    
-                    <button type="submit" class="w-full py-3 bg-slate-800 text-white rounded-xl font-bold shadow-lg">CONFERMA E SALVA TUTTO</button>
-                    <button type="button" onclick="resetApp()" class="w-full py-2 text-slate-400 text-xs font-bold">ANNULLA</button>
+
+                    <button type="submit"
+                        class="w-full py-3 bg-slate-800 text-white rounded-xl font-bold shadow-lg">CONFERMA E SALVA
+                        TUTTO</button>
+                    <button type="button" onclick="resetApp()"
+                        class="w-full py-2 text-slate-400 text-xs font-bold">ANNULLA</button>
                 </form>
             </div>
         </div>
@@ -577,8 +608,8 @@
             <div id="admin-content-instruments" class="hidden space-y-4">
                 <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm relative">
                     <div class="flex justify-between items-center mb-3">
-                        <h3 id="inst-form-title" class="text-sm font-bold text-slate-700 flex items-center gap-2"><i data-lucide="settings-2"
-                                class="w-4 h-4"></i> Configura Nuovo</h3>
+                        <h3 id="inst-form-title" class="text-sm font-bold text-slate-700 flex items-center gap-2"><i
+                                data-lucide="settings-2" class="w-4 h-4"></i> Configura Nuovo</h3>
                         <button type="button" onclick="clearInstrumentForm()"
                             class="text-[10px] text-indigo-600 font-bold hover:underline">NUOVO LOG</button>
                     </div>
@@ -608,30 +639,42 @@
             <!-- Content: Etichette -->
             <div id="admin-content-labels" class="hidden space-y-4">
                 <div class="flex gap-2 mb-2">
-                    <button onclick="switchLabelTab('strum')" id="lbl-tab-strum" class="flex-1 py-2 bg-indigo-600 text-white rounded-lg text-xs font-bold transition shadow-sm">Strumenti (<span id="lbl-count-strum">0</span>)</button>
-                    <button onclick="switchLabelTab('magaz')" id="lbl-tab-magaz" class="flex-1 py-2 bg-white text-slate-600 hover:bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold transition shadow-sm">Magazzino (<span id="lbl-count-magaz">0</span>)</button>
+                    <button onclick="switchLabelTab('strum')" id="lbl-tab-strum"
+                        class="flex-1 py-2 bg-indigo-600 text-white rounded-lg text-xs font-bold transition shadow-sm">Strumenti
+                        (<span id="lbl-count-strum">0</span>)</button>
+                    <button onclick="switchLabelTab('magaz')" id="lbl-tab-magaz"
+                        class="flex-1 py-2 bg-white text-slate-600 hover:bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold transition shadow-sm">Magazzino
+                        (<span id="lbl-count-magaz">0</span>)</button>
                 </div>
-                
+
                 <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
                     <div class="flex items-center justify-between border-b border-slate-100 pb-3 mb-2">
                         <label class="flex items-center gap-2 text-xs font-bold text-slate-700 cursor-pointer">
-                            <input type="checkbox" id="lbl-check-all" onchange="toggleAllLabels(this.checked)" class="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500">
+                            <input type="checkbox" id="lbl-check-all" onchange="toggleAllLabels(this.checked)"
+                                class="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500">
                             Seleziona Tutti
                         </label>
                         <div class="flex items-center gap-3">
-                            <label class="flex items-center gap-1 text-[10px] font-bold text-slate-600 cursor-pointer"><input type="checkbox" id="lbl-opt-qr" checked> QR CODE</label>
-                            <label class="flex items-center gap-1 text-[10px] font-bold text-slate-600 cursor-pointer"><input type="checkbox" id="lbl-opt-bc"> BARCODE</label>
+                            <label
+                                class="flex items-center gap-1 text-[10px] font-bold text-slate-600 cursor-pointer"><input
+                                    type="checkbox" id="lbl-opt-qr" checked> QR CODE</label>
+                            <label
+                                class="flex items-center gap-1 text-[10px] font-bold text-slate-600 cursor-pointer"><input
+                                    type="checkbox" id="lbl-opt-bc"> BARCODE</label>
                         </div>
                     </div>
-                    
+
                     <div id="labels-item-list" class="space-y-1.5 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
                         <p class="text-xs text-slate-400 text-center py-4">Caricamento...</p>
                     </div>
 
-                    <button onclick="generateLabels()" class="w-full py-3 mt-4 bg-indigo-600 text-white rounded-xl font-bold shadow flex items-center justify-center gap-2 hover:bg-indigo-700 transition">
+                    <button onclick="generateLabels()"
+                        class="w-full py-3 mt-4 bg-indigo-600 text-white rounded-xl font-bold shadow flex items-center justify-center gap-2 hover:bg-indigo-700 transition">
                         <i data-lucide="printer" class="w-4 h-4"></i> GENERA E STAMPA SELEZIONATI
                     </button>
-                    <button onclick="clearLabelSelection()" class="w-full py-2 text-[10px] font-bold text-slate-400 hover:text-slate-600 transition">AZZERA SELEZIONE</button>
+                    <button onclick="clearLabelSelection()"
+                        class="w-full py-2 text-[10px] font-bold text-slate-400 hover:text-slate-600 transition">AZZERA
+                        SELEZIONE</button>
                 </div>
             </div>
 
@@ -653,9 +696,11 @@
 
                 <!-- Admin Management -->
                 <!-- Gestione Co-Admins (Visible to Main Admin) -->
-                <div id="co-admin-section" class="bg-indigo-50 p-4 rounded-xl border border-indigo-200 shadow-sm hidden">
+                <div id="co-admin-section"
+                    class="bg-indigo-50 p-4 rounded-xl border border-indigo-200 shadow-sm hidden">
                     <h3 class="text-sm font-bold text-indigo-800 mb-2">👑 Gestione Co-Amministratori</h3>
-                    <p class="text-[10px] text-slate-500 mb-3">Possono gestire la dashboard e i supervisori, ma non gli altri admin.</p>
+                    <p class="text-[10px] text-slate-500 mb-3">Possono gestire la dashboard e i supervisori, ma non gli
+                        altri admin.</p>
                     <div id="admin-list-emails" class="space-y-2 mb-3"></div>
                     <div class="flex gap-2">
                         <input type="email" id="inp-new-admin-email" class="flex-1 text-xs p-2 border rounded"
@@ -666,21 +711,27 @@
                 </div>
 
                 <!-- Gestione Supervisori (Visible to Main Admin & Co-Admins) -->
-                <div id="supervisor-section" class="bg-emerald-50 p-4 rounded-xl border border-emerald-200 shadow-sm mt-4 hidden">
+                <div id="supervisor-section"
+                    class="bg-emerald-50 p-4 rounded-xl border border-emerald-200 shadow-sm mt-4 hidden">
                     <h3 class="text-sm font-bold text-emerald-800 mb-2">👁️ Gestione Supervisori</h3>
                     <p class="text-[10px] text-slate-500 mb-3">Assegna permessi specifici d'accesso ai supervisori.</p>
                     <div id="supervisor-list" class="space-y-2 mb-3"></div>
                     <div class="space-y-2 border border-emerald-200 p-3 rounded-lg bg-white">
-                        <input type="email" id="inp-new-sup-email" class="w-full text-xs p-2 border rounded border-slate-200"
-                            placeholder="email@esempio.com">
+                        <input type="email" id="inp-new-sup-email"
+                            class="w-full text-xs p-2 border rounded border-slate-200" placeholder="email@esempio.com">
                         <div class="flex gap-3 text-xs flex-wrap mb-2 text-slate-700 font-medium">
-                            <label class="flex items-center gap-1"><input type="checkbox" id="chk-sup-book" checked> Prenotazioni</label>
-                            <label class="flex items-center gap-1"><input type="checkbox" id="chk-sup-inv" checked> Magazzino</label>
-                            <label class="flex items-center gap-1"><input type="checkbox" id="chk-sup-inst" checked> Strumenti</label>
-                            <label class="flex items-center gap-1"><input type="checkbox" id="chk-sup-logs"> Logs</label>
+                            <label class="flex items-center gap-1"><input type="checkbox" id="chk-sup-book" checked>
+                                Prenotazioni</label>
+                            <label class="flex items-center gap-1"><input type="checkbox" id="chk-sup-inv" checked>
+                                Magazzino</label>
+                            <label class="flex items-center gap-1"><input type="checkbox" id="chk-sup-inst" checked>
+                                Strumenti</label>
+                            <label class="flex items-center gap-1"><input type="checkbox" id="chk-sup-logs">
+                                Logs</label>
                         </div>
                         <button onclick="addSupervisor()"
-                            class="w-full py-2 bg-emerald-600 text-white rounded text-xs font-bold">AGGIUNGI SUPERVISORE</button>
+                            class="w-full py-2 bg-emerald-600 text-white rounded text-xs font-bold">AGGIUNGI
+                            SUPERVISORE</button>
                     </div>
                 </div>
 
@@ -715,7 +766,8 @@
             <input type="text" id="inp-pnr-search" placeholder="Codice PNR o Tua Email"
                 class="w-full max-w-xs text-center text-sm font-bold px-4 py-3 border-2 border-slate-200 rounded-xl outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition-all">
             <button onclick="searchMyBooking()"
-                class="w-full max-w-xs py-3 bg-emerald-600 text-white rounded-xl font-bold shadow-lg hover:bg-emerald-500 transition">CERCA PRENOTAZIONE</button>
+                class="w-full max-w-xs py-3 bg-emerald-600 text-white rounded-xl font-bold shadow-lg hover:bg-emerald-500 transition">CERCA
+                PRENOTAZIONE</button>
             <div id="pnr-result" class="w-full max-w-xs mt-6 space-y-3"></div>
         </div>
 
@@ -800,18 +852,24 @@
                 <div class="space-y-3">
                     <div class="flex gap-2">
                         <div class="flex-1">
-                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">📅 Dal Giorno</label>
-                            <input type="date" id="inp-start-date" required class="w-full border border-slate-200 rounded-lg p-2 text-xs font-bold text-slate-700 bg-white focus:ring-2 focus:ring-indigo-500 outline-none">
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">📅 Dal
+                                Giorno</label>
+                            <input type="date" id="inp-start-date" required
+                                class="w-full border border-slate-200 rounded-lg p-2 text-xs font-bold text-slate-700 bg-white focus:ring-2 focus:ring-indigo-500 outline-none">
                         </div>
                         <div class="flex-1">
-                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">📅 Al Giorno</label>
-                            <input type="date" id="inp-end-date" required class="w-full border border-slate-200 rounded-lg p-2 text-xs font-bold text-slate-700 bg-white focus:ring-2 focus:ring-indigo-500 outline-none">
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">📅 Al
+                                Giorno</label>
+                            <input type="date" id="inp-end-date" required
+                                class="w-full border border-slate-200 rounded-lg p-2 text-xs font-bold text-slate-700 bg-white focus:ring-2 focus:ring-indigo-500 outline-none">
                         </div>
                     </div>
                     <div class="flex gap-2">
                         <div class="flex-1">
-                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">🕐 Ora inizio</label>
-                            <div id="time-slots-start" class="grid grid-cols-3 gap-1 max-h-32 overflow-y-auto pr-1"></div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">🕐 Ora
+                                inizio</label>
+                            <div id="time-slots-start" class="grid grid-cols-3 gap-1 max-h-32 overflow-y-auto pr-1">
+                            </div>
                             <input type="hidden" id="inp-start" required>
                         </div>
                         <div class="flex-1">
@@ -821,7 +879,8 @@
                         </div>
                     </div>
                     <div id="booking-overlap-warning"
-                        class="hidden text-xs text-red-600 bg-red-50 p-2 rounded-lg font-bold border border-red-100">⚠️ Orario non
+                        class="hidden text-xs text-red-600 bg-red-50 p-2 rounded-lg font-bold border border-red-100">⚠️
+                        Orario non
                         disponibile!</div>
                 </div>
                 <button type="submit"
@@ -912,28 +971,36 @@
                 <div class="space-y-3">
                     <div class="flex gap-2">
                         <div class="flex-1">
-                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">📅 Dal Giorno</label>
-                            <input type="date" id="inp-admin-start-date" required class="w-full border border-slate-200 rounded-lg p-2 text-xs font-bold text-slate-700 bg-white focus:ring-2 focus:ring-indigo-500 outline-none">
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">📅 Dal
+                                Giorno</label>
+                            <input type="date" id="inp-admin-start-date" required
+                                class="w-full border border-slate-200 rounded-lg p-2 text-xs font-bold text-slate-700 bg-white focus:ring-2 focus:ring-indigo-500 outline-none">
                         </div>
                         <div class="flex-1">
-                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">📅 Al Giorno</label>
-                            <input type="date" id="inp-admin-end-date" required class="w-full border border-slate-200 rounded-lg p-2 text-xs font-bold text-slate-700 bg-white focus:ring-2 focus:ring-indigo-500 outline-none">
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">📅 Al
+                                Giorno</label>
+                            <input type="date" id="inp-admin-end-date" required
+                                class="w-full border border-slate-200 rounded-lg p-2 text-xs font-bold text-slate-700 bg-white focus:ring-2 focus:ring-indigo-500 outline-none">
                         </div>
                     </div>
                     <div class="flex gap-2">
                         <div class="flex-1">
-                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">🕐 Ora inizio</label>
-                            <div id="admin-time-slots-start" class="grid grid-cols-3 gap-1 max-h-32 overflow-y-auto pr-1"></div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">🕐 Ora
+                                inizio</label>
+                            <div id="admin-time-slots-start"
+                                class="grid grid-cols-3 gap-1 max-h-32 overflow-y-auto pr-1"></div>
                             <input type="hidden" id="inp-admin-start" required>
                         </div>
                         <div class="flex-1">
                             <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">🕐 Ora fine</label>
-                            <div id="admin-time-slots-end" class="grid grid-cols-3 gap-1 max-h-32 overflow-y-auto pr-1"></div>
+                            <div id="admin-time-slots-end" class="grid grid-cols-3 gap-1 max-h-32 overflow-y-auto pr-1">
+                            </div>
                             <input type="hidden" id="inp-admin-end" required>
                         </div>
                     </div>
                     <div id="admin-booking-overlap-warning"
-                        class="hidden text-xs text-red-600 bg-red-50 p-2 rounded-lg font-bold border border-red-100">⚠️ Orario non
+                        class="hidden text-xs text-red-600 bg-red-50 p-2 rounded-lg font-bold border border-red-100">⚠️
+                        Orario non
                         disponibile!</div>
                 </div>
                 <button type="submit"
@@ -1053,12 +1120,12 @@
         let isRegisterMode = false;
         let editingBookingId = null;
         let currentStockAction = null;
-        
+
         // Nuove variabili RBAC
         let userRole = 'user'; // 'main_admin', 'co_admin', 'supervisor', 'user'
         let supervisorPermissions = {};
-        let isDesktopMode = localStorage.getItem('desktopMode') !== null 
-            ? localStorage.getItem('desktopMode') === 'true' 
+        let isDesktopMode = localStorage.getItem('desktopMode') !== null
+            ? localStorage.getItem('desktopMode') === 'true'
             : (window.innerWidth >= 1024 && !('ontouchstart' in window));
         let isBatchMode = false;
         let batchCart = [];
@@ -1126,7 +1193,7 @@
                 userRole = 'user';
                 supervisorPermissions = {};
                 isAdmin = false;
-                
+
                 if (MAIN_ADMINS.includes(uEmail)) {
                     userRole = 'main_admin';
                 } else {
@@ -1145,9 +1212,9 @@
                                 }
                             }
                         }
-                    } catch(e) { console.warn('Role check failed:', e); }
+                    } catch (e) { console.warn('Role check failed:', e); }
                 }
-                
+
                 if (userRole === 'user') {
                     if (!uEmail.endsWith('@studenti.unicz.it') && !uEmail.endsWith('@unicz.it')) {
                         alert("Accesso negato. Solo domini @studenti.unicz.it o @unicz.it sono ammessi.");
@@ -1168,7 +1235,7 @@
                 const nameEl = document.getElementById('user-display-name');
                 nameEl.innerText = displayName;
                 nameEl.classList.remove('hidden');
-                
+
                 // Hide/show settings sections based on role
                 const coAdminSec = document.getElementById('co-admin-section');
                 const supSec = document.getElementById('supervisor-section');
@@ -1280,7 +1347,7 @@
         };
         // MAKE GLOBAL FOR CLICK EVENTS
         window.handleScannedCode = async function (code) {
-            
+
             // --- BATCH MODE ---
             if (isBatchMode) {
                 const invItem = window.allInventoryCache.find(i => i.id === code || i.id === code.replace(/\//g, '_'));
@@ -1292,13 +1359,13 @@
                         batchCart.push({ ...invItem, qtyToAdd: 1 });
                     }
                     updateBatchUI();
-                    
+
                     const toast = document.createElement('div');
                     toast.className = 'fixed top-5 right-5 bg-emerald-600 text-white px-4 py-2 rounded shadow-lg z-[200] text-xs font-bold fade-in';
                     toast.innerHTML = `<i data-lucide="check" class="inline w-3 h-3"></i> ${invItem.name} aggiunto!`;
                     document.body.appendChild(toast);
                     setTimeout(() => toast.remove(), 2000);
-                    
+
                     document.getElementById('inp-manual-code').value = '';
                     setTimeout(() => document.getElementById('inp-manual-code').focus(), 50);
                     return;
@@ -1900,10 +1967,10 @@
                 } else {
                     container.innerHTML = results.slice(0, 10).map(r => {
                         if (r.type === 'instrument') {
-                            const iconHtml = r.imageUrl 
+                            const iconHtml = r.imageUrl
                                 ? `<img src="${r.imageUrl}" class="w-10 h-10 rounded-xl object-cover flex-shrink-0 shadow-sm border border-slate-200">`
                                 : `<div class="w-10 h-10 bg-indigo-100 rounded-xl flex items-center justify-center flex-shrink-0"><i data-lucide="microscope" class="w-5 h-5 text-indigo-600"></i></div>`;
-                                
+
                             return `<button onclick="navigateToInstrument('${r.id}')" class="w-full flex items-center gap-3 p-3 hover:bg-slate-50 transition text-left border-b border-slate-100 last:border-0">
                                 ${iconHtml}
                                 <div class="flex-1 min-w-0">
@@ -1914,10 +1981,10 @@
                             </button>`;
                         } else {
                             const stockColor = r.lowStock ? 'text-red-700 bg-red-100 border border-red-200' : 'text-emerald-700 bg-emerald-100 border border-emerald-200';
-                            const iconHtml = r.imageUrl 
+                            const iconHtml = r.imageUrl
                                 ? `<img src="${r.imageUrl}" class="w-10 h-10 rounded-xl object-cover flex-shrink-0 shadow-sm border border-slate-200">`
                                 : `<div class="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center flex-shrink-0"><i data-lucide="package" class="w-5 h-5 text-emerald-600"></i></div>`;
-                                
+
                             return `<button onclick="navigateToInventory('${r.id}')" class="w-full flex items-center gap-3 p-3 hover:bg-slate-50 transition text-left border-b border-slate-100 last:border-0">
                                 ${iconHtml}
                                 <div class="flex-1 min-w-0">
@@ -1971,12 +2038,12 @@
         // --- ADMIN TABS (UPDATED) ---
         window.switchAdminTab = (tab) => {
             if (userRole === 'supervisor') {
-               if (tab === 'bookings' && !supervisorPermissions.bookings) return alert("Non hai accesso alle Prenotazioni.");
-               if (tab === 'inventory' && !supervisorPermissions.inventory) return alert("Non hai accesso al Magazzino.");
-               if (tab === 'instruments' && !supervisorPermissions.instruments) return alert("Non hai accesso agli Strumenti.");
-               if (tab === 'logs' && !supervisorPermissions.logs) return alert("Non hai accesso ai Log.");
-               if (tab === 'labels' && !supervisorPermissions.instruments && !supervisorPermissions.inventory) return alert("Non hai accesso alle Etichette.");
-               if (tab === 'settings') return alert("Non hai accesso ai Settings.");
+                if (tab === 'bookings' && !supervisorPermissions.bookings) return alert("Non hai accesso alle Prenotazioni.");
+                if (tab === 'inventory' && !supervisorPermissions.inventory) return alert("Non hai accesso al Magazzino.");
+                if (tab === 'instruments' && !supervisorPermissions.instruments) return alert("Non hai accesso agli Strumenti.");
+                if (tab === 'logs' && !supervisorPermissions.logs) return alert("Non hai accesso ai Log.");
+                if (tab === 'labels' && !supervisorPermissions.instruments && !supervisorPermissions.inventory) return alert("Non hai accesso alle Etichette.");
+                if (tab === 'settings') return alert("Non hai accesso ai Settings.");
             }
             if (userRole === 'user') return alert('Accesso negato.');
 
@@ -2004,32 +2071,32 @@
             localStorage.setItem('desktopMode', isDesktopMode);
             applyDesktopMode();
         };
-        
+
         window.applyDesktopMode = () => {
             const btn = document.getElementById('btn-toggle-desktop');
             const cam = document.getElementById('camera-container');
             const inp = document.getElementById('inp-manual-code');
             const main = document.getElementById('main-container');
-            
+
             if (isDesktopMode) {
-                if(btn) btn.innerHTML = '<i data-lucide="smartphone" class="w-3 h-3"></i> <span>MODALITÀ MOBILE</span>';
-                if(cam) cam.classList.add('hidden');
-                if(inp) {
+                if (btn) btn.innerHTML = '<i data-lucide="smartphone" class="w-3 h-3"></i> <span>MODALITÀ MOBILE</span>';
+                if (cam) cam.classList.add('hidden');
+                if (inp) {
                     inp.classList.add('text-lg', 'py-6', 'font-black', 'shadow-2xl', 'text-center');
                     inp.placeholder = "Scansiona il QR Code / Barcode...";
                     setTimeout(() => inp.focus(), 300);
                 }
-                if(main) { main.classList.remove('max-w-md'); main.classList.add('max-w-5xl'); }
+                if (main) { main.classList.remove('max-w-md'); main.classList.add('max-w-5xl'); }
             } else {
-                if(btn) btn.innerHTML = '<i data-lucide="laptop" class="w-3 h-3"></i> <span>MODALITÀ DESKTOP</span>';
-                if(cam) cam.classList.remove('hidden');
-                if(inp) {
+                if (btn) btn.innerHTML = '<i data-lucide="laptop" class="w-3 h-3"></i> <span>MODALITÀ DESKTOP</span>';
+                if (cam) cam.classList.remove('hidden');
+                if (inp) {
                     inp.classList.remove('text-lg', 'py-6', 'font-black', 'shadow-2xl', 'text-center');
                     inp.placeholder = "Cerca strumento o materiale...";
                 }
-                if(main) { main.classList.remove('max-w-5xl'); main.classList.add('max-w-md', 'lg:max-w-3xl'); }
+                if (main) { main.classList.remove('max-w-5xl'); main.classList.add('max-w-md', 'lg:max-w-3xl'); }
             }
-            if(window.lucide) lucide.createIcons();
+            if (window.lucide) lucide.createIcons();
         };
 
         window.resetApp = () => {
@@ -2048,7 +2115,7 @@
                 if (el) el.classList.add('hidden');
             });
             const target = document.getElementById(id);
-            if(target) target.classList.remove('hidden');
+            if (target) target.classList.remove('hidden');
         };
         window.startScanner = async () => {
             document.getElementById('camera-overlay').classList.add('hidden');
@@ -2083,7 +2150,7 @@
                     window.currentInstrumentData = data;
                     document.getElementById('item-title').innerText = data.description || text;
                     document.getElementById('item-subtitle').innerHTML = renderIdLink(data.id || text, true);
-                    
+
                     const imgTg = document.getElementById('inst-public-img-tag');
                     if (data.imageUrl) {
                         imgTg.src = data.imageUrl;
@@ -2102,7 +2169,7 @@
                         document.getElementById('badge-status').classList.remove('hidden');
                     }
                 }
-                if(window.lucide) lucide.createIcons();
+                if (window.lucide) lucide.createIcons();
             } catch (e) { }
         }
 
@@ -2146,7 +2213,7 @@
                         </div>
                     </div>`;
                 }).join('');
-                if(window.lucide) lucide.createIcons();
+                if (window.lucide) lucide.createIcons();
             });
         };
 
@@ -2169,25 +2236,25 @@
         window.clearInstrumentForm = () => {
             document.querySelectorAll('.inst-card').forEach(c => c.classList.remove('ring-2', 'ring-indigo-500', 'bg-indigo-50'));
             document.getElementById('inst-form-title').innerHTML = '<i data-lucide="settings-2" class="w-4 h-4 text-slate-500"></i> Configura Nuovo';
-            
+
             document.getElementById('inp-inst-id').value = '';
             document.getElementById('inp-inst-desc').value = '';
             document.getElementById('inp-inst-contact').value = '';
             document.getElementById('inp-inst-image').value = '';
             document.getElementById('inp-inst-id').readOnly = false;
-            if(window.lucide) lucide.createIcons();
+            if (window.lucide) lucide.createIcons();
         };
         window.editInstrument = (id) => {
             const inst = window.allInstrumentsCache.find(i => i.id === id);
             if (!inst) return;
-            
+
             document.querySelectorAll('.inst-card').forEach(c => c.classList.remove('ring-2', 'ring-indigo-500', 'bg-indigo-50'));
             const card = document.getElementById(`inst-card-${id.replace(/\\./g, '-')}`);
             if (card) card.classList.add('ring-2', 'ring-indigo-500', 'bg-indigo-50');
-            
+
             document.getElementById('inst-form-title').innerHTML = `<i data-lucide="edit-3" class="w-4 h-4 text-indigo-600"></i> Modifica: ${inst.description}`;
-            if(window.lucide) lucide.createIcons();
-            
+            if (window.lucide) lucide.createIcons();
+
             document.getElementById('inp-inst-id').value = inst.id;
             document.getElementById('inp-inst-desc').value = inst.description;
             document.getElementById('inp-inst-contact').value = inst.contact || '';
@@ -2280,13 +2347,13 @@
             const dateVal = document.getElementById(prefix === 'admin' ? `inp-admin-${type}-date` : `inp-${type}-date`).value;
             let resourceId = prefix === 'admin' ? document.getElementById('inp-admin-instrument').value : currentItem;
             const excludeId = prefix === 'admin' ? window._editingAdminBookingId : editingBookingId;
-            
+
             await renderTimeSlots(
                 prefix === 'admin' ? `admin-time-slots-${type}` : `time-slots-${type}`,
                 prefix === 'admin' ? `inp-admin-${type}` : `inp-${type}`,
                 type, prefix, resourceId, dateVal, excludeId
             );
-            
+
             if (type === 'start') {
                 const endDateInput = document.getElementById(prefix === 'admin' ? 'inp-admin-end-date' : 'inp-end-date');
                 if (!endDateInput.value) {
@@ -2535,7 +2602,7 @@
                 adminMode = true;
                 document.getElementById('view-maintenance').classList.add('hidden');
                 window.switchView('view-admin');
-                
+
                 // Hide/show tabs based on supervisor permissions
                 if (userRole === 'supervisor') {
                     document.getElementById('tab-btn-bookings').style.display = supervisorPermissions.bookings ? 'block' : 'none';
@@ -2543,7 +2610,7 @@
                     document.getElementById('tab-btn-instruments').style.display = supervisorPermissions.instruments ? 'block' : 'none';
                     document.getElementById('tab-btn-logs').style.display = supervisorPermissions.logs ? 'block' : 'none';
                     document.getElementById('tab-btn-settings').style.display = 'none';
-                    
+
                     if (supervisorPermissions.bookings) switchAdminTab('bookings');
                     else if (supervisorPermissions.inventory) switchAdminTab('inventory');
                     else if (supervisorPermissions.instruments) switchAdminTab('instruments');
@@ -2571,16 +2638,16 @@
         };
         // --- ETICHETTE (LABELS) ---
         let currentLabelTab = 'strum';
-        
+
         window.switchLabelTab = (tab) => {
             currentLabelTab = tab;
-            document.getElementById('lbl-tab-strum').className = tab === 'strum' 
+            document.getElementById('lbl-tab-strum').className = tab === 'strum'
                 ? 'flex-1 py-2 bg-indigo-600 text-white rounded-lg text-xs font-bold transition shadow-sm'
                 : 'flex-1 py-2 bg-white text-slate-600 hover:bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold transition shadow-sm';
-            document.getElementById('lbl-tab-magaz').className = tab === 'magaz' 
+            document.getElementById('lbl-tab-magaz').className = tab === 'magaz'
                 ? 'flex-1 py-2 bg-indigo-600 text-white rounded-lg text-xs font-bold transition shadow-sm'
                 : 'flex-1 py-2 bg-white text-slate-600 hover:bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold transition shadow-sm';
-            
+
             document.getElementById('lbl-check-all').checked = false;
             loadLabelsList();
         };
@@ -2588,7 +2655,7 @@
         window.loadLabelsList = () => {
             const container = document.getElementById('labels-item-list');
             const items = currentLabelTab === 'strum' ? (window.allInstrumentsCache || []) : (window.allInventoryCache || []);
-            
+
             document.getElementById('lbl-count-strum').innerText = (window.allInstrumentsCache || []).length;
             document.getElementById('lbl-count-magaz').innerText = (window.allInventoryCache || []).length;
 
@@ -2622,7 +2689,7 @@
         window.generateLabels = async () => {
             const selectedIds = Array.from(document.querySelectorAll('.lbl-item-checkbox:checked')).map(cb => cb.value);
             if (selectedIds.length === 0) return alert("Seleziona almeno un elemento!");
-            
+
             const doQR = document.getElementById('lbl-opt-qr').checked;
             const doBC = document.getElementById('lbl-opt-bc').checked;
             if (!doQR && !doBC) return alert("Scegli un formato in alto (QR o Barcode)!");
@@ -2740,22 +2807,22 @@
             onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'global'), (doc) => {
                 if (doc.exists()) {
                     globalSettingsCache = doc.data();
-                    
+
                     if (doc.data().maintenanceMode && !adminMode) {
                         document.getElementById('view-maintenance').classList.remove('hidden');
                     } else {
                         document.getElementById('view-maintenance').classList.add('hidden');
                     }
-                    
+
                     document.getElementById('maint-ref-name').innerText = doc.data().referentName || '';
                     document.getElementById('inp-maint-active').checked = doc.data().maintenanceMode === true;
                     document.getElementById('inp-setting-batch').checked = doc.data().batchInventoryEnabled === true;
                     document.getElementById('inp-maint-name').value = doc.data().referentName || '';
                     document.getElementById('inp-maint-email').value = doc.data().referentEmail || '';
-                    
+
                     const batchBtn = document.getElementById('btn-toggle-batch');
-                    if(batchBtn) batchBtn.style.display = doc.data().batchInventoryEnabled ? 'flex' : 'none';
-                    if(!doc.data().batchInventoryEnabled) { isBatchMode = false; updateBatchUI(); }
+                    if (batchBtn) batchBtn.style.display = doc.data().batchInventoryEnabled ? 'flex' : 'none';
+                    if (!doc.data().batchInventoryEnabled) { isBatchMode = false; updateBatchUI(); }
                 }
             });
         }
@@ -2764,14 +2831,14 @@
             const batchEn = document.getElementById('inp-setting-batch').checked;
             const refName = document.getElementById('inp-maint-name').value;
             const refEmail = document.getElementById('inp-maint-email').value;
-            
-            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'global'), { 
-                maintenanceMode: active, 
+
+            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'global'), {
+                maintenanceMode: active,
                 batchInventoryEnabled: batchEn,
-                referentName: refName, 
-                referentEmail: refEmail 
+                referentName: refName,
+                referentEmail: refEmail
             }, { merge: true });
-            
+
             logAction('UPDATE', 'SETTINGS', `Global settings updated. Maintenance: ${active}, Batch Enabled: ${batchEn}`);
             alert("Settings salvati.");
         };
@@ -2841,12 +2908,12 @@
         };
         window.searchMyBooking = async () => {
             const val = document.getElementById('inp-pnr-search').value.trim();
-            if(!val) return;
+            if (!val) return;
             const resEl = document.getElementById('pnr-result');
             resEl.innerHTML = '<p class="text-xs text-center text-slate-400">Ricerca in corso...</p>';
             try {
                 let q;
-                if(val.includes('@')) {
+                if (val.includes('@')) {
                     q = query(collection(db, 'artifacts', appId, 'public', 'data', 'bookings'), where('email', '==', val.toLowerCase()));
                 } else {
                     q = query(collection(db, 'artifacts', appId, 'public', 'data', 'bookings'), where('pnr', '==', val.toUpperCase()));
@@ -2854,14 +2921,14 @@
                 const s = await getDocs(q);
                 if (!s.empty) {
                     const bookings = [];
-                    s.forEach(d => bookings.push({id: d.id, ...d.data()}));
-                    bookings.sort((a,b) => new Date(b.startDate) - new Date(a.startDate));
-                    
+                    s.forEach(d => bookings.push({ id: d.id, ...d.data() }));
+                    bookings.sort((a, b) => new Date(b.startDate) - new Date(a.startDate));
+
                     resEl.innerHTML = bookings.map(b => {
                         const isPast = new Date(b.endDate) < new Date();
                         const opacity = isPast ? 'opacity-60' : '';
                         const titleTag = isPast ? `<span class="text-[10px] font-bold px-2 py-1 bg-slate-100 text-slate-500 rounded uppercase tracking-widest">Scaduta</span>` : `<span class="text-[10px] font-bold px-2 py-1 bg-emerald-100 text-emerald-700 rounded uppercase tracking-widest">Attiva</span>`;
-                        
+
                         return `
                         <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm ${opacity}">
                             <div class="flex justify-between items-start mb-2">
@@ -2872,23 +2939,23 @@
                                 ${titleTag}
                             </div>
                             <div class="text-[10px] text-slate-600 font-medium mb-3 bg-slate-50 p-2 rounded-lg border border-slate-100">
-                                <div><span class="text-slate-400 w-8 inline-block">Dal:</span> <span class="font-bold">${new Date(b.startDate).toLocaleString('it-IT', {dateStyle:'short', timeStyle:'short'})}</span></div>
-                                <div class="mt-1"><span class="text-slate-400 w-8 inline-block">Al:</span> <span class="font-bold">${new Date(b.endDate).toLocaleString('it-IT', {dateStyle:'short', timeStyle:'short'})}</span></div>
+                                <div><span class="text-slate-400 w-8 inline-block">Dal:</span> <span class="font-bold">${new Date(b.startDate).toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'short' })}</span></div>
+                                <div class="mt-1"><span class="text-slate-400 w-8 inline-block">Al:</span> <span class="font-bold">${new Date(b.endDate).toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'short' })}</span></div>
                             </div>
                             ${!isPast ? `
                                 <div class="flex gap-2">
-                                    <button onclick="window.currentFoundBooking = {id:'${b.id}', ...${JSON.stringify(b).replace(/"/g,"&quot;")}}; window.openEditModal()" class="flex-1 py-1.5 bg-indigo-50 border border-indigo-200 text-indigo-700 rounded-lg text-[10px] font-bold shadow-sm hover:bg-indigo-100 transition"><i data-lucide="edit-3" class="w-3 h-3 inline"></i> MODIFICA</button>
+                                    <button onclick="window.currentFoundBooking = {id:'${b.id}', ...${JSON.stringify(b).replace(/"/g, "&quot;")}}; window.openEditModal()" class="flex-1 py-1.5 bg-indigo-50 border border-indigo-200 text-indigo-700 rounded-lg text-[10px] font-bold shadow-sm hover:bg-indigo-100 transition"><i data-lucide="edit-3" class="w-3 h-3 inline"></i> MODIFICA</button>
                                     <button onclick="deleteBooking('${b.id}', true)" class="flex-1 py-1.5 bg-red-50 border border-red-200 text-red-600 rounded-lg text-[10px] font-bold shadow-sm hover:bg-red-100 transition"><i data-lucide="trash-2" class="w-3 h-3 inline"></i> CANCELLA</button>
                                 </div>
                             ` : ''}
                         </div>
                         `;
                     }).join('');
-                    if(window.lucide) lucide.createIcons();
+                    if (window.lucide) lucide.createIcons();
                 } else {
                     resEl.innerHTML = "<p class='text-xs text-red-500 font-bold text-center bg-red-50 p-3 rounded-xl border border-red-100'>Nessuna prenotazione trovata.</p>";
                 }
-            } catch(e) {
+            } catch (e) {
                 resEl.innerHTML = "<p class='text-xs text-red-500 font-bold text-center'>Errore di rete.</p>";
             }
         };
@@ -2981,32 +3048,32 @@
             const lbl = document.getElementById('lbl-batch-mode');
             const cartBtn = document.getElementById('btn-cart');
             const count = document.getElementById('cart-count');
-            
-            if(lbl) lbl.innerText = isBatchMode ? 'MULTI' : 'SINGOLO';
-            
+
+            if (lbl) lbl.innerText = isBatchMode ? 'MULTI' : 'SINGOLO';
+
             if (isBatchMode && batchCart.length > 0) {
                 cartBtn.style.display = 'flex';
                 count.innerText = batchCart.length;
             } else {
                 cartBtn.style.display = 'none';
             }
-            
-            if(!isBatchMode && batchCart.length > 0) {
-                if(confirm('Attenzione: il carrello contiene articoli. Svuotare il carrello per tornare alla modalità singola?')) {
+
+            if (!isBatchMode && batchCart.length > 0) {
+                if (confirm('Attenzione: il carrello contiene articoli. Svuotare il carrello per tornare alla modalità singola?')) {
                     batchCart = [];
                     updateBatchUI();
                 } else {
-                    isBatchMode = true; 
-                    if(lbl) lbl.innerText = 'MULTI';
+                    isBatchMode = true;
+                    if (lbl) lbl.innerText = 'MULTI';
                 }
             }
         };
 
         window.showBatchCart = () => {
-             document.getElementById('view-scanner').classList.add('hidden');
-             importBatchItemsHTML();
-             window.switchView('view-batch-summary');
-             setTimeout(() => document.getElementById('inp-batch-operator').focus(), 100);
+            document.getElementById('view-scanner').classList.add('hidden');
+            importBatchItemsHTML();
+            window.switchView('view-batch-summary');
+            setTimeout(() => document.getElementById('inp-batch-operator').focus(), 100);
         };
 
         function importBatchItemsHTML() {
@@ -3028,23 +3095,23 @@
                     </div>
                 </div>
             `).join('');
-            if(window.lucide) lucide.createIcons();
+            if (window.lucide) lucide.createIcons();
         }
 
         window.updateBatchQty = (idx, val) => {
             const num = parseFloat(val);
-            if(num > 0) batchCart[idx].qtyToAdd = num;
+            if (num > 0) batchCart[idx].qtyToAdd = num;
         };
 
         window.removeBatchItem = (idx) => {
             batchCart.splice(idx, 1);
             importBatchItemsHTML();
             updateBatchUI();
-            if(batchCart.length === 0) resetApp();
+            if (batchCart.length === 0) resetApp();
         };
 
         window.clearBatchCart = () => {
-            if(confirm("Svuotare il carrello?")) {
+            if (confirm("Svuotare il carrello?")) {
                 batchCart = [];
                 resetApp();
             }
@@ -3053,18 +3120,18 @@
         window.toggleBatchRemoveOrder = () => {
             const action = document.querySelector('input[name="batch-action"]:checked').value;
             const div = document.getElementById('div-batch-remove-order');
-            if(action === 'add') div.style.display = 'flex';
+            if (action === 'add') div.style.display = 'flex';
             else div.style.display = 'none';
         };
 
         window.confirmBatchMovement = async (e) => {
             e.preventDefault();
             if (batchCart.length === 0) return alert("Carrello vuoto.");
-            const action = document.querySelector('input[name="batch-action"]:checked').value; 
+            const action = document.querySelector('input[name="batch-action"]:checked').value;
             const operator = document.getElementById('inp-batch-operator').value.trim();
             const removeOrder = document.getElementById('inp-batch-remove-order').checked;
 
-            if(!operator) return alert("Inserire Operatore.");
+            if (!operator) return alert("Inserire Operatore.");
 
             try {
                 const toast = document.createElement('div');
@@ -3076,9 +3143,9 @@
                 await runTransaction(db, async (t) => {
                     const docRefs = batchCart.map(item => doc(db, 'artifacts', appId, 'public', 'data', 'inventory', item.id.replace(/\//g, '_')));
                     const docsSnap = [];
-                    for(let ref of docRefs) {
+                    for (let ref of docRefs) {
                         const snap = await t.get(ref);
-                        if(!snap.exists()) throw `Articolo ${ref.id} non trovato.`;
+                        if (!snap.exists()) throw `Articolo ${ref.id} non trovato.`;
                         docsSnap.push(snap);
                     }
 
@@ -3089,15 +3156,15 @@
                         let finalQty = currentQty;
                         let updates = {};
 
-                        if(action === 'add') {
+                        if (action === 'add') {
                             finalQty += item.qtyToAdd;
-                            if(removeOrder && d.isOrdered) {
+                            if (removeOrder && d.isOrdered) {
                                 updates.isOrdered = false;
                                 updates.orderBy = null;
                                 updates.orderDate = null;
                             }
                         } else {
-                            if(currentQty < item.qtyToAdd) throw `Scorte insufficienti per ${d.name}! Disp: ${currentQty}`;
+                            if (currentQty < item.qtyToAdd) throw `Scorte insufficienti per ${d.name}! Disp: ${currentQty}`;
                             finalQty -= item.qtyToAdd;
                         }
 
@@ -3122,12 +3189,12 @@
                 document.getElementById('batch-loading-toast')?.remove();
                 alert(`${batchCart.length} movimenti processati con successo!`);
                 logAction('UPDATE', 'INVENTORY', `Batch ${action} completed for ${batchCart.length} items. Operator: ${operator}`);
-                
+
                 batchCart = [];
                 resetApp();
-            } catch (err) { 
+            } catch (err) {
                 document.getElementById('batch-loading-toast')?.remove();
-                alert("Errore Transazione: " + err); 
+                alert("Errore Transazione: " + err);
             }
         };
 
@@ -3234,9 +3301,9 @@
                 loadSupervisors();
                 logAction('UPDATE', 'SETTINGS', `Supervisor added/updated: ${email}`);
                 alert(`${email} salvato come Supervisore.`);
-            } catch(e) { alert('Errore: ' + e.message); }
+            } catch (e) { alert('Errore: ' + e.message); }
         }
-        
+
         window.removeSupervisor = async (emailToRemove) => {
             if (!confirm(`Rimuovere ${emailToRemove} dai supervisori?`)) return;
             try {
@@ -3247,7 +3314,7 @@
                 await setDoc(docRef, { list });
                 loadSupervisors();
                 logAction('UPDATE', 'SETTINGS', `Supervisor removed: ${emailToRemove}`);
-            } catch(e) { alert('Errore: ' + e.message); }
+            } catch (e) { alert('Errore: ' + e.message); }
         }
 
         // --- BOOKING CONFIRMATION EMAIL ---
