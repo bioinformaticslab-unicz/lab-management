@@ -1569,47 +1569,49 @@
                 logAction('UPDATE', 'INVENTORY', `Stock movement for ${updatedData.name} (${currentItem}): ${currentStockAction === 'add' ? '+' : '-'}${qty} ${updatedData.unit}. User: ${operatorName}`);
 
                 // --- RESTOCK ALERT EMAIL ---
-                // --- RESTOCK ALERT EMAIL ---
-                // Debug log for email logic
-                console.log(`[EMAIL CHECK] Item: ${updatedData.name}, Qty: ${updatedData.quantity}, Threshold: ${updatedData.threshold || 0}, Email: ${updatedData.restockEmail}`);
-
-                if (updatedData.quantity <= (updatedData.threshold || 0)) {
-                    if (updatedData.restockEmail) {
-                        try {
-                            // Visual feedback
-                            const toast = document.createElement('div');
-                            toast.className = 'fixed top-5 right-5 bg-indigo-600 text-white px-4 py-2 rounded shadow-lg z-[200] text-xs font-bold fade-in';
-                            toast.innerHTML = `<i data-lucide="mail" class="inline w-3 h-3"></i> Invio email riordino...`;
-                            document.body.appendChild(toast);
-                            setTimeout(() => toast.remove(), 3000);
-
-                            await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_RESTOCK_TEMPLATE_ID, {
-                                to_email: updatedData.restockEmail,
-                                product_name: updatedData.name,
-                                current_qty: updatedData.quantity,
-                                threshold: updatedData.threshold,
-                                unit: updatedData.unit === 'pacco' ? 'pacchi' : (updatedData.unit || 'pz'),
-                                from_name: 'UniScan Lab'
-                            });
-
-                            console.log('Restock alert email sent to', updatedData.restockEmail);
-                            logAction('EMAIL', 'SYSTEM', `Restock alert sent to ${updatedData.restockEmail} for ${updatedData.name}`);
-
-                            // Success toast
-                            toast.className = 'fixed top-5 right-5 bg-green-600 text-white px-4 py-2 rounded shadow-lg z-[200] text-xs font-bold fade-in';
-                            toast.innerText = 'Email inviata!';
-                        } catch (emailErr) {
-                            console.warn('Restock email failed:', emailErr);
-                            logAction('ERROR', 'SYSTEM', `Email failed: ${emailErr.text || emailErr}`);
-                        }
-                    } else {
-                        console.warn('Low stock but no restock email configured.');
-                        logAction('EMAIL_SKIP', 'SYSTEM', `Restock alert skipped for ${updatedData.name}: No email set.`);
-                    }
-                }
+                checkAndSendRestockEmail(updatedData);
 
             } catch (err) { alert("Errore: " + err); }
         };
+
+        // SHARED FUNCTION FOR LOW STOCK EMAILS
+        async function checkAndSendRestockEmail(itemData) {
+            console.log(`[EMAIL CHECK] Item: ${itemData.name}, Qty: ${itemData.quantity}, Threshold: ${itemData.threshold || 0}, Email: ${itemData.restockEmail}`);
+            if (itemData.quantity <= (itemData.threshold || 0)) {
+                if (itemData.restockEmail) {
+                    try {
+                        // Visual feedback
+                        const toast = document.createElement('div');
+                        toast.className = 'fixed top-5 right-5 bg-indigo-600 text-white px-4 py-2 rounded shadow-lg z-[200] text-xs font-bold fade-in';
+                        toast.innerHTML = `<i data-lucide="mail" class="inline w-3 h-3"></i> Invio email riordino (${itemData.name})...`;
+                        document.body.appendChild(toast);
+                        setTimeout(() => toast.remove(), 3000);
+
+                        await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_RESTOCK_TEMPLATE_ID, {
+                            to_email: itemData.restockEmail,
+                            product_name: itemData.name,
+                            current_qty: itemData.quantity,
+                            threshold: itemData.threshold,
+                            unit: itemData.unit === 'pacco' ? 'pacchi' : (itemData.unit || 'pz'),
+                            from_name: 'LABSCAN Lab'
+                        });
+
+                        console.log('Restock alert email sent to', itemData.restockEmail);
+                        logAction('EMAIL', 'SYSTEM', `Restock alert sent to ${itemData.restockEmail} for ${itemData.name}`);
+
+                        // Success toast
+                        toast.className = 'fixed top-5 right-5 bg-green-600 text-white px-4 py-2 rounded shadow-lg z-[200] text-xs font-bold fade-in';
+                        toast.innerText = `Email inviata per ${itemData.name}!`;
+                    } catch (emailErr) {
+                        console.warn('Restock email failed:', emailErr);
+                        logAction('ERROR', 'SYSTEM', `Email failed for ${itemData.name}: ${emailErr.text || emailErr}`);
+                    }
+                } else {
+                    console.warn('Low stock but no restock email configured for', itemData.name);
+                    logAction('EMAIL_SKIP', 'SYSTEM', `Restock alert skipped for ${itemData.name}: No email set.`);
+                }
+            }
+        }
 
         function loadStockHistory(itemId) {
             const listEl = document.getElementById('stock-history-list');
@@ -3189,6 +3191,16 @@
                 document.getElementById('batch-loading-toast')?.remove();
                 alert(`${batchCart.length} movimenti processati con successo!`);
                 logAction('UPDATE', 'INVENTORY', `Batch ${action} completed for ${batchCart.length} items. Operator: ${operator}`);
+
+                // --- CHECK LOW STOCK FOR EMAILS IN BATCH ---
+                if (action === 'remove') {
+                    for (let item of batchCart) {
+                        const snap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'inventory', item.id.replace(/\//g, '_')));
+                        if (snap.exists()) {
+                            checkAndSendRestockEmail(snap.data());
+                        }
+                    }
+                }
 
                 batchCart = [];
                 resetApp();
