@@ -529,14 +529,35 @@
                 </div>
 
                 <!-- Admin Management -->
-                <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-200 shadow-sm">
-                    <h3 class="text-sm font-bold text-indigo-800 mb-3">👥 Gestione Amministratori</h3>
+                <!-- Gestione Co-Admins (Visible to Main Admin) -->
+                <div id="co-admin-section" class="bg-indigo-50 p-4 rounded-xl border border-indigo-200 shadow-sm hidden">
+                    <h3 class="text-sm font-bold text-indigo-800 mb-2">👑 Gestione Co-Amministratori</h3>
+                    <p class="text-[10px] text-slate-500 mb-3">Possono gestire la dashboard e i supervisori, ma non gli altri admin.</p>
                     <div id="admin-list-emails" class="space-y-2 mb-3"></div>
                     <div class="flex gap-2">
                         <input type="email" id="inp-new-admin-email" class="flex-1 text-xs p-2 border rounded"
                             placeholder="email@esempio.com">
                         <button onclick="addAdminEmail()"
                             class="px-3 py-2 bg-indigo-600 text-white rounded text-xs font-bold">AGGIUNGI</button>
+                    </div>
+                </div>
+
+                <!-- Gestione Supervisori (Visible to Main Admin & Co-Admins) -->
+                <div id="supervisor-section" class="bg-emerald-50 p-4 rounded-xl border border-emerald-200 shadow-sm mt-4 hidden">
+                    <h3 class="text-sm font-bold text-emerald-800 mb-2">👁️ Gestione Supervisori</h3>
+                    <p class="text-[10px] text-slate-500 mb-3">Assegna permessi specifici d'accesso ai supervisori.</p>
+                    <div id="supervisor-list" class="space-y-2 mb-3"></div>
+                    <div class="space-y-2 border border-emerald-200 p-3 rounded-lg bg-white">
+                        <input type="email" id="inp-new-sup-email" class="w-full text-xs p-2 border rounded border-slate-200"
+                            placeholder="email@esempio.com">
+                        <div class="flex gap-3 text-xs flex-wrap mb-2 text-slate-700 font-medium">
+                            <label class="flex items-center gap-1"><input type="checkbox" id="chk-sup-book" checked> Prenotazioni</label>
+                            <label class="flex items-center gap-1"><input type="checkbox" id="chk-sup-inv" checked> Magazzino</label>
+                            <label class="flex items-center gap-1"><input type="checkbox" id="chk-sup-inst" checked> Strumenti</label>
+                            <label class="flex items-center gap-1"><input type="checkbox" id="chk-sup-logs"> Logs</label>
+                        </div>
+                        <button onclick="addSupervisor()"
+                            class="w-full py-2 bg-emerald-600 text-white rounded text-xs font-bold">AGGIUNGI SUPERVISORE</button>
                     </div>
                 </div>
 
@@ -896,6 +917,10 @@
         let isRegisterMode = false;
         let editingBookingId = null;
         let currentStockAction = null;
+        
+        // Nuove variabili RBAC
+        let userRole = 'user'; // 'main_admin', 'co_admin', 'supervisor', 'user'
+        let supervisorPermissions = {};
 
         window.currentFoundBooking = null;
         window.currentInstrumentData = {};
@@ -931,6 +956,45 @@
         // AUTH
         onAuthStateChanged(auth, async (user) => {
             if (user) {
+                // Determine Role
+                const uEmail = user.email.toLowerCase();
+                const MAIN_ADMINS = ['vono.niccolo@gmail.com'];
+                userRole = 'user';
+                supervisorPermissions = {};
+                isAdmin = false;
+                
+                if (MAIN_ADMINS.includes(uEmail)) {
+                    userRole = 'main_admin';
+                } else {
+                    try {
+                        const coAdminSnap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'admins'));
+                        if (coAdminSnap.exists() && (coAdminSnap.data().emails || []).includes(uEmail)) {
+                            userRole = 'co_admin';
+                        } else {
+                            const supSnap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'supervisors'));
+                            if (supSnap.exists()) {
+                                const sups = supSnap.data().list || [];
+                                const mySup = sups.find(s => s.email === uEmail);
+                                if (mySup) {
+                                    userRole = 'supervisor';
+                                    supervisorPermissions = mySup.permissions || {};
+                                }
+                            }
+                        }
+                    } catch(e) { console.warn('Role check failed:', e); }
+                }
+                
+                if (userRole === 'user') {
+                    if (!uEmail.endsWith('@studenti.unicz.it') && !uEmail.endsWith('@unicz.it')) {
+                        alert("Accesso negato. Solo domini @studenti.unicz.it o @unicz.it sono ammessi.");
+                        await signOut(auth);
+                        return;
+                    }
+                } else {
+                    isAdmin = true;
+                    adminMode = true; // Auto-enter admin mode se non-user
+                }
+
                 currentUser = user;
                 document.getElementById('view-login').classList.add('hidden');
                 document.getElementById('user-status').classList.remove('bg-red-500', 'animate-pulse');
@@ -940,25 +1004,18 @@
                 const nameEl = document.getElementById('user-display-name');
                 nameEl.innerText = displayName;
                 nameEl.classList.remove('hidden');
-                // Check if user is admin
-                const DEFAULT_ADMINS = ['vono.niccolo@gmail.com'];
-                isAdmin = DEFAULT_ADMINS.includes(user.email);
-                try {
-                    const adminSnap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'admins'));
-                    if (adminSnap.exists()) {
-                        const adminEmails = adminSnap.data().emails || [];
-                        if (adminEmails.includes(user.email)) isAdmin = true;
-                    }
-                } catch (e) { console.warn('Admin check failed:', e); }
-                // Auto-enter admin mode if admin
-                if (isAdmin) {
-                    adminMode = true;
-                }
+                
+                // Hide/show settings sections based on role
+                const coAdminSec = document.getElementById('co-admin-section');
+                const supSec = document.getElementById('supervisor-section');
+                if (coAdminSec) coAdminSec.style.display = userRole === 'main_admin' ? 'block' : 'none';
+                if (supSec) supSec.style.display = (userRole === 'main_admin' || userRole === 'co_admin') ? 'block' : 'none';
+
                 loadGlobalSettings();
                 loadPublicInventory();
                 loadResourcesCache();
                 checkUrlParams();
-                logAction('LOGIN', 'AUTH', `User logged in: ${user.email}`);
+                logAction('LOGIN', 'AUTH', `User logged in: ${user.email} Role: ${userRole}`);
             } else {
                 document.getElementById('view-login').classList.remove('hidden');
                 document.getElementById('btn-logout').classList.add('hidden');
@@ -1706,6 +1763,15 @@
 
         // --- ADMIN TABS (UPDATED) ---
         window.switchAdminTab = (tab) => {
+            if (userRole === 'supervisor') {
+               if (tab === 'bookings' && !supervisorPermissions.bookings) return alert("Non hai accesso alle Prenotazioni.");
+               if (tab === 'inventory' && !supervisorPermissions.inventory) return alert("Non hai accesso al Magazzino.");
+               if (tab === 'instruments' && !supervisorPermissions.instruments) return alert("Non hai accesso agli Strumenti.");
+               if (tab === 'logs' && !supervisorPermissions.logs) return alert("Non hai accesso ai Log.");
+               if (tab === 'settings') return alert("Non hai accesso ai Settings.");
+            }
+            if (userRole === 'user') return alert('Accesso negato.');
+
             document.querySelectorAll('.admin-tab-btn').forEach(b => {
                 b.classList.remove('bg-white', 'text-indigo-700', 'shadow-sm');
                 b.classList.add('text-slate-500');
@@ -2088,8 +2154,29 @@
                 adminMode = true;
                 document.getElementById('view-maintenance').classList.add('hidden');
                 window.switchView('view-admin');
-                switchAdminTab('bookings');
-                loadAdminEmails(); // Load admin list when entering settings
+                
+                // Hide/show tabs based on supervisor permissions
+                if (userRole === 'supervisor') {
+                    document.getElementById('tab-btn-bookings').style.display = supervisorPermissions.bookings ? 'block' : 'none';
+                    document.getElementById('tab-btn-inventory').style.display = supervisorPermissions.inventory ? 'block' : 'none';
+                    document.getElementById('tab-btn-instruments').style.display = supervisorPermissions.instruments ? 'block' : 'none';
+                    document.getElementById('tab-btn-logs').style.display = supervisorPermissions.logs ? 'block' : 'none';
+                    document.getElementById('tab-btn-settings').style.display = 'none';
+                    
+                    if (supervisorPermissions.bookings) switchAdminTab('bookings');
+                    else if (supervisorPermissions.inventory) switchAdminTab('inventory');
+                    else if (supervisorPermissions.instruments) switchAdminTab('instruments');
+                    else if (supervisorPermissions.logs) switchAdminTab('logs');
+                } else {
+                    document.getElementById('tab-btn-bookings').style.display = 'block';
+                    document.getElementById('tab-btn-inventory').style.display = 'block';
+                    document.getElementById('tab-btn-instruments').style.display = 'block';
+                    document.getElementById('tab-btn-logs').style.display = 'block';
+                    document.getElementById('tab-btn-settings').style.display = 'block';
+                    switchAdminTab('bookings');
+                    loadAdminEmails(); // For Co-Admins
+                    loadSupervisors(); // For Supervisors
+                }
             } else {
                 alert('Non hai i permessi di amministratore. Contatta un admin per essere abilitato.');
             }
@@ -2308,14 +2395,14 @@
             } catch (err) { alert('Errore: ' + err.message); }
         };
 
-        // --- ADMIN EMAIL MANAGEMENT ---
+        // --- CO-ADMIN EMAIL MANAGEMENT ---
         async function loadAdminEmails() {
             try {
                 const adminSnap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'admins'));
                 const emails = adminSnap.exists() ? (adminSnap.data().emails || []) : [];
                 const container = document.getElementById('admin-list-emails');
                 if (emails.length === 0) {
-                    container.innerHTML = '<p class="text-xs text-slate-400">Nessun admin aggiuntivo configurato.</p>';
+                    container.innerHTML = '<p class="text-xs text-slate-400">Nessun co-admin configurato.</p>';
                 } else {
                     container.innerHTML = emails.map(em => `
                         <div class="flex justify-between items-center bg-white p-2 rounded border border-indigo-100">
@@ -2324,8 +2411,7 @@
                         </div>
                     `).join('');
                 }
-                // Show default admins (not removable)
-                const defaultInfo = '<p class="text-[10px] text-indigo-400 mt-2">Admin predefiniti: vono.niccolo@gmail.com</p>';
+                const defaultInfo = '<p class="text-[10px] text-indigo-400 mt-2">Main Admin: vono.niccolo@gmail.com</p>';
                 container.innerHTML += defaultInfo;
             } catch (e) { console.warn('Load admin emails failed:', e); }
         }
@@ -2342,12 +2428,12 @@
                 await setDoc(adminRef, { emails }, { merge: true });
                 emailInput.value = '';
                 loadAdminEmails();
-                logAction('UPDATE', 'SETTINGS', `Admin added: ${newEmail}`);
-                alert(`${newEmail} aggiunto come amministratore.`);
+                logAction('UPDATE', 'SETTINGS', `Co-Admin added: ${newEmail}`);
+                alert(`${newEmail} aggiunto come co-amministratore.`);
             } catch (e) { alert('Errore: ' + e.message); }
         };
         window.removeAdminEmail = async (emailToRemove) => {
-            if (!confirm(`Rimuovere ${emailToRemove} dagli amministratori?`)) return;
+            if (!confirm(`Rimuovere ${emailToRemove} dai co-amministratori?`)) return;
             try {
                 const adminRef = doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'admins');
                 const adminSnap = await getDoc(adminRef);
@@ -2355,9 +2441,78 @@
                 const updated = emails.filter(em => em !== emailToRemove);
                 await setDoc(adminRef, { emails: updated });
                 loadAdminEmails();
-                logAction('UPDATE', 'SETTINGS', `Admin removed: ${emailToRemove}`);
+                logAction('UPDATE', 'SETTINGS', `Co-Admin removed: ${emailToRemove}`);
             } catch (e) { alert('Errore: ' + e.message); }
         };
+
+        // --- SUPERVISOR MANAGEMENT ---
+        async function loadSupervisors() {
+            try {
+                const supSnap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'supervisors'));
+                const sups = supSnap.exists() ? (supSnap.data().list || []) : [];
+                const container = document.getElementById('supervisor-list');
+                if (sups.length === 0) {
+                    container.innerHTML = '<p class="text-xs text-slate-400">Nessun supervisore configurato.</p>';
+                } else {
+                    container.innerHTML = sups.map(s => {
+                        const perms = [];
+                        if (s.permissions.bookings) perms.push('Prenotazioni');
+                        if (s.permissions.inventory) perms.push('Magazzino');
+                        if (s.permissions.instruments) perms.push('Strumenti');
+                        if (s.permissions.logs) perms.push('Logs');
+                        return `
+                        <div class="flex justify-between items-start bg-white p-2 rounded border border-emerald-100">
+                            <div>
+                                <div class="text-xs font-mono text-slate-700 font-bold">${s.email}</div>
+                                <div class="text-[9px] text-emerald-600">${perms.join(', ') || 'Nessun Permesso'}</div>
+                            </div>
+                            <button onclick="removeSupervisor('${s.email}')" class="text-red-500 text-xs font-bold px-2 py-1 hover:bg-red-50 rounded">✕</button>
+                        </div>
+                        `;
+                    }).join('');
+                }
+            } catch (e) { console.warn('Load supervisors failed:', e); }
+        }
+
+        window.addSupervisor = async () => {
+            const email = document.getElementById('inp-new-sup-email').value.trim().toLowerCase();
+            if (!email || !email.includes('@')) return alert('Email non valida.');
+            const perms = {
+                bookings: document.getElementById('chk-sup-book').checked,
+                inventory: document.getElementById('chk-sup-inv').checked,
+                instruments: document.getElementById('chk-sup-inst').checked,
+                logs: document.getElementById('chk-sup-logs').checked
+            };
+            try {
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'supervisors');
+                const snap = await getDoc(docRef);
+                const list = snap.exists() ? (snap.data().list || []) : [];
+                const existingIdx = list.findIndex(s => s.email === email);
+                if (existingIdx >= 0) {
+                    list[existingIdx].permissions = perms;
+                } else {
+                    list.push({ email, permissions: perms });
+                }
+                await setDoc(docRef, { list }, { merge: true });
+                document.getElementById('inp-new-sup-email').value = '';
+                loadSupervisors();
+                logAction('UPDATE', 'SETTINGS', `Supervisor added/updated: ${email}`);
+                alert(`${email} salvato come Supervisore.`);
+            } catch(e) { alert('Errore: ' + e.message); }
+        }
+        
+        window.removeSupervisor = async (emailToRemove) => {
+            if (!confirm(`Rimuovere ${emailToRemove} dai supervisori?`)) return;
+            try {
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'supervisors');
+                const snap = await getDoc(docRef);
+                let list = snap.exists() ? (snap.data().list || []) : [];
+                list = list.filter(s => s.email !== emailToRemove);
+                await setDoc(docRef, { list });
+                loadSupervisors();
+                logAction('UPDATE', 'SETTINGS', `Supervisor removed: ${emailToRemove}`);
+            } catch(e) { alert('Errore: ' + e.message); }
+        }
 
         // --- BOOKING CONFIRMATION EMAIL ---
         function buildGoogleCalendarUrl(title, startStr, endStr, description) {
