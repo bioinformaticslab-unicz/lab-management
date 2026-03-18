@@ -24,7 +24,10 @@
         }
     </script>
 
-    <!-- Alpine.js (deferred, no x-cloak flash) -->
+    <!-- App Logic loaded BEFORE Alpine so alpine:init event fires correctly -->
+    <script type="module" src="./src/main.js"></script>
+
+    <!-- Alpine.js (deferred — must come AFTER main.js in document order) -->
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
     <!-- Lucide Icons -->
