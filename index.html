@@ -2005,12 +2005,22 @@
             window.currentInstrumentData = { id: text };
             loadBookings(text);
             try {
-                const docSnap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'resources', text.replace(/\//g, '_')));
+                const docSnap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'resources', text.replace(/\\//g, '_')));
                 if (docSnap.exists()) {
                     const data = docSnap.data();
                     window.currentInstrumentData = data;
                     document.getElementById('item-title').innerText = data.description || text;
                     document.getElementById('item-subtitle').innerHTML = renderIdLink(data.id || text);
+                    
+                    const imgCtn = document.getElementById('inst-public-image');
+                    const imgTg = document.getElementById('inst-public-img-tag');
+                    if (data.imageUrl) {
+                        imgTg.src = data.imageUrl;
+                        imgCtn.classList.remove('hidden');
+                    } else {
+                        imgCtn.classList.add('hidden');
+                    }
+
                     if (isIpAddress(data.id || text)) {
                         document.getElementById('ip-actions').classList.remove('hidden');
                         document.getElementById('btn-open-ip').href = 'http://' + (data.id || text);
@@ -2020,7 +2030,7 @@
                         document.getElementById('badge-status').classList.remove('hidden');
                     }
                 }
-                lucide.createIcons();
+                if(window.lucide) lucide.createIcons();
             } catch (e) { }
         }
 
@@ -2047,16 +2057,24 @@
                 snapshot.forEach(doc => items.push(doc.data()));
                 window.allInstrumentsCache = items;
                 document.getElementById('instruments-list').innerHTML = items.map(item => {
-                    const ipLink = /^(\d{1,3}\.){3}\d{1,3}(:\d+)?$/.test(item.id)
+                    const ipLink = /^(\\d{1,3}\\.){3}\\d{1,3}(:\\d+)?$/.test(item.id)
                         ? `<a href="http://${item.id}" target="_blank" class="text-[10px] text-blue-500 hover:text-blue-700 underline font-mono inline-flex items-center gap-0.5"><i data-lucide="external-link" class="w-2.5 h-2.5"></i> ${item.id}</a>`
                         : `<div class="text-[10px] text-slate-400 font-mono">${item.id}</div>`;
                     return `
-                    <div class="bg-white p-3 rounded-lg border border-slate-100 flex justify-between items-center shadow-sm">
-                        <div onclick="editInstrument('${item.id}')"><div class="text-xs font-bold text-slate-700">${item.description}</div>${ipLink}</div>
-                        <div class="flex gap-2"><button onclick="openCalendarForInstrument('${item.id}', '${item.description}')" class="p-2 bg-indigo-50 rounded-lg"><i data-lucide="calendar" class="w-4 h-4"></i></button></div>
+                    <div id="inst-card-${item.id.replace(/\\./g, '-')}" class="inst-card bg-white p-3 rounded-lg border border-slate-100 flex justify-between items-center shadow-sm cursor-pointer hover:border-indigo-400 transition" onclick="editInstrument('${item.id}')">
+                        <div>
+                            <div class="flex items-center gap-2">
+                                ${item.imageUrl ? `<img src="${item.imageUrl}" class="w-6 h-6 rounded object-cover shadow-sm">` : ''}
+                                <div class="text-xs font-bold text-slate-700">${item.description}</div>
+                            </div>
+                            ${ipLink}
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="event.stopPropagation(); openCalendarForInstrument('${item.id}', '${item.description}')" class="p-2 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition"><i data-lucide="calendar" class="w-4 h-4"></i></button>
+                        </div>
                     </div>`;
                 }).join('');
-                lucide.createIcons();
+                if(window.lucide) lucide.createIcons();
             });
         };
 
@@ -2065,10 +2083,11 @@
             const id = document.getElementById('inp-inst-id').value.trim();
             const desc = document.getElementById('inp-inst-desc').value.trim();
             const contact = document.getElementById('inp-inst-contact').value.trim();
+            const url = document.getElementById('inp-inst-image').value.trim();
             const bookable = document.getElementById('inp-inst-bookable').checked;
             try {
-                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'resources', id.replace(/\//g, '_')), {
-                    id, description: desc, contact, isBookable: bookable, updatedAt: serverTimestamp()
+                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'resources', id.replace(/\\//g, '_')), {
+                    id, description: desc, contact, imageUrl: url, isBookable: bookable, updatedAt: serverTimestamp()
                 });
                 alert("Salvato!");
                 logAction('UPDATE', 'INSTRUMENT', `Instrument saved: ${desc} (${id})`);
@@ -2076,17 +2095,31 @@
             } catch (e) { alert(e.message); }
         };
         window.clearInstrumentForm = () => {
+            document.querySelectorAll('.inst-card').forEach(c => c.classList.remove('ring-2', 'ring-indigo-500', 'bg-indigo-50'));
+            document.getElementById('inst-form-title').innerHTML = '<i data-lucide="settings-2" class="w-4 h-4 text-slate-500"></i> Configura Nuovo';
+            
             document.getElementById('inp-inst-id').value = '';
             document.getElementById('inp-inst-desc').value = '';
             document.getElementById('inp-inst-contact').value = '';
+            document.getElementById('inp-inst-image').value = '';
             document.getElementById('inp-inst-id').readOnly = false;
+            if(window.lucide) lucide.createIcons();
         };
         window.editInstrument = (id) => {
             const inst = window.allInstrumentsCache.find(i => i.id === id);
             if (!inst) return;
+            
+            document.querySelectorAll('.inst-card').forEach(c => c.classList.remove('ring-2', 'ring-indigo-500', 'bg-indigo-50'));
+            const card = document.getElementById(`inst-card-${id.replace(/\\./g, '-')}`);
+            if (card) card.classList.add('ring-2', 'ring-indigo-500', 'bg-indigo-50');
+            
+            document.getElementById('inst-form-title').innerHTML = `<i data-lucide="edit-3" class="w-4 h-4 text-indigo-600"></i> Modifica: ${inst.description}`;
+            if(window.lucide) lucide.createIcons();
+            
             document.getElementById('inp-inst-id').value = inst.id;
             document.getElementById('inp-inst-desc').value = inst.description;
             document.getElementById('inp-inst-contact').value = inst.contact || '';
+            document.getElementById('inp-inst-image').value = inst.imageUrl || '';
             document.getElementById('inp-inst-bookable').checked = inst.isBookable !== false;
             document.getElementById('inp-inst-id').readOnly = true;
             document.querySelector('#admin-content-instruments').scrollIntoView({ behavior: 'smooth' });
@@ -2150,7 +2183,7 @@
             });
             btn.classList.add('bg-indigo-600', 'text-white', 'border-indigo-600');
             btn.classList.remove('border-slate-200', 'text-slate-600');
-            const dateInput = document.getElementById(prefix === 'admin' ? 'inp-admin-date' : 'inp-date');
+            const dateInput = document.getElementById(prefix === 'admin' ? `inp-admin-${type}-date` : `inp-${type}-date`);
             const date = dateInput.value;
             if (date) {
                 document.getElementById(hiddenInputId).value = date + 'T' + btn.dataset.time;
@@ -2159,7 +2192,8 @@
             }
             if (type === 'start') {
                 const endHidden = document.getElementById(prefix === 'admin' ? 'inp-admin-end' : 'inp-end');
-                if (!endHidden.value || endHidden.value.indexOf('T') === -1) {
+                const endDateInput = document.getElementById(prefix === 'admin' ? 'inp-admin-end-date' : 'inp-end-date');
+                if (dateInput.value === endDateInput.value && (!endHidden.value || endHidden.value.indexOf('T') === -1)) {
                     const slots = generateTimeSlots();
                     const idx = slots.indexOf(btn.dataset.time);
                     if (idx >= 0 && idx < slots.length - 1) {
@@ -2170,24 +2204,25 @@
                 }
             }
         };
-        // Re-render slots when date changes to show availability
-        async function onDateChange(prefix) {
-            const dateVal = document.getElementById(prefix === 'admin' ? 'inp-admin-date' : 'inp-date').value;
-            let resourceId;
-            if (prefix === 'admin') {
-                const sel = document.getElementById('inp-admin-instrument');
-                resourceId = sel.value;
-            } else {
-                resourceId = currentItem;
-            }
+        async function onDateChange(prefix, type) {
+            const dateVal = document.getElementById(prefix === 'admin' ? `inp-admin-${type}-date` : `inp-${type}-date`).value;
+            let resourceId = prefix === 'admin' ? document.getElementById('inp-admin-instrument').value : currentItem;
             const excludeId = prefix === 'admin' ? window._editingAdminBookingId : editingBookingId;
-            await renderTimeSlots(prefix === 'admin' ? 'admin-time-slots-start' : 'time-slots-start',
-                prefix === 'admin' ? 'inp-admin-start' : 'inp-start', 'start', prefix, resourceId, dateVal, excludeId);
-            await renderTimeSlots(prefix === 'admin' ? 'admin-time-slots-end' : 'time-slots-end',
-                prefix === 'admin' ? 'inp-admin-end' : 'inp-end', 'end', prefix, resourceId, dateVal, excludeId);
-            // Reset selected times
-            document.getElementById(prefix === 'admin' ? 'inp-admin-start' : 'inp-start').value = '';
-            document.getElementById(prefix === 'admin' ? 'inp-admin-end' : 'inp-end').value = '';
+            
+            await renderTimeSlots(
+                prefix === 'admin' ? `admin-time-slots-${type}` : `time-slots-${type}`,
+                prefix === 'admin' ? `inp-admin-${type}` : `inp-${type}`,
+                type, prefix, resourceId, dateVal, excludeId
+            );
+            
+            if (type === 'start') {
+                const endDateInput = document.getElementById(prefix === 'admin' ? 'inp-admin-end-date' : 'inp-end-date');
+                if (!endDateInput.value) {
+                    endDateInput.value = dateVal;
+                    onDateChange(prefix, 'end');
+                }
+            }
+            document.getElementById(prefix === 'admin' ? `inp-admin-${type}` : `inp-${type}`).value = '';
         }
         // Overlap checking utility
         async function checkBookingOverlap(resourceId, startStr, endStr, excludeBookingId) {
@@ -2215,8 +2250,10 @@
             renderTimeSlots('time-slots-end', 'inp-end', 'end', 'user');
             document.getElementById('inp-start').value = '';
             document.getElementById('inp-end').value = '';
-            document.getElementById('inp-date').value = '';
-            document.getElementById('inp-date').onchange = () => onDateChange('user');
+            document.getElementById('inp-start-date').value = '';
+            document.getElementById('inp-end-date').value = '';
+            document.getElementById('inp-start-date').onchange = () => onDateChange('user', 'start');
+            document.getElementById('inp-end-date').onchange = () => onDateChange('user', 'end');
             document.getElementById('booking-overlap-warning').classList.add('hidden');
             setTimeout(() => document.getElementById('inp-name').focus(), 100);
         };
@@ -2509,16 +2546,64 @@
                 editBookingFromAdmin(window.currentFoundBooking.id);
             }
         };
-        window.showMyBookingSearch = () => window.switchView('view-my-booking');
-        window.searchBookingByPNR = () => {
-            const pnr = document.getElementById('inp-pnr-search').value.trim().toUpperCase();
-            const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'bookings'), where("pnr", "==", pnr));
-            onSnapshot(q, (s) => {
+        window.showMyBookingSearch = () => {
+            document.getElementById('inp-pnr-search').value = '';
+            document.getElementById('pnr-result').innerHTML = '';
+            window.switchView('view-my-booking');
+            setTimeout(() => document.getElementById('inp-pnr-search').focus(), 100);
+        };
+        window.searchMyBooking = async () => {
+            const val = document.getElementById('inp-pnr-search').value.trim();
+            if(!val) return;
+            const resEl = document.getElementById('pnr-result');
+            resEl.innerHTML = '<p class="text-xs text-center text-slate-400">Ricerca in corso...</p>';
+            try {
+                let q;
+                if(val.includes('@')) {
+                    q = query(collection(db, 'artifacts', appId, 'public', 'data', 'bookings'), where('email', '==', val.toLowerCase()));
+                } else {
+                    q = query(collection(db, 'artifacts', appId, 'public', 'data', 'bookings'), where('pnr', '==', val.toUpperCase()));
+                }
+                const s = await getDocs(q);
                 if (!s.empty) {
-                    const b = s.docs[0].data(); b.id = s.docs[0].id; window.currentFoundBooking = b;
-                    document.getElementById('pnr-result').innerHTML = `<div class="bg-white p-4 rounded border-2 border-emerald-500"><h3>Trovata: ${b.resourceName}</h3><button onclick="window.openEditModal()">Modifica</button></div>`;
-                } else document.getElementById('pnr-result').innerHTML = "Non trovata.";
-            });
+                    const bookings = [];
+                    s.forEach(d => bookings.push({id: d.id, ...d.data()}));
+                    bookings.sort((a,b) => new Date(b.startDate) - new Date(a.startDate));
+                    
+                    resEl.innerHTML = bookings.map(b => {
+                        const isPast = new Date(b.endDate) < new Date();
+                        const opacity = isPast ? 'opacity-60' : '';
+                        const titleTag = isPast ? `<span class="text-[10px] font-bold px-2 py-1 bg-slate-100 text-slate-500 rounded uppercase tracking-widest">Scaduta</span>` : `<span class="text-[10px] font-bold px-2 py-1 bg-emerald-100 text-emerald-700 rounded uppercase tracking-widest">Attiva</span>`;
+                        
+                        return `
+                        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm ${opacity}">
+                            <div class="flex justify-between items-start mb-2">
+                                <div>
+                                    <span class="text-xs font-black text-slate-800">${b.resourceName}</span>
+                                    <div class="text-[10px] text-slate-500 font-mono mt-0.5">PNR: ${b.pnr}</div>
+                                </div>
+                                ${titleTag}
+                            </div>
+                            <div class="text-[10px] text-slate-600 font-medium mb-3 bg-slate-50 p-2 rounded-lg border border-slate-100">
+                                <div><span class="text-slate-400 w-8 inline-block">Dal:</span> <span class="font-bold">${new Date(b.startDate).toLocaleString('it-IT', {dateStyle:'short', timeStyle:'short'})}</span></div>
+                                <div class="mt-1"><span class="text-slate-400 w-8 inline-block">Al:</span> <span class="font-bold">${new Date(b.endDate).toLocaleString('it-IT', {dateStyle:'short', timeStyle:'short'})}</span></div>
+                            </div>
+                            ${!isPast ? `
+                                <div class="flex gap-2">
+                                    <button onclick="window.currentFoundBooking = {id:'${b.id}', ...${JSON.stringify(b).replace(/"/g,"&quot;")}}; window.openEditModal()" class="flex-1 py-1.5 bg-indigo-50 border border-indigo-200 text-indigo-700 rounded-lg text-[10px] font-bold shadow-sm hover:bg-indigo-100 transition"><i data-lucide="edit-3" class="w-3 h-3 inline"></i> MODIFICA</button>
+                                    <button onclick="deleteBooking('${b.id}', true)" class="flex-1 py-1.5 bg-red-50 border border-red-200 text-red-600 rounded-lg text-[10px] font-bold shadow-sm hover:bg-red-100 transition"><i data-lucide="trash-2" class="w-3 h-3 inline"></i> CANCELLA</button>
+                                </div>
+                            ` : ''}
+                        </div>
+                        `;
+                    }).join('');
+                    if(window.lucide) lucide.createIcons();
+                } else {
+                    resEl.innerHTML = "<p class='text-xs text-red-500 font-bold text-center bg-red-50 p-3 rounded-xl border border-red-100'>Nessuna prenotazione trovata.</p>";
+                }
+            } catch(e) {
+                resEl.innerHTML = "<p class='text-xs text-red-500 font-bold text-center'>Errore di rete.</p>";
+            }
         };
 
         // --- ADMIN BOOKING MODAL ---
@@ -2533,13 +2618,15 @@
             });
             document.getElementById('inp-admin-name').value = '';
             document.getElementById('inp-admin-booking-email').value = '';
-            document.getElementById('inp-admin-date').value = '';
+            document.getElementById('inp-admin-start-date').value = '';
+            document.getElementById('inp-admin-end-date').value = '';
             document.getElementById('inp-admin-start').value = '';
             document.getElementById('inp-admin-end').value = '';
             // Init time slot pickers
             renderTimeSlots('admin-time-slots-start', 'inp-admin-start', 'start', 'admin');
             renderTimeSlots('admin-time-slots-end', 'inp-admin-end', 'end', 'admin');
-            document.getElementById('inp-admin-date').onchange = () => onDateChange('admin');
+            document.getElementById('inp-admin-start-date').onchange = () => onDateChange('admin', 'start');
+            document.getElementById('inp-admin-end-date').onchange = () => onDateChange('admin', 'end');
             document.getElementById('admin-booking-overlap-warning').classList.add('hidden');
             document.getElementById('modal-admin-booking').classList.remove('hidden');
             setTimeout(() => document.getElementById('inp-admin-name').focus(), 100);
