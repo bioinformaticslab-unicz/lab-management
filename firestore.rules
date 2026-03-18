@@ -1,0 +1,71 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ─── HELPER FUNCTIONS ────────────────────────────────────────────────────────
+
+    // Check if the user is authenticated
+    function isAuth() {
+      return request.auth != null;
+    }
+
+    // Check if the user's email is from the allowed University domains
+    function isAllowedDomain() {
+      return isAuth() &&
+        (request.auth.token.email.matches('.*@unicz\\.it') ||
+         request.auth.token.email.matches('.*@studenti\\.unicz\\.it') ||
+         request.auth.token.email == 'vono.niccolo@gmail.com');
+    }
+
+    // Check if the user is the main admin
+    function isMainAdmin() {
+      return isAuth() && request.auth.token.email == 'vono.niccolo@gmail.com';
+    }
+
+    // Check if the user is a co-admin (stored in settings/admins)
+    function isCoAdmin() {
+      return isAuth() &&
+        exists(/databases/$(database)/documents/artifacts/unisca-lab-v1/settings/admins/emails/$(request.auth.token.email));
+    }
+
+    // Check if the user is a supervisor
+    function isSupervisor() {
+      return isAuth() &&
+        exists(/databases/$(database)/documents/artifacts/unisca-lab-v1/settings/supervisors/list/$(request.auth.token.email));
+    }
+
+    // Any elevated role
+    function isAdminOrSupervisor() {
+      return isMainAdmin() || isCoAdmin() || isSupervisor();
+    }
+
+    // ─── PUBLIC APP DATA ─────────────────────────────────────────────────────────
+    match /artifacts/unisca-lab-v1/public/data/{collection}/{docId} {
+
+      // Any authenticated University user can read all public data
+      allow read: if isAllowedDomain();
+
+      // Inventory writes: any authenticated user can update stock (for stock movements)
+      // but only admins/supervisors can create or delete inventory items
+      allow create: if isAdminOrSupervisor();
+      allow delete: if isMainAdmin() || isCoAdmin();
+
+      // Allows updating specific fields (stock movements by any user)
+      // Full field control is enforced in the frontend; rules enforce authentication
+      allow update: if isAllowedDomain();
+    }
+
+    // ─── ADMIN SETTINGS ──────────────────────────────────────────────────────────
+    // Only admins can read/write global app settings (admin list, supervisors, etc.)
+    match /artifacts/unisca-lab-v1/settings/{document=**} {
+      allow read: if isAdminOrSupervisor();
+      allow write: if isMainAdmin() || isCoAdmin();
+    }
+
+    // ─── DENY ALL ELSE ───────────────────────────────────────────────────────────
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
