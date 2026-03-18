@@ -1,5 +1,6 @@
 // main.js — LABSCAN Beta v2
-// Full Alpine.js app logic: auth, inventory, bookings, admin CRUD, logs.
+// Uses correct Firestore paths matching the stable app.
+// Instruments are stored in the 'resources' collection, not 'instruments'.
 
 import { auth, db, googleProvider, APP_ID } from './firebase.js';
 import {
@@ -7,102 +8,104 @@ import {
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import {
     collection, onSnapshot, query, orderBy, limit,
-    doc, updateDoc, addDoc, setDoc, deleteDoc, serverTimestamp, getDocs
+    doc, getDoc, updateDoc, addDoc, setDoc, deleteDoc,
+    serverTimestamp, getDocs
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
 const ALLOWED_DOMAINS = ['@unicz.it', '@studenti.unicz.it'];
 const MAIN_ADMIN_EMAIL = 'vono.niccolo@gmail.com';
 
-function dbCol(...segments) {
-    return collection(db, 'artifacts', APP_ID, 'public', 'data', ...segments);
-}
-function dbDoc(...segments) {
-    return doc(db, 'artifacts', APP_ID, 'public', 'data', ...segments);
-}
+// ─── Firestore path helpers (mirrors stable app exactly) ─────────────────────
+function dbCol(...segs) { return collection(db, 'artifacts', APP_ID, 'public', 'data', ...segs); }
+function dbDoc(...segs) { return doc(db, 'artifacts', APP_ID, 'public', 'data', ...segs); }
+function safeid(id) { return id.replace(/\//g, '_'); }
 function genPNR() {
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    return Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+    const c = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    return Array.from({ length: 6 }, () => c[Math.floor(Math.random() * c.length)]).join('');
 }
 
-// ════════════════════════════════════════════════════════════
-// Alpine.data registration (must happen BEFORE Alpine boots)
-// ════════════════════════════════════════════════════════════
+// ─── html5-qrcode singleton ───────────────────────────────────────────────────
+let qrScanner = null;
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  Alpine component registration
+// ══════════════════════════════════════════════════════════════════════════════
 document.addEventListener('alpine:init', () => {
     Alpine.data('labApp', () => ({
 
-        // ── AUTH ──────────────────────────────────────────────
+        // ── Auth ──────────────────────────────────────────────────────────────
         user: null,
         userRole: 'user',
         authLoading: false,
         authError: '',
 
-        // ── NAVIGATION ────────────────────────────────────────
+        // ── Navigation ────────────────────────────────────────────────────────
         activeView: 'scanner',
         tabs: [
             { id: 'scanner',   icon: '📷', label: 'Scanner',   roles: ['user','supervisor','co_admin','main_admin'] },
             { id: 'inventory', icon: '📦', label: 'Magazzino',  roles: ['user','supervisor','co_admin','main_admin'] },
-            { id: 'bookings',  icon: '📅', label: 'Prenota',    roles: ['user','supervisor','co_admin','main_admin'] },
+            { id: 'strumenti', icon: '🔬', label: 'Strumenti',  roles: ['user','supervisor','co_admin','main_admin'] },
             { id: 'admin',     icon: '🛠️', label: 'Admin',     roles: ['supervisor','co_admin','main_admin'] },
             { id: 'profile',   icon: '👤', label: 'Profilo',    roles: ['user','supervisor','co_admin','main_admin'] },
         ],
         adminTab: 'inventory',
 
-        // ── DATA ──────────────────────────────────────────────
+        // ── Data ──────────────────────────────────────────────────────────────
         inventory: [],
-        instruments: [],
+        resources: [],      // ← 'resources' collection = strumenti/instruments
         recentMovements: [],
         logs: [],
 
-        // ── FILTERS ───────────────────────────────────────────
+        // ── Filters ───────────────────────────────────────────────────────────
         inventorySearch: '',
         inventoryTab: 'all',
-        instrumentSearch: '',
+        resourceSearch: '',
 
-        // ── SCANNER ───────────────────────────────────────────
+        // ── Scanner ───────────────────────────────────────────────────────────
         scanInput: '',
         searchResults: [],
+        cameraActive: false,
 
-        // ── MODALS ────────────────────────────────────────────
+        // ── Modals ────────────────────────────────────────────────────────────
         stockModal:   { open: false, item: null, action: 'add', qty: null, operator: '' },
-        bookingModal: { open: false, instrument: null, email: '', userName: '', startDate: '', endDate: '', notes: '', pnr: '' },
+        bookingModal: { open: false, resource: null, email: '', userName: '', startDate: '', endDate: '', notes: '', pnr: '' },
         confirming: false,
         saving: false,
 
-        // ── ADMIN FORMS ───────────────────────────────────────
+        // ── Admin forms ───────────────────────────────────────────────────────
         editingItem: null,
         itemForm: { name:'', id:'', brand:'', category:'', quantity:0, unit:'', threshold:0, location:'', restockEmail:'', image:'' },
 
         editingInstrument: null,
-        instrumentForm: { name:'', id:'', brand:'', location:'', imageUrl:'' },
+        instrumentForm: { name:'', id:'', brand:'', location:'', imageUrl:'', category:'' },
 
-        // ═══ COMPUTED ═══════════════════════════════════════════
+        // ══ COMPUTED ══════════════════════════════════════════════════════════
         get isAdmin()      { return ['main_admin','co_admin'].includes(this.userRole); },
         get isSupervisor() { return this.userRole === 'supervisor'; },
         get visibleTabs()  { return this.tabs.filter(t => t.roles.includes(this.userRole)); },
 
         get filteredInventory() {
             const t = this.inventorySearch.toLowerCase();
-            let items = this.inventoryTab === 'reorder' ? this.inventory.filter(i => i.isOrdered) : this.inventory;
+            let items = this.inventoryTab === 'reorder'
+                ? this.inventory.filter(i => i.isOrdered)
+                : this.inventory;
             return t ? items.filter(i =>
-                i.name?.toLowerCase().includes(t) ||
-                i.id?.toLowerCase().includes(t) ||
-                i.brand?.toLowerCase().includes(t) ||
-                i.category?.toLowerCase().includes(t)
+                i.name?.toLowerCase().includes(t) || i.id?.toLowerCase().includes(t) ||
+                i.brand?.toLowerCase().includes(t) || i.category?.toLowerCase().includes(t)
             ) : items;
         },
 
-        get filteredInstruments() {
-            const t = this.instrumentSearch.toLowerCase();
-            return t ? this.instruments.filter(i =>
-                i.name?.toLowerCase().includes(t) ||
-                i.id?.toLowerCase().includes(t) ||
-                i.brand?.toLowerCase().includes(t)
-            ) : this.instruments;
+        get filteredResources() {
+            const t = this.resourceSearch.toLowerCase();
+            return t ? this.resources.filter(r =>
+                r.name?.toLowerCase().includes(t) || r.id?.toLowerCase().includes(t) ||
+                r.brand?.toLowerCase().includes(t) || r.manufacturer?.toLowerCase().includes(t)
+            ) : this.resources;
         },
 
-        // ═══ INIT ════════════════════════════════════════════════
+        // ══ INIT ══════════════════════════════════════════════════════════════
         async init() {
-            onAuthStateChanged(auth, async (fbUser) => {
+            onAuthStateChanged(auth, async fbUser => {
                 if (fbUser) {
                     const email = fbUser.email || '';
                     const role  = await this.resolveRole(email);
@@ -113,37 +116,47 @@ document.addEventListener('alpine:init', () => {
                         this.authError = 'Accesso consentito solo agli indirizzi @unicz.it o @studenti.unicz.it.';
                         return;
                     }
-                    this.user     = fbUser;
-                    this.userRole = role;
-                    // Pre-fill booking form with known user info
+                    this.user      = fbUser;
+                    this.userRole  = role;
                     this.bookingModal.email    = fbUser.email || '';
                     this.bookingModal.userName = fbUser.displayName || '';
-                    this.activeView = 'scanner';
                     this.startDataListeners();
                 } else {
-                    this.user     = null;
-                    this.userRole = 'user';
-                    this.inventory = []; this.instruments = [];
+                    this.user      = null;
+                    this.userRole  = 'user';
+                    this.inventory = [];
+                    this.resources = [];
+                    this.stopCamera();
                 }
             });
 
-            this.$watch('activeView', v => {
-                if (v === 'scanner') this.$nextTick(() => document.getElementById('scanner-input')?.focus());
-            });
             document.addEventListener('keydown', e => {
-                if (e.key === 'Escape') { this.stockModal.open = false; this.bookingModal.open = false; }
+                if (e.key === 'Escape') {
+                    this.stockModal.open = false;
+                    this.bookingModal.open = false;
+                    this.bookingModal.pnr  = '';
+                    this.stopCamera();
+                }
             });
         },
 
-        // ═══ AUTH ════════════════════════════════════════════════
+        // ── Helpers ───────────────────────────────────────────────────────────
+        switchView(id) {
+            if (this.activeView !== 'scanner') this.stopCamera();
+            this.activeView = id;
+            if (id === 'scanner') {
+                this.$nextTick(() => document.getElementById('scanner-input')?.focus());
+            }
+        },
+
+        // ══ AUTH ══════════════════════════════════════════════════════════════
         async signIn() {
             this.authLoading = true; this.authError = '';
             try { await signInWithPopup(auth, googleProvider); }
-            catch (e) {
-                this.authError = e.code === 'auth/popup-closed-by-user' ? 'Finestra chiusa. Riprova.' : 'Errore login: ' + e.message;
-            } finally { this.authLoading = false; }
+            catch (e) { this.authError = e.code === 'auth/popup-closed-by-user' ? 'Finestra chiusa. Riprova.' : 'Errore: ' + e.message; }
+            finally { this.authLoading = false; }
         },
-        async signOut() { await fbSignOut(auth); },
+        async signOut() { this.stopCamera(); await fbSignOut(auth); },
 
         async resolveRole(email) {
             if (email === MAIN_ADMIN_EMAIL) return 'main_admin';
@@ -154,42 +167,132 @@ document.addEventListener('alpine:init', () => {
             return 'user';
         },
 
-        // ═══ DATA LISTENERS ═══════════════════════════════════════
+        // ══ DATA LISTENERS ════════════════════════════════════════════════════
         startDataListeners() {
+            // Inventory
             onSnapshot(query(dbCol('inventory')), snap => {
                 this.inventory = snap.docs.map(d => ({ ...d.data(), _docId: d.id }));
             });
-            onSnapshot(query(dbCol('instruments')), snap => {
-                this.instruments = snap.docs.map(d => ({ ...d.data(), type: 'instrument' }));
+            // Resources/Instruments (correct collection name from stable app)
+            onSnapshot(query(dbCol('resources')), snap => {
+                this.resources = snap.docs.map(d => ({ ...d.data(), _docId: d.id }));
             });
+            // Recent movements for profile
             onSnapshot(
-                query(dbCol('stock_movements'), orderBy('timestamp', 'desc'), limit(20)),
+                query(dbCol('stock_movements'), orderBy('timestamp','desc'), limit(20)),
                 snap => { this.recentMovements = snap.docs.map(d => ({ ...d.data(), _id: d.id })); }
             );
         },
 
         async loadLogs() {
-            const snap = await getDocs(query(dbCol('logs'), orderBy('timestamp', 'desc'), limit(60))).catch(() => null);
+            const snap = await getDocs(query(dbCol('logs'), orderBy('timestamp','desc'), limit(60))).catch(() => null);
             this.logs = snap ? snap.docs.map(d => ({ ...d.data(), _id: d.id })) : [];
         },
 
-        // ═══ SCANNER ══════════════════════════════════════════════
-        handleScan() {
-            const t = (this.scanInput || '').trim().toLowerCase();
-            if (!t || t.length < 2) { this.searchResults = []; return; }
-            const inv = this.inventory.filter(i => i.id?.toLowerCase().includes(t) || i.name?.toLowerCase().includes(t) || i.brand?.toLowerCase().includes(t)).map(i => ({ ...i, type: 'inventory' })).slice(0, 5);
-            const ins = this.instruments.filter(i => i.id?.toLowerCase().includes(t) || i.name?.toLowerCase().includes(t) || i.ip?.toLowerCase().includes(t)).slice(0, 5);
-            this.searchResults = [...ins, ...inv];
-        },
-        openItem(r) {
-            if (r.type === 'inventory') {
-                this.activeView = 'inventory'; this.inventorySearch = r.name; this.searchResults = []; this.scanInput = '';
-            } else {
-                this.activeView = 'bookings'; this.instrumentSearch = r.name; this.searchResults = []; this.scanInput = '';
+        // ══ CAMERA / SCANNER ══════════════════════════════════════════════════
+        async toggleCamera() {
+            if (this.cameraActive) { this.stopCamera(); return; }
+            this.cameraActive = true;
+            await this.$nextTick();
+            try {
+                qrScanner = new Html5Qrcode('qr-reader');
+                await qrScanner.start(
+                    { facingMode: 'environment' },
+                    { fps: 10, qrbox: { width: 220, height: 220 } },
+                    (decodedText) => {
+                        this.stopCamera();
+                        this.processScannedCode(decodedText);
+                    },
+                    () => {}
+                );
+            } catch (e) {
+                console.warn('Camera error:', e);
+                this.cameraActive = false;
+                alert('Impossibile accedere alla camera. Verifica i permessi del browser.');
             }
         },
 
-        // ═══ STOCK MOVEMENTS ══════════════════════════════════════
+        stopCamera() {
+            if (qrScanner) {
+                qrScanner.stop().catch(() => {}).finally(() => { qrScanner = null; });
+            }
+            this.cameraActive = false;
+        },
+
+        handleManualScan() {
+            const code = this.scanInput.trim();
+            if (code) this.processScannedCode(code);
+        },
+
+        handleSearchInput() {
+            const t = (this.scanInput || '').trim().toLowerCase();
+            if (!t || t.length < 2) { this.searchResults = []; return; }
+
+            const invRes = this.inventory.filter(i =>
+                i.id?.toLowerCase().includes(t) ||
+                i.name?.toLowerCase().includes(t) ||
+                i.brand?.toLowerCase().includes(t)
+            ).slice(0, 4).map(i => ({ ...i, type: 'inventory' }));
+
+            const resRes = this.resources.filter(r =>
+                r.id?.toLowerCase().includes(t) ||
+                r.name?.toLowerCase().includes(t) ||
+                r.brand?.toLowerCase().includes(t) ||
+                r.manufacturer?.toLowerCase().includes(t)
+            ).slice(0, 4).map(r => ({ ...r, type: 'resource' }));
+
+            this.searchResults = [...resRes, ...invRes];
+        },
+
+        async processScannedCode(code) {
+            // Strip ?r= params from QR URLs (matches stable app logic)
+            if (code.includes('?r=')) {
+                try {
+                    const url = new URL(code);
+                    const r = new URLSearchParams(url.search).get('r');
+                    if (r) code = r;
+                } catch (e) {}
+            }
+
+            const safeCode = safeid(code);
+            this.scanInput = code;
+
+            // 1. Check resources (instruments) first
+            const resSnap = await getDoc(dbDoc('resources', safeCode));
+            if (resSnap.exists()) {
+                this.scanInput = '';
+                this.searchResults = [];
+                this.openBookingModal({ ...resSnap.data(), id: safeCode });
+                return;
+            }
+
+            // 2. Check inventory
+            const invSnap = await getDoc(dbDoc('inventory', safeCode));
+            if (invSnap.exists()) {
+                this.scanInput = '';
+                this.searchResults = [];
+                this.switchView('inventory');
+                this.inventorySearch = invSnap.data().name || code;
+                return;
+            }
+
+            // 3. Unknown
+            this.searchResults = [];
+            alert(`Codice "${code}" non trovato nel sistema.`);
+        },
+
+        openItem(r) {
+            this.scanInput = '';
+            this.searchResults = [];
+            if (r.type === 'resource') {
+                this.openBookingModal(r);
+            } else {
+                this.switchView('inventory');
+                this.inventorySearch = r.name;
+            }
+        },
+
+        // ══ STOCK MOVEMENTS ═══════════════════════════════════════════════════
         openStockModal(item, action) {
             this.stockModal = { open: true, item, action, qty: null, operator: '' };
             this.$nextTick(() => document.getElementById('stock-modal-qty')?.focus());
@@ -203,8 +306,19 @@ document.addEventListener('alpine:init', () => {
             this.confirming = true;
             try {
                 await updateDoc(dbDoc('inventory', item.id), { quantity: newQty });
-                await addDoc(dbCol('stock_movements'), { itemId: item.id, itemName: item.name, action, amount: qty, unit: item.unit, operatorName: operator, userEmail: this.user?.email || '', timestamp: serverTimestamp() });
-                await addDoc(dbCol('logs'), { category: 'INVENTORY', action: `${action === 'add' ? 'CARICO' : 'SCARICO'}: ${item.name}`, details: `${action === 'add' ? '+' : '-'}${qty} ${item.unit} | Operatore: ${operator}`, userEmail: this.user?.email || '', timestamp: serverTimestamp() });
+                await addDoc(dbCol('stock_movements'), {
+                    itemId: item.id, itemName: item.name, action,
+                    amount: qty, unit: item.unit,
+                    operatorName: operator, userEmail: this.user?.email || '',
+                    timestamp: serverTimestamp()
+                });
+                await addDoc(dbCol('logs'), {
+                    category: 'INVENTORY',
+                    action: `${action === 'add' ? 'CARICO' : 'SCARICO'}: ${item.name}`,
+                    details: `${action === 'add' ? '+' : '-'}${qty} ${item.unit} | Op: ${operator}`,
+                    userEmail: this.user?.email || '',
+                    timestamp: serverTimestamp()
+                });
                 if (newQty <= item.threshold && item.restockEmail) this.sendRestockEmail(item, newQty);
                 this.stockModal.open = false;
             } catch (e) { console.error(e); alert('Errore nel salvataggio.'); }
@@ -215,19 +329,25 @@ document.addEventListener('alpine:init', () => {
             if (!confirm(`Confermi l'arrivo di ${item.orderQuantity} ${item.unit} di "${item.name}"?`)) return;
             const newQty = (item.quantity || 0) + (item.orderQuantity || 0);
             try {
-                await updateDoc(dbDoc('inventory', item.id), { quantity: newQty, isOrdered: false, orderQuantity: null, orderBy: null, orderDate: null });
-                await addDoc(dbCol('stock_movements'), { itemId: item.id, itemName: item.name, action: 'add', amount: item.orderQuantity, unit: item.unit, operatorName: this.user?.email || '', userEmail: this.user?.email || '', isArrival: true, timestamp: serverTimestamp() });
-            } catch (e) { console.error(e); alert('Errore nella conferma arrivo.'); }
+                await updateDoc(dbDoc('inventory', item.id), {
+                    quantity: newQty, isOrdered: false,
+                    orderQuantity: null, orderBy: null, orderDate: null
+                });
+                await addDoc(dbCol('stock_movements'), {
+                    itemId: item.id, itemName: item.name, action: 'add',
+                    amount: item.orderQuantity, unit: item.unit,
+                    operatorName: this.user?.email || '', userEmail: this.user?.email || '',
+                    isArrival: true, timestamp: serverTimestamp()
+                });
+            } catch (e) { console.error(e); alert('Errore.'); }
         },
 
-        openOrderModal() {
-            alert('Funzionalità in arrivo!\n\nPer ora usa la versione principale per aggiungere ordini.');
-        },
-
-        // ═══ BOOKINGS ══════════════════════════════════════════════
-        openBookingModal(inst) {
+        // ══ BOOKINGS ══════════════════════════════════════════════════════════
+        openBookingModal(resource) {
             this.bookingModal = {
-                open: true, instrument: inst, pnr: '',
+                open: true,
+                resource,
+                pnr: '',
                 email: this.user?.email || '',
                 userName: this.user?.displayName || '',
                 startDate: '', endDate: '', notes: ''
@@ -235,16 +355,20 @@ document.addEventListener('alpine:init', () => {
         },
 
         async confirmBooking() {
-            const { instrument, email, userName, startDate, endDate, notes } = this.bookingModal;
+            const { resource, email, userName, startDate, endDate, notes } = this.bookingModal;
             if (!email || !userName || !startDate || !endDate) return;
-            if (new Date(endDate) <= new Date(startDate)) { alert('La data di fine deve essere successiva alla data di inizio.'); return; }
+            if (new Date(endDate) <= new Date(startDate)) {
+                alert('La data di fine deve essere successiva alla data di inizio.');
+                return;
+            }
             this.confirming = true;
             try {
                 const pnr = genPNR();
+                // Uses 'resourceId' field to match stable app schema exactly
                 await addDoc(dbCol('bookings'), {
-                    instrumentId: instrument.id,
-                    instrumentName: instrument.name,
-                    userEmail: email,
+                    resourceId: resource.id,
+                    resourceName: resource.name,
+                    email,
                     userName,
                     startDate,
                     endDate,
@@ -255,27 +379,21 @@ document.addEventListener('alpine:init', () => {
                 });
                 await addDoc(dbCol('logs'), {
                     category: 'BOOKING',
-                    action: `Prenotazione: ${instrument.name}`,
-                    details: `${userName} · ${startDate} → ${endDate} · PNR: ${pnr}`,
+                    action: `Prenotazione: ${resource.name}`,
+                    details: `${userName} · ${new Date(startDate).toLocaleString('it-IT')} → ${new Date(endDate).toLocaleString('it-IT')} · PNR: ${pnr}`,
                     userEmail: email,
                     timestamp: serverTimestamp()
                 });
                 this.bookingModal.pnr = pnr;
-            } catch (e) { console.error(e); alert('Errore nella prenotazione. Riprova.'); }
+            } catch (e) { console.error(e); alert('Errore nella prenotazione.'); }
             finally { this.confirming = false; }
         },
 
-        // ═══ ADMIN — INVENTORY CRUD ════════════════════════════════
+        // ══ ADMIN — INVENTORY CRUD ════════════════════════════════════════════
         editItem(item) {
             this.editingItem = item;
-            this.itemForm = {
-                name: item.name || '', id: item.id || '', brand: item.brand || '',
-                category: item.category || '', quantity: item.quantity || 0,
-                unit: item.unit || '', threshold: item.threshold || 0,
-                location: item.location || '', restockEmail: item.restockEmail || '',
-                image: item.image || ''
-            };
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            this.itemForm = { name:item.name||'', id:item.id||'', brand:item.brand||'', category:item.category||'', quantity:item.quantity||0, unit:item.unit||'', threshold:item.threshold||0, location:item.location||'', restockEmail:item.restockEmail||'', image:item.image||'' };
+            window.scrollTo({ top:0, behavior:'smooth' });
         },
 
         clearItemForm() {
@@ -288,38 +406,37 @@ document.addEventListener('alpine:init', () => {
             if (!f.name || !f.id || !f.unit) return;
             this.saving = true;
             try {
-                const data = { name: f.name, brand: f.brand, category: f.category, quantity: f.quantity, unit: f.unit, threshold: f.threshold, location: f.location, restockEmail: f.restockEmail, image: f.image };
+                const data = { name:f.name, brand:f.brand, category:f.category, quantity:f.quantity, unit:f.unit, threshold:f.threshold, location:f.location, restockEmail:f.restockEmail, image:f.image };
                 if (this.editingItem) {
                     await updateDoc(dbDoc('inventory', this.editingItem.id), data);
                 } else {
-                    await setDoc(dbDoc('inventory', f.id), { ...data, id: f.id, isOrdered: false });
+                    await setDoc(dbDoc('inventory', safeid(f.id)), { ...data, id: safeid(f.id), isOrdered: false });
                 }
-                await addDoc(dbCol('logs'), { category: 'ADMIN', action: `${this.editingItem ? 'Modifica' : 'Nuovo'} articolo: ${f.name}`, details: `ID: ${f.id}`, userEmail: this.user?.email || '', timestamp: serverTimestamp() });
+                await addDoc(dbCol('logs'), { category:'ADMIN', action:`${this.editingItem ? 'Modifica' : 'Nuovo'} articolo: ${f.name}`, details:`ID: ${f.id}`, userEmail:this.user?.email||'', timestamp:serverTimestamp() });
                 this.clearItemForm();
-                alert(this.editingItem ? 'Articolo aggiornato!' : 'Articolo aggiunto!');
             } catch (e) { console.error(e); alert('Errore nel salvataggio.'); }
             finally { this.saving = false; }
         },
 
         async deleteItem(item) {
             if (!this.isAdmin) return;
-            if (!confirm(`Eliminare definitivamente "${item.name}"? Questa azione è irreversibile.`)) return;
+            if (!confirm(`Eliminare definitivamente "${item.name}"?\nQuesta azione è irreversibile.`)) return;
             try {
                 await deleteDoc(dbDoc('inventory', item.id));
-                await addDoc(dbCol('logs'), { category: 'ADMIN', action: `Eliminazione articolo: ${item.name}`, details: `ID: ${item.id}`, userEmail: this.user?.email || '', timestamp: serverTimestamp() });
-            } catch (e) { console.error(e); alert('Errore nell\'eliminazione.'); }
+                await addDoc(dbCol('logs'), { category:'ADMIN', action:`Eliminazione: ${item.name}`, details:`ID: ${item.id}`, userEmail:this.user?.email||'', timestamp:serverTimestamp() });
+            } catch (e) { console.error(e); alert('Errore eliminazione.'); }
         },
 
-        // ═══ ADMIN — INSTRUMENT CRUD ═══════════════════════════════
-        editInstrument(inst) {
-            this.editingInstrument = inst;
-            this.instrumentForm = { name: inst.name || '', id: inst.id || '', brand: inst.brand || '', location: inst.location || '', imageUrl: inst.imageUrl || '' };
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+        // ══ ADMIN — INSTRUMENT CRUD ═══════════════════════════════════════════
+        editInstrument(res) {
+            this.editingInstrument = res;
+            this.instrumentForm = { name:res.name||'', id:res.id||'', brand:res.brand||'', location:res.location||'', imageUrl:res.imageUrl||'', category:res.category||'' };
+            window.scrollTo({ top:0, behavior:'smooth' });
         },
 
         clearInstrumentForm() {
             this.editingInstrument = null;
-            this.instrumentForm = { name:'', id:'', brand:'', location:'', imageUrl:'' };
+            this.instrumentForm = { name:'', id:'', brand:'', location:'', imageUrl:'', category:'' };
         },
 
         async saveInstrument() {
@@ -327,20 +444,19 @@ document.addEventListener('alpine:init', () => {
             if (!f.name || !f.id) return;
             this.saving = true;
             try {
-                const data = { name: f.name, brand: f.brand, location: f.location, imageUrl: f.imageUrl };
+                const data = { name:f.name, brand:f.brand, location:f.location, imageUrl:f.imageUrl, category:f.category };
                 if (this.editingInstrument) {
-                    await updateDoc(dbDoc('instruments', this.editingInstrument.id), data);
+                    await updateDoc(dbDoc('resources', this.editingInstrument.id), data);
                 } else {
-                    await setDoc(dbDoc('instruments', f.id), { ...data, id: f.id });
+                    await setDoc(dbDoc('resources', safeid(f.id)), { ...data, id:safeid(f.id) });
                 }
-                await addDoc(dbCol('logs'), { category: 'ADMIN', action: `${this.editingInstrument ? 'Modifica' : 'Nuovo'} strumento: ${f.name}`, details: `ID: ${f.id}`, userEmail: this.user?.email || '', timestamp: serverTimestamp() });
+                await addDoc(dbCol('logs'), { category:'ADMIN', action:`${this.editingInstrument ? 'Modifica' : 'Nuovo'} strumento: ${f.name}`, details:`ID: ${f.id}`, userEmail:this.user?.email||'', timestamp:serverTimestamp() });
                 this.clearInstrumentForm();
-                alert(this.editingInstrument ? 'Strumento aggiornato!' : 'Strumento aggiunto!');
-            } catch (e) { console.error(e); alert('Errore nel salvataggio.'); }
+            } catch (e) { console.error(e); alert('Errore salvataggio.'); }
             finally { this.saving = false; }
         },
 
-        // ═══ EMAIL ════════════════════════════════════════════════
+        // ══ EMAIL ══════════════════════════════════════════════════════════════
         async sendRestockEmail(item, currentQty) {
             if (typeof emailjs === 'undefined') return;
             try {
@@ -349,7 +465,7 @@ document.addEventListener('alpine:init', () => {
                     current_qty: currentQty, unit: item.unit, threshold: item.threshold,
                     location: item.location || 'N/A'
                 }, 'OSVoNoZCEeHUrwaaq');
-            } catch (e) { console.warn('[Beta] Email not sent:', e); }
+            } catch (e) { console.warn('[Beta] Email non inviata:', e); }
         }
 
     }));
