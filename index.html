@@ -2012,7 +2012,7 @@
             document.getElementById('btn-main-book').classList.remove('hidden');
             document.getElementById('badge-status').classList.add('hidden');
             document.getElementById('ip-actions').classList.add('hidden');
-            document.getElementById('inst-public-img-tag').parentElement.classList.add('hidden');
+            document.getElementById('inst-public-img-tag').classList.add('hidden');
             window.currentInstrumentData = { id: text };
             loadBookings(text);
             try {
@@ -2026,9 +2026,10 @@
                     const imgTg = document.getElementById('inst-public-img-tag');
                     if (data.imageUrl) {
                         imgTg.src = data.imageUrl;
-                        imgTg.parentElement.classList.remove('hidden');
+                        imgTg.classList.remove('hidden');
                     } else {
-                        imgTg.parentElement.classList.add('hidden');
+                        imgTg.src = '';
+                        imgTg.classList.add('hidden');
                     }
 
                     if (isIpAddress(data.id || text)) {
