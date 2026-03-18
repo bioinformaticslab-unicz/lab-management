@@ -13,7 +13,6 @@
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 
     <!-- Generazione Codici JS -->
-    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
 
     <!-- Icone -->
@@ -2507,55 +2506,75 @@
             const items = currentLabelTab === 'strum' ? window.allInstrumentsCache : window.allInventoryCache;
             const selectedItems = items.filter(i => selectedIds.includes(i.id));
 
-            const container = document.getElementById('print-grid');
-            container.innerHTML = '';
-            
-            // Clean up old classes and add grid classes to print container
-            container.className = 'grid grid-cols-2 sm:grid-cols-3 gap-6 p-6';
-
+            // Build label cards HTML
+            let cardsHtml = '';
             for (const item of selectedItems) {
                 const title = currentLabelTab === 'strum' ? item.description : item.name;
-                const sub = currentLabelTab === 'strum' ? item.id : item.id;
-                
-                const div = document.createElement('div');
-                div.className = 'flex flex-col items-center justify-center p-4 border-2 border-slate-800 rounded-xl bg-white text-center gap-3 break-inside-avoid shadow-sm';
-                
-                div.innerHTML = `<h3 class="font-black text-lg leading-tight uppercase mb-1">${title}</h3>`;
-                
-                const codesDiv = document.createElement('div');
-                codesDiv.className = 'flex flex-col items-center justify-center gap-4 w-full';
-                
+                const sub = item.id;
+                let codesHtml = '';
+
                 if (doBC) {
-                    const bcWrap = document.createElement('div');
-                    bcWrap.className = 'flex flex-col items-center bg-white p-2 rounded';
-                    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-                    JsBarcode(svg, String(item.id), { format: "CODE128", width: 2, height: 60, displayValue: false, margin: 0 });
-                    bcWrap.appendChild(svg);
-                    codesDiv.appendChild(bcWrap);
+                    codesHtml += `<svg class="label-barcode" data-barcode="${sub}"></svg>`;
                 }
-
                 if (doQR) {
-                    const qrWrap = document.createElement('div');
-                    qrWrap.className = 'flex flex-col items-center bg-white p-2 rounded';
-                    const qrDiv = document.createElement('div');
-                    new QRCode(qrDiv, { text: String(item.id), width: 120, height: 120, correctLevel: QRCode.CorrectLevel.M });
-                    qrWrap.appendChild(qrDiv);
-                    codesDiv.appendChild(qrWrap);
+                    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encodeURIComponent(sub)}`;
+                    codesHtml += `<img src="${qrUrl}" width="140" height="140" style="display:block;margin:8px auto 0;">`;
                 }
-                
-                div.appendChild(codesDiv);
-                div.innerHTML += `<p class="font-mono text-sm font-bold mt-1 tracking-wider">${sub}</p>`;
-                container.appendChild(div);
-            }
-            
-            document.getElementById('print-area').classList.remove('hidden');
-            document.getElementById('app-container').classList.add('hidden'); // Hide main app to avoid overlapping backgrounds
 
-            setTimeout(() => {
-                window.print();
-                document.getElementById('print-area').classList.add('hidden');
-                document.getElementById('app-container').classList.remove('hidden');
-            }, 800);
+                cardsHtml += `
+                <div class="label-card">
+                    <h3>${title}</h3>
+                    ${codesHtml}
+                    <p class="label-id">${sub}</p>
+                </div>`;
+            }
+
+            // Open a clean popup window for print / save-as-PDF
+            const printWin = window.open('', '_blank', 'width=800,height=600');
+            printWin.document.write(`<!DOCTYPE html>
+<html><head><title>Etichette - UniScan</title>
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"><\/script>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: system-ui, -apple-system, sans-serif; padding: 20px; background: #fff; }
+  h1 { text-align:center; font-size:18px; margin-bottom:16px; color:#333; }
+  .grid { display:grid; grid-template-columns: repeat(3, 1fr); gap:16px; }
+  .label-card {
+    border: 2px solid #1e293b; border-radius: 12px; padding: 16px;
+    text-align: center; page-break-inside: avoid; break-inside: avoid; background:#fff;
+  }
+  .label-card h3 { font-size:14px; font-weight:900; text-transform:uppercase; margin-bottom:8px; line-height:1.2; }
+  .label-card .label-id { font-family: monospace; font-size:11px; font-weight:700; margin-top:8px; letter-spacing:1px; color:#475569; }
+  .label-barcode { display:block; margin:4px auto; max-width:100%; }
+  .no-print { text-align:center; margin-bottom:16px; }
+  .no-print button {
+    padding: 10px 24px; font-size:13px; font-weight:700; border:none; border-radius:8px;
+    cursor:pointer; margin:0 6px; transition: background 0.2s;
+  }
+  .btn-print { background:#4f46e5; color:#fff; }
+  .btn-print:hover { background:#4338ca; }
+  .btn-close { background:#e2e8f0; color:#334155; }
+  .btn-close:hover { background:#cbd5e1; }
+  @media print {
+    .no-print { display:none; }
+    body { padding: 0; }
+    .grid { gap: 12px; }
+  }
+</style>
+</head><body>
+<div class="no-print">
+  <button class="btn-print" onclick="window.print()">🖨️ STAMPA / SALVA PDF</button>
+  <button class="btn-close" onclick="window.close()">✕ CHIUDI</button>
+</div>
+<h1>Etichette ${currentLabelTab === 'strum' ? 'Strumenti' : 'Magazzino'}</h1>
+<div class="grid">${cardsHtml}</div>
+<script>
+  document.querySelectorAll('.label-barcode').forEach(svg => {
+    try { JsBarcode(svg, svg.dataset.barcode, { format:'CODE128', width:2, height:55, displayValue:false, margin:0 }); } catch(e){}
+  });
+<\/script>
+</body></html>`);
+            printWin.document.close();
         };
         window.copyDirectLink = () => {
             navigator.clipboard.writeText(window.location.href.split('?')[0] + '?r=' + currentItem).then(() => alert("Copiato!"));
