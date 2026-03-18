@@ -12,6 +12,10 @@
     <!-- Libreria Scanner -->
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 
+    <!-- Generazione Codici JS -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+
     <!-- Icone -->
     <script src="https://unpkg.com/lucide@latest"></script>
 
@@ -414,6 +418,8 @@
                     class="admin-tab-btn flex-1 py-2 px-3 rounded-md transition whitespace-nowrap">Magazzino</button>
                 <button onclick="switchAdminTab('instruments')" id="tab-btn-instruments"
                     class="admin-tab-btn flex-1 py-2 px-3 rounded-md transition whitespace-nowrap">Strumenti</button>
+                <button onclick="switchAdminTab('labels')" id="tab-btn-labels"
+                    class="admin-tab-btn flex-1 py-2 px-3 rounded-md transition whitespace-nowrap">Etichette</button>
                 <button onclick="switchAdminTab('settings')" id="tab-btn-settings"
                     class="admin-tab-btn flex-1 py-2 px-3 rounded-md transition whitespace-nowrap">Settings</button>
                 <button onclick="switchAdminTab('logs')" id="tab-btn-logs"
@@ -578,10 +584,37 @@
                             class="w-full py-2 bg-indigo-600 text-white rounded-lg font-bold text-xs">SALVA</button>
                     </form>
                 </div>
-                <button onclick="printLabels()"
-                    class="text-xs bg-slate-800 text-white px-3 py-2 rounded w-full flex items-center justify-center gap-2"><i
-                        data-lucide="printer" class="w-3 h-3"></i> STAMPA QR STRUMENTI</button>
                 <div id="instruments-list" class="space-y-2 mt-2"></div>
+            </div>
+
+            <!-- Content: Etichette -->
+            <div id="admin-content-labels" class="hidden space-y-4">
+                <div class="flex gap-2 mb-2">
+                    <button onclick="switchLabelTab('strum')" id="lbl-tab-strum" class="flex-1 py-2 bg-indigo-600 text-white rounded-lg text-xs font-bold transition shadow-sm">Strumenti (<span id="lbl-count-strum">0</span>)</button>
+                    <button onclick="switchLabelTab('magaz')" id="lbl-tab-magaz" class="flex-1 py-2 bg-white text-slate-600 hover:bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold transition shadow-sm">Magazzino (<span id="lbl-count-magaz">0</span>)</button>
+                </div>
+                
+                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-3 mb-2">
+                        <label class="flex items-center gap-2 text-xs font-bold text-slate-700 cursor-pointer">
+                            <input type="checkbox" id="lbl-check-all" onchange="toggleAllLabels(this.checked)" class="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500">
+                            Seleziona Tutti
+                        </label>
+                        <div class="flex items-center gap-3">
+                            <label class="flex items-center gap-1 text-[10px] font-bold text-slate-600 cursor-pointer"><input type="checkbox" id="lbl-opt-qr" checked> QR CODE</label>
+                            <label class="flex items-center gap-1 text-[10px] font-bold text-slate-600 cursor-pointer"><input type="checkbox" id="lbl-opt-bc"> BARCODE</label>
+                        </div>
+                    </div>
+                    
+                    <div id="labels-item-list" class="space-y-1.5 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
+                        <p class="text-xs text-slate-400 text-center py-4">Caricamento...</p>
+                    </div>
+
+                    <button onclick="generateLabels()" class="w-full py-3 mt-4 bg-indigo-600 text-white rounded-xl font-bold shadow flex items-center justify-center gap-2 hover:bg-indigo-700 transition">
+                        <i data-lucide="printer" class="w-4 h-4"></i> GENERA E STAMPA SELEZIONATI
+                    </button>
+                    <button onclick="clearLabelSelection()" class="w-full py-2 text-[10px] font-bold text-slate-400 hover:text-slate-600 transition">AZZERA SELEZIONE</button>
+                </div>
             </div>
 
             <!-- Content: Settings -->
@@ -1919,6 +1952,7 @@
                if (tab === 'inventory' && !supervisorPermissions.inventory) return alert("Non hai accesso al Magazzino.");
                if (tab === 'instruments' && !supervisorPermissions.instruments) return alert("Non hai accesso agli Strumenti.");
                if (tab === 'logs' && !supervisorPermissions.logs) return alert("Non hai accesso ai Log.");
+               if (tab === 'labels' && !supervisorPermissions.instruments && !supervisorPermissions.inventory) return alert("Non hai accesso alle Etichette.");
                if (tab === 'settings') return alert("Non hai accesso ai Settings.");
             }
             if (userRole === 'user') return alert('Accesso negato.');
@@ -1929,7 +1963,7 @@
             });
             document.getElementById('tab-btn-' + tab).classList.add('bg-white', 'text-indigo-700', 'shadow-sm');
 
-            ['bookings', 'instruments', 'settings', 'inventory', 'logs'].forEach(t => {
+            ['bookings', 'instruments', 'labels', 'settings', 'inventory', 'logs'].forEach(t => {
                 const el = document.getElementById('admin-content-' + t);
                 if (el) el.classList.add('hidden');
             });
@@ -1939,6 +1973,7 @@
             if (tab === 'instruments') loadInstruments();
             if (tab === 'inventory') loadInventoryListAdmin();
             if (tab === 'logs') loadAdminLogs();
+            if (tab === 'labels') loadLabelsList();
         };
 
         window.toggleDesktopMode = () => {
@@ -2411,20 +2446,116 @@
             const csvContent = "data:text/csv;charset=utf-8,ID,Nome,Utente,Inizio,Fine\n" + rows.join("\n");
             const link = document.createElement("a"); link.href = encodeURI(csvContent); link.download = "report.csv"; document.body.appendChild(link); link.click();
         };
-        window.printLabels = () => {
-            if (window.allInstrumentsCache.length === 0) return alert("Nessuno strumento.");
+        // --- ETICHETTE (LABELS) ---
+        let currentLabelTab = 'strum';
+        
+        window.switchLabelTab = (tab) => {
+            currentLabelTab = tab;
+            document.getElementById('lbl-tab-strum').className = tab === 'strum' 
+                ? 'flex-1 py-2 bg-indigo-600 text-white rounded-lg text-xs font-bold transition shadow-sm'
+                : 'flex-1 py-2 bg-white text-slate-600 hover:bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold transition shadow-sm';
+            document.getElementById('lbl-tab-magaz').className = tab === 'magaz' 
+                ? 'flex-1 py-2 bg-indigo-600 text-white rounded-lg text-xs font-bold transition shadow-sm'
+                : 'flex-1 py-2 bg-white text-slate-600 hover:bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold transition shadow-sm';
+            
+            document.getElementById('lbl-check-all').checked = false;
+            loadLabelsList();
+        };
+
+        window.loadLabelsList = () => {
+            const container = document.getElementById('labels-item-list');
+            const items = currentLabelTab === 'strum' ? (window.allInstrumentsCache || []) : (window.allInventoryCache || []);
+            
+            document.getElementById('lbl-count-strum').innerText = (window.allInstrumentsCache || []).length;
+            document.getElementById('lbl-count-magaz').innerText = (window.allInventoryCache || []).length;
+
+            if (items.length === 0) {
+                container.innerHTML = '<p class="text-xs text-slate-400 text-center py-4">Nessun elemento trovato.</p>';
+                return;
+            }
+
+            container.innerHTML = items.map(item => {
+                const title = currentLabelTab === 'strum' ? item.description : item.name;
+                const sub = currentLabelTab === 'strum' ? item.id : (item.id || item.brand || item.category || '');
+                return `<label class="flex items-center gap-3 p-2 hover:bg-slate-50 rounded-lg border border-transparent hover:border-slate-100 transition cursor-pointer">
+                    <input type="checkbox" value="${item.id}" class="lbl-item-checkbox w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500">
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-bold text-slate-800 truncate">${title}</p>
+                        <p class="text-[10px] text-slate-400 font-mono truncate">${sub}</p>
+                    </div>
+                </label>`;
+            }).join('');
+        };
+
+        window.toggleAllLabels = (checked) => {
+            document.querySelectorAll('.lbl-item-checkbox').forEach(cb => cb.checked = checked);
+        };
+
+        window.clearLabelSelection = () => {
+            document.getElementById('lbl-check-all').checked = false;
+            document.querySelectorAll('.lbl-item-checkbox').forEach(cb => cb.checked = false);
+        };
+
+        window.generateLabels = async () => {
+            const selectedIds = Array.from(document.querySelectorAll('.lbl-item-checkbox:checked')).map(cb => cb.value);
+            if (selectedIds.length === 0) return alert("Seleziona almeno un elemento!");
+            
+            const doQR = document.getElementById('lbl-opt-qr').checked;
+            const doBC = document.getElementById('lbl-opt-bc').checked;
+            if (!doQR && !doBC) return alert("Scegli un formato in alto (QR o Barcode)!");
+
+            const items = currentLabelTab === 'strum' ? window.allInstrumentsCache : window.allInventoryCache;
+            const selectedItems = items.filter(i => selectedIds.includes(i.id));
+
             const container = document.getElementById('print-grid');
             container.innerHTML = '';
-            document.getElementById('print-area').classList.remove('hidden');
-            let loaded = 0;
-            window.allInstrumentsCache.forEach(inst => {
-                const url = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(window.location.href.split('?')[0] + '?r=' + inst.id)}`;
-                const img = new Image(); img.src = url; img.style.width = '100px'; img.style.display = 'block'; img.style.margin = '0 auto';
-                img.onload = () => { if (++loaded === window.allInstrumentsCache.length) setTimeout(() => window.print(), 500); };
-                const div = document.createElement('div'); div.className = 'label-item';
-                div.innerHTML = `<h3>${inst.description}</h3>`; div.appendChild(img); div.innerHTML += `<p>${inst.id}</p>`;
+            
+            // Clean up old classes and add grid classes to print container
+            container.className = 'grid grid-cols-2 sm:grid-cols-3 gap-6 p-6';
+
+            for (const item of selectedItems) {
+                const title = currentLabelTab === 'strum' ? item.description : item.name;
+                const sub = currentLabelTab === 'strum' ? item.id : item.id;
+                
+                const div = document.createElement('div');
+                div.className = 'flex flex-col items-center justify-center p-4 border-2 border-slate-800 rounded-xl bg-white text-center gap-3 break-inside-avoid shadow-sm';
+                
+                div.innerHTML = `<h3 class="font-black text-lg leading-tight uppercase mb-1">${title}</h3>`;
+                
+                const codesDiv = document.createElement('div');
+                codesDiv.className = 'flex flex-col items-center justify-center gap-4 w-full';
+                
+                if (doBC) {
+                    const bcWrap = document.createElement('div');
+                    bcWrap.className = 'flex flex-col items-center bg-white p-2 rounded';
+                    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+                    JsBarcode(svg, String(item.id), { format: "CODE128", width: 2, height: 60, displayValue: false, margin: 0 });
+                    bcWrap.appendChild(svg);
+                    codesDiv.appendChild(bcWrap);
+                }
+
+                if (doQR) {
+                    const qrWrap = document.createElement('div');
+                    qrWrap.className = 'flex flex-col items-center bg-white p-2 rounded';
+                    const qrDiv = document.createElement('div');
+                    new QRCode(qrDiv, { text: String(item.id), width: 120, height: 120, correctLevel: QRCode.CorrectLevel.M });
+                    qrWrap.appendChild(qrDiv);
+                    codesDiv.appendChild(qrWrap);
+                }
+                
+                div.appendChild(codesDiv);
+                div.innerHTML += `<p class="font-mono text-sm font-bold mt-1 tracking-wider">${sub}</p>`;
                 container.appendChild(div);
-            });
+            }
+            
+            document.getElementById('print-area').classList.remove('hidden');
+            document.getElementById('app-container').classList.add('hidden'); // Hide main app to avoid overlapping backgrounds
+
+            setTimeout(() => {
+                window.print();
+                document.getElementById('print-area').classList.add('hidden');
+                document.getElementById('app-container').classList.remove('hidden');
+            }, 800);
         };
         window.copyDirectLink = () => {
             navigator.clipboard.writeText(window.location.href.split('?')[0] + '?r=' + currentItem).then(() => alert("Copiato!"));
