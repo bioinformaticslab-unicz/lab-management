@@ -36,10 +36,10 @@ document.addEventListener('alpine:init', () => {
         // --- VIEW STATE ---
         activeView: 'scanner',
         tabs: [
-            { id: 'scanner',   label: '📷 Scanner',   roles: ['user', 'supervisor', 'co_admin', 'main_admin'] },
-            { id: 'inventory', label: '📦 Magazzino',  roles: ['user', 'supervisor', 'co_admin', 'main_admin'] },
-            { id: 'admin',     label: '🛠️ Admin',     roles: ['supervisor', 'co_admin', 'main_admin'] },
-            { id: 'profile',   label: '👤 Profilo',   roles: ['user', 'supervisor', 'co_admin', 'main_admin'] },
+            { id: 'scanner',   icon: '📷', label: 'Scanner',   roles: ['user', 'supervisor', 'co_admin', 'main_admin'] },
+            { id: 'inventory', icon: '📦', label: 'Magazzino',  roles: ['user', 'supervisor', 'co_admin', 'main_admin'] },
+            { id: 'admin',     icon: '🛠️', label: 'Admin',     roles: ['supervisor', 'co_admin', 'main_admin'] },
+            { id: 'profile',   icon: '👤', label: 'Profilo',   roles: ['user', 'supervisor', 'co_admin', 'main_admin'] },
         ],
 
         // --- SCANNER ---
@@ -51,9 +51,11 @@ document.addEventListener('alpine:init', () => {
         inventory: [],
         inventorySearch: '',
         inventoryTab: 'all',
+        recentMovements: [],
 
         // --- STOCK MODAL ---
         stockModal: { open: false, item: null, action: 'add', qty: null, operator: '' },
+        confirming: false,
 
         // ========= COMPUTED =========
         get isAdmin()     { return ['main_admin', 'co_admin'].includes(this.userRole); },
@@ -148,6 +150,12 @@ document.addEventListener('alpine:init', () => {
             onSnapshot(query(dbCol('instruments')), snap => {
                 this.allInstruments = snap.docs.map(d => ({ ...d.data(), type: 'instrument' }));
             });
+            // Recent movements for profile view
+            import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js').then(({ orderBy, limit }) => {
+                onSnapshot(query(dbCol('stock_movements'), orderBy('timestamp', 'desc'), limit(20)), snap => {
+                    this.recentMovements = snap.docs.map(d => ({ ...d.data(), _id: d.id }));
+                });
+            });
         },
 
         // ========= SCANNER =========
@@ -192,6 +200,7 @@ document.addEventListener('alpine:init', () => {
             const newQty = action === 'add' ? item.quantity + qty : item.quantity - qty;
             if (newQty < 0) { alert(`Impossibile: disponibili ${item.quantity} ${item.unit}`); return; }
 
+            this.confirming = true;
             try {
                 await updateDoc(dbDoc('inventory', item.id), { quantity: newQty });
                 await addDoc(dbCol('stock_movements'), {
@@ -211,6 +220,8 @@ document.addEventListener('alpine:init', () => {
             } catch (err) {
                 console.error(err);
                 alert('Errore nel salvataggio. Riprova.');
+            } finally {
+                this.confirming = false;
             }
         },
 

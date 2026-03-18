@@ -2,32 +2,29 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>LABSCAN Lab · Beta</title>
-    <meta name="description" content="LABSCAN Lab Beta — Gestione laboratorio: magazzino, prenotazioni strumenti e scanner QR/Barcode." />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>LABSCAN Lab · Beta v2</title>
+    <meta name="description" content="LABSCAN Lab Beta v2 — Gestione laboratorio: magazzino, prenotazioni e scanner." />
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
             theme: {
                 extend: {
-                    colors: {
-                        brand: { DEFAULT: '#10b981', dark: '#059669' }
-                    },
-                    animation: {
-                        'fade-in': 'fadeIn 0.25s ease-out'
-                    },
+                    borderRadius: { '2xl': '1rem', '3xl': '1.5rem', '4xl': '2rem' },
+                    animation: { 'fade-in': 'fadeIn 0.25s ease-out' },
                     keyframes: {
-                        fadeIn: { '0%': { opacity: 0, transform: 'translateY(6px)' }, '100%': { opacity: 1, transform: 'translateY(0)' } }
+                        fadeIn: { '0%': { opacity: 0, transform: 'translateY(8px)' }, '100%': { opacity: 1, transform: 'translateY(0)' } }
                     }
                 }
             }
         }
     </script>
 
-    <!-- App Logic loaded BEFORE Alpine so alpine:init event fires correctly -->
+    <!-- App Logic BEFORE Alpine so alpine:init fires correctly -->
     <script type="module" src="./src/main.js"></script>
 
-    <!-- Alpine.js (deferred — must come AFTER main.js in document order) -->
+    <!-- Alpine.js (deferred, must come AFTER main.js in document order) -->
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
     <!-- Lucide Icons -->
@@ -35,209 +32,271 @@
 
     <style>
         [x-cloak] { display: none !important; }
-        .fade-in { animation: fade-in 0.25s ease-out; }
-        @keyframes fade-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+        body { -webkit-tap-highlight-color: transparent; }
+        .fade-in { animation: fadeIn 0.25s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; } }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         .beta-badge {
-            position: fixed; bottom: 12px; right: 12px; z-index: 9999;
-            background: #f59e0b; color: #fff; font-size: 10px; font-weight: 900;
-            padding: 4px 10px; border-radius: 999px; letter-spacing: 0.08em;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+            position: fixed; bottom: 76px; right: 12px; z-index: 9999;
+            background: #f59e0b; color: #fff; font-size: 9px; font-weight: 900;
+            padding: 3px 8px; border-radius: 999px; letter-spacing: 0.06em;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2); pointer-events: none;
         }
     </style>
 </head>
 
-<body class="bg-slate-50 min-h-screen font-sans antialiased" x-data="labApp()" x-init="init()" x-cloak>
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen pb-24" x-data="labApp()" x-init="init()" x-cloak>
 
     <!-- BETA BADGE -->
-    <div class="beta-badge">⚗️ BETA v2</div>
+    <div class="beta-badge" x-show="user">⚗️ BETA v2</div>
 
-    <!-- AUTH GATE (shown when not logged in) -->
-    <div x-show="!user" class="min-h-screen flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-sm space-y-6 animate-fade-in">
+    <!-- ===== AUTH GATE ===== -->
+    <div x-show="!user" class="min-h-screen flex flex-col items-center justify-center p-6 space-y-6">
+        <!-- Logo / Branding -->
+        <div class="text-center space-y-2">
+            <div class="inline-flex items-center justify-center w-20 h-20 bg-slate-900 rounded-[1.5rem] shadow-xl mb-2">
+                <svg class="w-10 h-10 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/>
+                </svg>
+            </div>
+            <h1 class="text-3xl font-black italic tracking-tighter text-slate-900">
+                LAB<span class="text-emerald-500">SCAN</span>
+            </h1>
+            <p class="text-xs text-slate-400 font-medium">Gestione Laboratorio · Beta v2</p>
+        </div>
+
+        <!-- Login Card -->
+        <div class="bg-white w-full max-w-sm rounded-[1.5rem] shadow-xl p-6 space-y-4">
             <div class="text-center">
-                <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-emerald-50 mb-4">
-                    <svg class="w-8 h-8 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/>
-                    </svg>
-                </div>
-                <h1 class="text-2xl font-black text-slate-800">LABSCAN <span class="text-emerald-500">Lab</span></h1>
-                <p class="text-xs text-slate-400 mt-1">Beta v2 — Accedi con Google (@unicz.it)</p>
+                <p class="text-sm font-bold text-slate-700">Accedi con il tuo account universitario</p>
+                <p class="text-[10px] text-slate-400 mt-0.5">Solo indirizzi @unicz.it o @studenti.unicz.it</p>
             </div>
 
             <button @click="signIn()" :disabled="authLoading"
-                class="w-full flex items-center justify-center gap-3 py-3 px-4 bg-white border-2 border-slate-200 rounded-xl text-sm font-bold hover:border-emerald-400 hover:bg-emerald-50 transition-all shadow-sm disabled:opacity-50">
-                <svg class="w-5 h-5" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+                class="w-full flex items-center justify-center gap-3 py-3 px-4 bg-slate-900 text-white rounded-xl text-sm font-bold hover:bg-slate-700 active:scale-[0.98] transition-all shadow-md disabled:opacity-50">
+                <svg class="w-5 h-5 bg-white rounded-full p-0.5" viewBox="0 0 24 24">
+                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                </svg>
                 <span x-text="authLoading ? 'Accesso in corso...' : 'Accedi con Google'"></span>
             </button>
 
-            <p x-show="authError" class="text-xs text-red-500 font-bold text-center bg-red-50 p-2 rounded-lg" x-text="authError"></p>
+            <p x-show="authError" x-text="authError"
+                class="text-[10px] text-red-600 font-bold text-center bg-red-50 px-3 py-2 rounded-xl border border-red-200"></p>
         </div>
+
+        <a href="../" class="text-[10px] text-slate-400 hover:text-slate-600 transition underline">
+            ← Versione stabile
+        </a>
     </div>
 
-    <!-- MAIN APP (shown when logged in) -->
-    <div x-show="user" class="flex flex-col min-h-screen">
+    <!-- ===== MAIN APP ===== -->
+    <div x-show="user">
 
-        <!-- TOPBAR -->
-        <header class="sticky top-0 z-40 bg-white/80 backdrop-blur border-b border-slate-100 shadow-sm">
-            <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
+        <!-- HEADER — slate-900, sticky, rounded bottom -->
+        <header class="bg-slate-900 text-white px-5 pt-5 pb-6 rounded-b-[2rem] shadow-xl sticky top-0 z-50">
+            <div class="max-w-3xl mx-auto flex justify-between items-center">
                 <div class="flex items-center gap-2">
-                    <div class="w-8 h-8 rounded-xl bg-emerald-600 flex items-center justify-center">
-                        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
-                    </div>
-                    <span class="font-black text-slate-800 text-sm">LABSCAN <span class="text-emerald-500">Beta</span></span>
+                    <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/>
+                    </svg>
+                    <h1 class="text-lg font-black italic tracking-tighter">LAB<span class="text-emerald-400">SCAN</span></h1>
                 </div>
-
-                <nav class="hidden sm:flex items-center gap-1">
-                    <template x-for="tab in visibleTabs" :key="tab.id">
-                        <button @click="activeView = tab.id"
-                            :class="activeView === tab.id ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-500 hover:bg-slate-100'"
-                            class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all"
-                            x-text="tab.label">
-                        </button>
-                    </template>
-                </nav>
-
-                <button @click="signOut()" class="text-[10px] text-slate-400 font-bold hover:text-red-500 transition">
-                    <span x-text="user?.email?.split('@')[0]"></span> · Esci
-                </button>
+                <div class="flex items-center gap-3">
+                    <span class="text-[10px] text-slate-400 hidden sm:inline"
+                        x-text="user?.email?.split('@')[0]"></span>
+                    <button @click="signOut()"
+                        class="text-[10px] text-slate-400 hover:text-red-400 transition font-bold">Esci</button>
+                </div>
             </div>
 
-            <!-- Mobile nav -->
-            <div class="sm:hidden flex overflow-x-auto pb-2 px-4 gap-2 scrollbar-hide">
+            <!-- DESKTOP INLINE NAV (hidden on mobile) -->
+            <div class="hidden sm:flex max-w-3xl mx-auto mt-4 gap-2">
                 <template x-for="tab in visibleTabs" :key="tab.id">
                     <button @click="activeView = tab.id"
-                        :class="activeView === tab.id ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600'"
-                        class="flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap"
-                        x-text="tab.label">
+                        :class="activeView === tab.id
+                            ? 'bg-emerald-500 text-white shadow-md'
+                            : 'text-slate-400 hover:text-white hover:bg-white/10'"
+                        class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all">
+                        <span x-text="tab.icon"></span>
+                        <span x-text="tab.label"></span>
                     </button>
                 </template>
             </div>
         </header>
 
         <!-- MAIN CONTENT -->
-        <main class="flex-1 max-w-5xl w-full mx-auto px-4 py-6 space-y-6">
+        <main class="max-w-3xl mx-auto px-4 pt-5 pb-6 space-y-4">
 
-            <!-- VIEW: SCANNER -->
+            <!-- ── VIEW: SCANNER ── -->
             <section x-show="activeView === 'scanner'" class="fade-in space-y-4">
-                <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+                <div class="bg-white rounded-[1.5rem] border border-slate-100 shadow-sm p-5">
                     <h2 class="text-base font-bold text-slate-800 mb-4 flex items-center gap-2">
-                        <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/></svg>
+                        <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/></svg>
                         Scanner QR / Barcode
                     </h2>
                     <input type="text"
                         x-model="scanInput"
                         @keyup.enter="handleScan()"
-                        @input.debounce.300ms="handleScan()"
-                        class="w-full text-center text-sm font-mono px-4 py-3 border-2 border-slate-200 rounded-xl outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition-all"
-                        placeholder="Scansiona il QR Code / Barcode qui..."
+                        @input.debounce.250ms="handleScan()"
+                        class="w-full text-center text-sm font-mono px-4 py-3 border-2 border-slate-200 rounded-xl outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition-all bg-slate-50"
+                        placeholder="Scansiona il QR Code / Barcode..."
                         id="scanner-input"
                         autocomplete="off" />
 
-                    <!-- Smart Search Results -->
-                    <div x-show="searchResults.length > 0" class="mt-4 space-y-2">
+                    <!-- Smart search results -->
+                    <div x-show="searchResults.length > 0" class="mt-3 space-y-2">
+                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">Risultati</p>
                         <template x-for="r in searchResults" :key="r.id">
                             <button @click="openItem(r)"
-                                class="w-full flex items-center gap-3 p-3 bg-slate-50 hover:bg-emerald-50 border border-slate-200 hover:border-emerald-300 rounded-xl transition-all text-left">
-                                <span class="text-lg" x-text="r.type === 'instrument' ? '🔬' : '📦'"></span>
+                                class="w-full flex items-center gap-3 p-3 bg-slate-50 hover:bg-emerald-50 border border-slate-200 hover:border-emerald-300 rounded-xl transition-all text-left active:scale-[0.98]">
+                                <div class="w-9 h-9 rounded-xl flex items-center justify-center text-base flex-shrink-0"
+                                    :class="r.type === 'instrument' ? 'bg-indigo-50' : 'bg-emerald-50'">
+                                    <span x-text="r.type === 'instrument' ? '🔬' : '📦'"></span>
+                                </div>
                                 <div class="flex-1 min-w-0">
                                     <div class="font-bold text-sm text-slate-800 truncate" x-text="r.name"></div>
-                                    <div class="text-[10px] text-slate-500 font-mono" x-text="r.id"></div>
+                                    <div class="text-[10px] text-slate-400 font-mono mt-0.5" x-text="r.id"></div>
                                 </div>
-                                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                                <span class="text-[9px] font-bold px-2 py-0.5 rounded-full flex-shrink-0"
                                     :class="r.type === 'instrument' ? 'bg-indigo-100 text-indigo-700' : 'bg-emerald-100 text-emerald-700'"
                                     x-text="r.type === 'instrument' ? 'Strumento' : 'Magazzino'"></span>
                             </button>
                         </template>
                     </div>
+
+                    <!-- Empty state when input is clear -->
+                    <div x-show="!scanInput && searchResults.length === 0" class="py-6 text-center">
+                        <div class="text-4xl mb-2">📷</div>
+                        <p class="text-xs text-slate-400 font-medium">Punta il barcode o QR qui sopra</p>
+                        <p class="text-[10px] text-slate-300 mt-1">oppure digita manualmente nome o ID</p>
+                    </div>
                 </div>
             </section>
 
-            <!-- VIEW: INVENTORY -->
+            <!-- ── VIEW: INVENTORY ── -->
             <section x-show="activeView === 'inventory'" class="fade-in space-y-4">
+                <!-- Header row -->
                 <div class="flex items-center justify-between gap-3 flex-wrap">
                     <div>
-                        <h2 class="text-base font-bold text-slate-800">📦 Magazzino Lab</h2>
-                        <p class="text-[10px] text-slate-400 mt-0.5" x-text="`${inventory.length} articoli totali`"></p>
+                        <h2 class="text-base font-bold text-slate-800">Magazzino Lab</h2>
+                        <p class="text-[10px] text-slate-400 mt-0.5"
+                            x-text="filteredInventory.length + ' ' + (inventoryTab === 'reorder' ? 'in ordine' : 'articoli')"></p>
                     </div>
-                    <div class="flex items-center gap-2">
-                        <template x-if="isAdmin || isSupervisor">
-                            <button @click="openOrderModal(null)"
-                                class="px-3 py-2 bg-emerald-600 text-white rounded-lg text-xs font-bold shadow hover:bg-emerald-500 transition flex items-center gap-1">
-                                🚚 Aggiungi Ordine
-                            </button>
-                        </template>
-                    </div>
+                    <button x-show="isAdmin || isSupervisor" @click="openOrderModal(null)"
+                        class="flex items-center gap-1.5 px-3 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold shadow hover:bg-slate-700 active:scale-[0.97] transition-all">
+                        🚚 Aggiungi Ordine
+                    </button>
                 </div>
 
                 <!-- Sub-tabs -->
-                <div class="flex gap-2 p-1 bg-slate-100 rounded-xl">
+                <div class="flex p-1 bg-slate-100 rounded-2xl gap-1">
                     <button @click="inventoryTab = 'all'"
-                        :class="inventoryTab === 'all' ? 'bg-white shadow text-slate-800' : 'text-slate-500 hover:text-slate-700'"
-                        class="flex-1 py-2 rounded-lg text-xs font-bold transition-all">
+                        :class="inventoryTab === 'all' ? 'bg-white shadow font-black text-slate-800' : 'text-slate-500 font-bold'"
+                        class="flex-1 py-2 rounded-xl text-xs transition-all">
                         Tutti gli Articoli
                     </button>
                     <button @click="inventoryTab = 'reorder'"
-                        :class="inventoryTab === 'reorder' ? 'bg-white shadow text-slate-800' : 'text-slate-500 hover:text-slate-700'"
-                        class="flex-1 py-2 rounded-lg text-xs font-bold transition-all">
-                        🚚 Riordino
+                        :class="inventoryTab === 'reorder' ? 'bg-white shadow font-black text-slate-800' : 'text-slate-500 font-bold'"
+                        class="flex-1 py-2 rounded-xl text-xs transition-all">
+                        🚚 In Ordine
                     </button>
                 </div>
 
                 <!-- Search -->
-                <input type="text" x-model="inventorySearch" placeholder="Cerca articolo..."
-                    class="w-full px-4 py-2.5 text-sm border-2 border-slate-200 rounded-xl outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition-all" />
+                <input type="text" x-model="inventorySearch" placeholder="Cerca articolo, brand, categoria..."
+                    class="w-full px-4 py-2.5 text-sm border-2 border-slate-200 rounded-xl outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 bg-white transition-all" />
 
                 <!-- Inventory List -->
                 <div class="space-y-3">
                     <template x-if="filteredInventory.length === 0">
-                        <p class="text-center text-sm text-slate-400 py-8">Nessun articolo trovato.</p>
+                        <div class="text-center py-12">
+                            <div class="text-4xl mb-2">📭</div>
+                            <p class="text-sm text-slate-400 font-medium">Nessun articolo trovato.</p>
+                        </div>
                     </template>
+
                     <template x-for="item in filteredInventory" :key="item.id">
-                        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 flex items-start gap-4 hover:border-emerald-200 transition-all">
-                            <template x-if="item.image">
-                                <img :src="item.image" :alt="item.name" class="w-12 h-12 rounded-xl object-cover flex-shrink-0" />
-                            </template>
-                            <template x-if="!item.image">
-                                <div class="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center flex-shrink-0 text-xl">📦</div>
-                            </template>
-                            <div class="flex-1 min-w-0">
-                                <div class="flex items-start justify-between gap-2">
-                                    <div>
-                                        <h3 class="font-bold text-sm text-slate-800" x-text="item.name"></h3>
-                                        <p class="text-[10px] text-slate-400 font-mono mt-0.5" x-text="item.id"></p>
+                        <div class="bg-white rounded-[1.5rem] border border-slate-100 shadow-sm p-4 hover:shadow-md hover:border-slate-200 transition-all">
+                            <div class="flex items-start gap-3">
+                                <!-- Image or placeholder -->
+                                <template x-if="item.image">
+                                    <img :src="item.image" :alt="item.name" class="w-12 h-12 rounded-xl object-cover flex-shrink-0 border border-slate-100" />
+                                </template>
+                                <template x-if="!item.image">
+                                    <div class="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center flex-shrink-0 text-xl">📦</div>
+                                </template>
+
+                                <!-- Content -->
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex items-start justify-between gap-2 mb-1">
+                                        <div class="min-w-0">
+                                            <h3 class="font-black text-sm text-slate-800 leading-tight" x-text="item.name"></h3>
+                                            <p class="text-[10px] text-slate-400 font-mono mt-0.5 truncate" x-text="item.id"></p>
+                                        </div>
+                                        <!-- Qty badge -->
+                                        <div class="flex-shrink-0 text-right">
+                                            <span class="text-lg font-black leading-none"
+                                                :class="item.quantity <= item.threshold ? 'text-red-500' : 'text-emerald-600'"
+                                                x-text="item.quantity"></span>
+                                            <span class="text-[10px] text-slate-400 ml-0.5" x-text="item.unit"></span>
+                                        </div>
                                     </div>
-                                    <div class="flex flex-col items-end gap-1 flex-shrink-0">
-                                        <span class="text-base font-black"
-                                            :class="item.quantity <= item.threshold ? 'text-red-600' : 'text-emerald-600'"
-                                            x-text="`${item.quantity} ${item.unit}`"></span>
+
+                                    <!-- Tags -->
+                                    <div class="flex gap-1.5 flex-wrap mb-2">
+                                        <template x-if="item.brand">
+                                            <span class="text-[9px] px-1.5 py-0.5 bg-slate-100 text-slate-500 rounded-full font-medium" x-text="item.brand"></span>
+                                        </template>
+                                        <template x-if="item.category">
+                                            <span class="text-[9px] px-1.5 py-0.5 bg-indigo-50 text-indigo-500 rounded-full font-medium" x-text="item.category"></span>
+                                        </template>
+                                        <template x-if="item.location">
+                                            <span class="text-[9px] px-1.5 py-0.5 bg-amber-50 text-amber-600 rounded-full font-medium" x-text="'📍 ' + item.location"></span>
+                                        </template>
                                         <template x-if="item.isOrdered">
-                                            <span class="text-[9px] font-bold px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full">📦 In Ordine</span>
+                                            <span class="text-[9px] px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded-full font-bold">
+                                                🚚 In Ordine
+                                                <template x-if="item.orderQuantity">
+                                                    <span x-text="'(+' + item.orderQuantity + ' ' + item.unit + ')'"></span>
+                                                </template>
+                                            </span>
+                                        </template>
+                                        <template x-if="item.quantity <= item.threshold">
+                                            <span class="text-[9px] px-1.5 py-0.5 bg-red-50 text-red-500 rounded-full font-bold">⚠️ Scorta Bassa</span>
                                         </template>
                                     </div>
-                                </div>
-                                <div x-show="item.brand || item.category" class="mt-1 flex gap-2 flex-wrap">
-                                    <template x-if="item.brand">
-                                        <span class="text-[10px] px-2 py-0.5 bg-slate-100 text-slate-500 rounded-full" x-text="item.brand"></span>
-                                    </template>
-                                    <template x-if="item.category">
-                                        <span class="text-[10px] px-2 py-0.5 bg-indigo-50 text-indigo-500 rounded-full" x-text="item.category"></span>
-                                    </template>
-                                </div>
-                                <div class="flex gap-2 mt-3">
-                                    <button @click="openStockModal(item, 'add')"
-                                        class="flex-1 py-1.5 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-lg text-[10px] font-bold hover:bg-emerald-100 transition">
-                                        + CARICO
-                                    </button>
-                                    <button @click="openStockModal(item, 'remove')"
-                                        class="flex-1 py-1.5 bg-red-50 border border-red-200 text-red-600 rounded-lg text-[10px] font-bold hover:bg-red-100 transition">
-                                        − SCARICO
-                                    </button>
-                                    <template x-if="item.isOrdered">
-                                        <button @click="confirmArrival(item)"
-                                            class="flex-1 py-1.5 bg-blue-600 text-white rounded-lg text-[10px] font-bold hover:bg-blue-500 transition">
-                                            ✅ ARRIVO
+
+                                    <!-- Progress bar (stock level) -->
+                                    <div class="h-1 bg-slate-100 rounded-full overflow-hidden mb-2">
+                                        <div class="h-full rounded-full transition-all"
+                                            :class="item.quantity <= item.threshold ? 'bg-red-400' : 'bg-emerald-500'"
+                                            :style="'width: ' + Math.min(100, Math.round((item.quantity / Math.max(item.threshold * 3, item.quantity, 1)) * 100)) + '%'">
+                                        </div>
+                                    </div>
+
+                                    <!-- Actions -->
+                                    <div class="flex gap-2 mt-1">
+                                        <button @click="openStockModal(item, 'add')"
+                                            class="flex-1 py-1.5 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-xl text-[10px] font-bold hover:bg-emerald-100 active:scale-[0.97] transition-all">
+                                            + CARICO
                                         </button>
-                                    </template>
+                                        <button @click="openStockModal(item, 'remove')"
+                                            class="flex-1 py-1.5 bg-red-50 border border-red-200 text-red-600 rounded-xl text-[10px] font-bold hover:bg-red-100 active:scale-[0.97] transition-all">
+                                            − SCARICO
+                                        </button>
+                                        <template x-if="item.isOrdered">
+                                            <button @click="confirmArrival(item)"
+                                                class="flex-1 py-1.5 bg-blue-600 text-white rounded-xl text-[10px] font-bold hover:bg-blue-500 active:scale-[0.97] transition-all shadow-sm">
+                                                ✅ ARRIVO
+                                            </button>
+                                        </template>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -245,78 +304,154 @@
                 </div>
             </section>
 
-            <!-- VIEW: ADMIN (placeholder) -->
-            <section x-show="activeView === 'admin'" class="fade-in">
-                <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-8 text-center space-y-3">
-                    <div class="text-4xl mb-2">🛠️</div>
-                    <h2 class="text-lg font-bold text-slate-800">Admin Dashboard</h2>
-                    <p class="text-xs text-slate-500">Questa sezione è in costruzione per la Beta. Le funzionalità admin complete sono disponibili sull'app principale.</p>
-                    <a href="../index.html" class="inline-block mt-4 px-4 py-2 bg-slate-800 text-white rounded-xl text-xs font-bold">
-                        ← Torna alla versione stabile
-                    </a>
-                </div>
-            </section>
-
-            <!-- VIEW: PROFILE -->
+            <!-- ── VIEW: PROFILE ── -->
             <section x-show="activeView === 'profile'" class="fade-in space-y-4">
-                <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
-                    <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
-                    Il Mio Profilo
-                </h2>
-                <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 space-y-3">
-                    <div class="flex items-center gap-3">
+                <h2 class="text-base font-bold text-slate-800">Il Mio Profilo</h2>
+
+                <div class="bg-white rounded-[1.5rem] border border-slate-100 shadow-sm p-5">
+                    <div class="flex items-center gap-4">
                         <template x-if="user?.photoURL">
-                            <img :src="user.photoURL" class="w-12 h-12 rounded-full border-2 border-slate-200" />
+                            <img :src="user.photoURL" class="w-14 h-14 rounded-2xl border-2 border-slate-200" />
                         </template>
-                        <div>
-                            <div class="font-bold text-slate-800" x-text="user?.displayName || user?.email?.split('@')[0]"></div>
-                            <div class="text-xs text-slate-400" x-text="user?.email"></div>
-                            <div class="mt-1">
+                        <template x-if="!user?.photoURL">
+                            <div class="w-14 h-14 rounded-2xl bg-slate-900 flex items-center justify-center text-white text-xl font-black"
+                                x-text="(user?.displayName || user?.email || '?')[0].toUpperCase()"></div>
+                        </template>
+                        <div class="flex-1 min-w-0">
+                            <div class="font-black text-slate-800 truncate" x-text="user?.displayName || user?.email?.split('@')[0]"></div>
+                            <div class="text-[10px] text-slate-400 truncate" x-text="user?.email"></div>
+                            <div class="mt-1.5">
                                 <span class="text-[10px] font-bold px-2 py-0.5 rounded-full"
-                                    :class="isAdmin ? 'bg-amber-100 text-amber-700' : (isSupervisor ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600')"
+                                    :class="{
+                                        'bg-amber-100 text-amber-700': isAdmin,
+                                        'bg-emerald-100 text-emerald-700': isSupervisor && !isAdmin,
+                                        'bg-slate-100 text-slate-600': !isAdmin && !isSupervisor
+                                    }"
                                     x-text="isAdmin ? '👑 Amministratore' : (isSupervisor ? '👁️ Supervisore' : '👤 Utente')">
                                 </span>
                             </div>
                         </div>
                     </div>
                 </div>
+
+                <!-- Inventory movements -->
+                <div class="bg-white rounded-[1.5rem] border border-slate-100 shadow-sm p-5">
+                    <h3 class="text-xs font-bold text-slate-700 mb-3 flex items-center gap-2">
+                        <svg class="w-3.5 h-3.5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                        Ultimi movimenti magazzino
+                    </h3>
+                    <template x-if="recentMovements.length === 0">
+                        <p class="text-[10px] text-slate-400 text-center py-4">Nessun movimento registrato.</p>
+                    </template>
+                    <template x-for="m in recentMovements.slice(0, 10)" :key="m._id">
+                        <div class="flex items-center gap-3 py-2 border-b border-slate-50 last:border-0">
+                            <span class="text-sm font-black w-6 text-center"
+                                :class="m.action === 'add' ? 'text-emerald-600' : 'text-red-500'"
+                                x-text="m.action === 'add' ? '+' : '−'"></span>
+                            <div class="flex-1 min-w-0">
+                                <div class="text-xs font-bold text-slate-700 truncate" x-text="m.itemName"></div>
+                                <div class="text-[9px] text-slate-400" x-text="m.timestamp ? new Date(m.timestamp.seconds * 1000).toLocaleString('it-IT') : ''"></div>
+                            </div>
+                            <span class="text-xs font-black text-slate-600"
+                                x-text="m.amount + ' ' + (m.unit || '')"></span>
+                        </div>
+                    </template>
+                </div>
+
+                <!-- Sign out -->
+                <button @click="signOut()"
+                    class="w-full py-3 bg-white border-2 border-slate-200 text-red-500 rounded-2xl font-bold text-sm hover:bg-red-50 hover:border-red-200 active:scale-[0.98] transition-all shadow-sm">
+                    Esci dall'Account
+                </button>
+            </section>
+
+            <!-- ── VIEW: ADMIN PLACEHOLDER ── -->
+            <section x-show="activeView === 'admin'" class="fade-in">
+                <div class="bg-white rounded-[1.5rem] border border-slate-100 shadow-sm p-8 text-center space-y-3">
+                    <div class="text-5xl">🛠️</div>
+                    <h2 class="text-base font-bold text-slate-800">Admin Dashboard</h2>
+                    <p class="text-xs text-slate-400 max-w-xs mx-auto">Questa sezione è in costruzione per la Beta v2. Le funzionalità admin sono disponibili nell'app principale.</p>
+                    <a href="../"
+                        class="inline-block mt-2 px-5 py-2.5 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-slate-700 transition">
+                        ← Vai alla versione stabile
+                    </a>
+                </div>
             </section>
 
         </main>
-    </div>
 
-    <!-- MODAL: STOCK MOVEMENT -->
+        <!-- ── BOTTOM NAV (mobile) ── -->
+        <nav class="sm:hidden fixed bottom-0 inset-x-0 bg-white border-t border-slate-100 shadow-[0_-4px_24px_rgba(0,0,0,0.06)] z-50">
+            <div class="flex items-stretch">
+                <template x-for="tab in visibleTabs" :key="tab.id">
+                    <button @click="activeView = tab.id"
+                        :class="activeView === tab.id ? 'text-emerald-600' : 'text-slate-400'"
+                        class="flex-1 flex flex-col items-center justify-center py-3 gap-0.5 transition-colors active:bg-slate-50">
+                        <span class="text-lg leading-none" x-text="tab.icon"></span>
+                        <span class="text-[9px] font-bold leading-none" x-text="tab.label"></span>
+                    </button>
+                </template>
+            </div>
+        </nav>
+
+    </div><!-- /main app -->
+
+    <!-- ===== MODAL: STOCK MOVEMENT ===== -->
     <div x-show="stockModal.open" x-cloak
-        class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+        class="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] flex items-end sm:items-center justify-center"
         @click.self="stockModal.open = false">
-        <div class="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl animate-fade-in">
-            <h3 class="text-lg font-bold text-slate-800 mb-4"
-                x-text="stockModal.action === 'add' ? '📦 Carico' : '📤 Scarico'"></h3>
+        <div class="bg-white w-full sm:max-w-sm rounded-t-[2rem] sm:rounded-[2rem] p-6 shadow-2xl fade-in">
+            <!-- Handle bar (mobile) -->
+            <div class="sm:hidden mx-auto mb-4 w-10 h-1 bg-slate-200 rounded-full"></div>
+
+            <div class="flex items-center gap-3 mb-5">
+                <div class="w-10 h-10 rounded-2xl flex items-center justify-center text-lg"
+                    :class="stockModal.action === 'add' ? 'bg-emerald-50' : 'bg-red-50'">
+                    <span x-text="stockModal.action === 'add' ? '📦' : '📤'"></span>
+                </div>
+                <div>
+                    <h3 class="text-base font-black text-slate-800"
+                        x-text="stockModal.action === 'add' ? 'Carico Magazzino' : 'Scarico Magazzino'"></h3>
+                    <p class="text-[10px] text-slate-400" x-text="stockModal.item?.name"></p>
+                </div>
+            </div>
+
             <div class="space-y-4">
-                <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
-                    <div class="font-bold text-sm text-slate-800" x-text="stockModal.item?.name"></div>
-                    <div class="text-xs text-slate-500 font-mono" x-text="stockModal.item?.id"></div>
-                    <div class="text-xs text-slate-600 mt-1">
-                        Disponibili: <span class="font-bold" x-text="`${stockModal.item?.quantity} ${stockModal.item?.unit}`"></span>
-                    </div>
+                <!-- Current stock info -->
+                <div class="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs">
+                    <span class="text-slate-500 font-medium">Disponibili ora</span>
+                    <span class="font-black text-slate-800"
+                        x-text="(stockModal.item?.quantity || 0) + ' ' + (stockModal.item?.unit || '')"></span>
                 </div>
+
+                <!-- Quantity -->
                 <div>
-                    <label class="block text-xs font-bold text-slate-500 mb-1">Quantità (<span x-text="stockModal.item?.unit"></span>)</label>
+                    <label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase tracking-wide">
+                        Quantità (<span x-text="stockModal.item?.unit"></span>)
+                    </label>
                     <input type="number" step="0.01" min="0.01" x-model.number="stockModal.qty"
-                        class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-2xl font-mono font-bold text-center"
-                        placeholder="0" id="stock-modal-qty" />
+                        class="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 rounded-xl text-2xl font-black font-mono text-center outline-none transition-all"
+                        placeholder="0"
+                        id="stock-modal-qty" />
                 </div>
+
+                <!-- Operator -->
                 <div>
-                    <label class="block text-xs font-bold text-slate-500 mb-1">Identificativo Operatore</label>
+                    <label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase tracking-wide">Identificativo Operatore</label>
                     <input type="text" x-model="stockModal.operator"
-                        class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm"
+                        class="w-full px-4 py-2.5 bg-slate-50 border-2 border-slate-200 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 rounded-xl text-sm outline-none transition-all"
                         placeholder="Nome, PI o Codice..." />
                 </div>
+
                 <button @click="confirmStockMovement()"
-                    :disabled="!stockModal.qty || !stockModal.operator"
-                    class="w-full py-3 bg-slate-800 text-white rounded-xl font-bold shadow-lg disabled:opacity-50 hover:bg-slate-700 transition">
-                    CONFERMA
+                    :disabled="!stockModal.qty || !stockModal.operator || confirming"
+                    :class="stockModal.action === 'add'
+                        ? 'bg-emerald-600 hover:bg-emerald-500 disabled:bg-emerald-300'
+                        : 'bg-red-600 hover:bg-red-500 disabled:bg-red-300'"
+                    class="w-full py-3.5 text-white rounded-xl font-black shadow-lg active:scale-[0.98] transition-all disabled:cursor-not-allowed">
+                    <span x-text="confirming ? 'Salvataggio...' : 'CONFERMA'"></span>
                 </button>
+
                 <button @click="stockModal.open = false"
                     class="w-full py-2 text-slate-400 text-xs font-bold hover:text-slate-600 transition">
                     ANNULLA
@@ -325,7 +460,5 @@
         </div>
     </div>
 
-    <!-- App Logic -->
-    <script type="module" src="./src/main.js"></script>
 </body>
 </html>
