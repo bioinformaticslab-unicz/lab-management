@@ -63,6 +63,12 @@ document.addEventListener('alpine:init', () => {
 
         // Scanner
         scanInput: '', searchResults: [], cameraActive: false,
+        isBatchMode: false, batchItems: [], batchOperator: '', batchAction: 'remove',
+
+        // Admin Configs
+        labelsType: 'inventory', selectedLabels: [],
+        coAdmins: [], supervisorsList: [], maintenanceMode: false,
+        newCoAdminEmail: '', newSupervisorEmail: '',
 
         // Modals
         stockModal:   { open: false, item: null, action: 'add', qty: 1, operator: '' },
@@ -74,6 +80,8 @@ document.addEventListener('alpine:init', () => {
         itemForm: { name:'',id:'',brand:'',category:'',quantity:0,unit:'pz',threshold:0,location:'',restockEmail:'',image:'' },
         editingInstrument: null,
         instrumentForm: { name:'',id:'',brand:'',location:'',imageUrl:'',category:'' },
+
+        allBookings: [], // For admin dashboard
 
         // Computed
         get isAdmin()      { return ['main_admin','co_admin'].includes(this.userRole); },
@@ -166,9 +174,31 @@ document.addEventListener('alpine:init', () => {
                 this.resources = snap.docs.map(d => ({ ...d.data(), _docId: d.id }));
                 this.rebuildFuseIndexes();
             });
+            onSnapshot(query(dbCol('bookings')), snap => {
+                this.allBookings = snap.docs.map(d => ({ ...d.data(), id: d.id }));
+            });
             onSnapshot(query(dbCol('stock_movements'), orderBy('timestamp','desc'), limit(20)), snap => {
                 this.recentMovements = snap.docs.map(d => ({ ...d.data(), _id: d.id }));
             });
+            
+            // Roles lists
+            onSnapshot(collection(db,'artifacts',APP_ID,'settings','admins','emails'), snap => {
+                this.coAdmins = snap.docs.map(d => d.id).filter(e => e !== MAIN_ADMIN_EMAIL);
+            });
+            onSnapshot(collection(db,'artifacts',APP_ID,'settings','supervisors','list'), snap => {
+                this.supervisorsList = snap.docs.map(d => d.id);
+            });
+        },
+
+        getBookingStatus(book) {
+            const now = new Date();
+            const start = new Date(book.startDate);
+            const end = new Date(book.endDate);
+            if (now >= start && now <= end) return 'active';
+            const diffHours = (start - now) / (1000 * 60 * 60);
+            if (diffHours > 0 && diffHours <= 24) return 'upcoming';
+            if (diffHours > 24) return 'future';
+            return 'past';
         },
 
         rebuildFuseIndexes() {
@@ -179,8 +209,18 @@ document.addEventListener('alpine:init', () => {
         },
 
         async loadLogs() {
-            const snap = await getDocs(query(dbCol('logs'), orderBy('timestamp','desc'), limit(60))).catch(()=>null);
+            const snap = await getDocs(query(dbCol('logs'), orderBy('timestamp','desc'), limit(100))).catch(()=>null);
             this.logs = snap ? snap.docs.map(d => ({...d.data(), _id: d.id})) : [];
+        },
+
+        exportLogs() {
+            if (!this.logs.length) return;
+            const text = this.logs.map(l => `[${l.timestamp ? new Date(l.timestamp.seconds*1000).toLocaleString('it-IT') : ''}] [${l.category||'SYSTEM'}] [${l.userEmail||'N/A'}] ${l.action} - ${l.details}`).join('\n');
+            const blob = new Blob([text], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = `labscan-logs-${new Date().toISOString().slice(0,10)}.txt`;
+            a.click(); URL.revokeObjectURL(url);
         },
 
         // CAMERA / SCANNER
@@ -231,7 +271,24 @@ document.addEventListener('alpine:init', () => {
             if (resSnap.exists()) { this.scanInput=''; this.searchResults=[]; this.openBookingModal({...resSnap.data(),id:safe}); return; }
 
             const invSnap = await getDoc(dbDoc('inventory', safe));
-            if (invSnap.exists()) { this.scanInput=''; this.searchResults=[]; this.switchView('inventory'); this.inventorySearch = invSnap.data().name||code; return; }
+            if (invSnap.exists()) { 
+                this.scanInput=''; this.searchResults=[]; 
+                const data = { ...invSnap.data(), id: safe };
+                
+                if (this.isBatchMode) {
+                    const ex = this.batchItems.find(i => i.id === safe);
+                    if (ex) ex.qty++; else this.batchItems.push({...data, qty: 1});
+                    toast(`🛒 Aggiunto al carrello: ${data.name}`);
+                    if (this.cameraActive) {
+                        try { await qrScanner.resume(); } catch(e){} // Quick resume if possible
+                    }
+                    return;
+                }
+                
+                this.switchView('inventory'); 
+                this.inventorySearch = data.name||code; 
+                return; 
+            }
 
             this.searchResults = [];
             if (this.isAdmin || this.isSupervisor) {
@@ -253,6 +310,34 @@ document.addEventListener('alpine:init', () => {
         openStockModal(item, action) {
             this.stockModal = { open: true, item, action, qty: 1, operator: '' };
             this.$nextTick(() => document.getElementById('stock-modal-qty')?.focus());
+        },
+
+        removeBatchItem(idx) { this.batchItems.splice(idx, 1); },
+
+        async confirmBatch() {
+            if (!this.batchItems.length || !this.batchOperator) return;
+            this.confirming = true;
+            let success = 0, errors = 0;
+            const op = this.batchOperator.trim();
+            const action = this.batchAction;
+
+            for (const item of this.batchItems) {
+                if (!item.qty || item.qty <= 0) continue;
+                const newQty = action === 'add' ? item.quantity + item.qty : item.quantity - item.qty;
+                if (newQty < 0) { errors++; continue; }
+                
+                try {
+                    await updateDoc(dbDoc('inventory', item.id), { quantity: newQty });
+                    await addDoc(dbCol('stock_movements'), { itemId:item.id, itemName:item.name, action, amount:item.qty, unit:item.unit, operatorName:op, userEmail:this.user?.email||'', user:this.user?.uid||'', timestamp:serverTimestamp() });
+                    await addDoc(dbCol('logs'), { category:'INVENTORY', action:`BATCH ${action==='add' ? 'CARICO':'SCARICO'}: ${item.name}`, details:`${action==='add'?'+':'-'}${item.qty} ${item.unit} | Op: ${op}`, userEmail:this.user?.email||'', timestamp:serverTimestamp() });
+                    this.checkAndSendRestockEmail({ ...item, quantity: newQty });
+                    success++;
+                } catch(e) { errors++; }
+            }
+
+            this.confirming = false;
+            toast(errors > 0 ? `⚠️ ${success} salvati, ${errors} falliti.` : `✅ Batch completato! (${success} articoli)`);
+            if (errors === 0) { this.batchItems = []; this.batchOperator = ''; this.isBatchMode = false; }
         },
 
         async confirmStockMovement() {
@@ -433,6 +518,126 @@ document.addEventListener('alpine:init', () => {
             } catch(e) { console.error(e); alert('Errore.'); }
             finally { this.saving = false; }
         },
+
+        // DASHBOARD CHARTS
+        initCharts() {
+            if (typeof Chart === 'undefined') return;
+            const ctxInv = document.getElementById('inventoryCategoryChart');
+            const ctxMov = document.getElementById('stockMovementsChart');
+            if (this.invChart) this.invChart.destroy();
+            if (this.movChart) this.movChart.destroy();
+
+            // Inventory Chart Data
+            const catCounts = {};
+            this.inventory.forEach(i => { const c = i.category || 'Altro'; catCounts[c] = (catCounts[c]||0) + 1; });
+            const bgColors = ['#10b981', '#3b82f6', '#f59e0b', '#8b5cf6', '#ec4899', '#64748b'];
+
+            if (ctxInv) {
+                this.invChart = new Chart(ctxInv, {
+                    type: 'doughnut',
+                    data: { labels: Object.keys(catCounts), datasets: [{ data: Object.values(catCounts), backgroundColor: bgColors, borderWidth: 0 }] },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { font: { size: 10, family: 'Inter, sans-serif' } } } }, cutout: '70%' }
+                });
+            }
+
+            // Movements Chart Data (Add vs Remove counts from recent movements)
+            let mAdds = 0, mRemoves = 0;
+            this.recentMovements.forEach(m => { if(m.action==='add') mAdds++; else if(m.action==='remove') mRemoves++; });
+            
+            if (ctxMov) {
+                this.movChart = new Chart(ctxMov, {
+                    type: 'bar',
+                    data: { labels: ['Carichi', 'Scarichi'], datasets: [{ label:'Operazioni Recenti', data: [mAdds, mRemoves], backgroundColor: ['#10b981', '#ef4444'], borderRadius: 6 }] },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+                });
+            }
+        },
+
+        // LABELS GENERATION (JsBarcode)
+        generateSelectedLabels() {
+            if (typeof JsBarcode === 'undefined') return;
+            const srcList = this.labelsType === 'inventory' ? this.inventory : this.resources;
+            const container = document.getElementById('labels-preview');
+            const printCont = document.getElementById('print-labels-container');
+            if (!container || !printCont) return;
+            
+            container.innerHTML = ''; printCont.innerHTML = '';
+            
+            const toGenerate = srcList.filter(item => this.selectedLabels.includes(item.id));
+            if (toGenerate.length === 0) {
+                container.innerHTML = '<p class="text-xs text-slate-400 col-span-full text-center py-4">Seleziona articoli per visualizzare l\'anteprima.</p>';
+                return;
+            }
+
+            toGenerate.forEach(item => {
+                // Wrapper per preview UI
+                const wrapperUI = document.createElement('div');
+                wrapperUI.className = 'bg-slate-50 border border-slate-200 rounded-xl p-2 flex flex-col items-center justify-center';
+                
+                // SVG for Barcode
+                const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                svg.className = 'w-full max-w-[120px] h-auto';
+                
+                // Print wrapper
+                const printWrap = document.createElement('div');
+                printWrap.style.cssText = 'border:1px solid #000; padding:10px; text-align:center; width: 4cm; height: 2cm; page-break-inside: avoid; margin: 2px;';
+                
+                const printTitle = document.createElement('div');
+                printTitle.style.cssText = 'font-size:8pt; font-family:sans-serif; font-weight:bold; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;';
+                printTitle.textContent = item.name.substring(0,25);
+                
+                const printSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                
+                JsBarcode(svg, String(item.id).substring(0,30), { format: "CODE128", width: 1.5, height: 35, displayValue: true, fontSize: 10, margin: 2 });
+                JsBarcode(printSvg, String(item.id).substring(0,30), { format: "CODE128", width: 1.2, height: 25, displayValue: true, fontSize: 8, margin: 0 });
+                
+                wrapperUI.appendChild(svg);
+                
+                printWrap.appendChild(printTitle);
+                printWrap.appendChild(printSvg);
+                
+                container.appendChild(wrapperUI);
+                printCont.appendChild(printWrap);
+            });
+        },
+
+        printLabels() {
+            if (!this.selectedLabels.length) return;
+            const originalContents = document.body.innerHTML;
+            const printContents = `<div style="display:flex; flex-wrap:wrap; gap:5px;">` + document.getElementById('print-labels-container').innerHTML + `</div>`;
+            document.body.innerHTML = printContents;
+            window.print();
+            document.body.innerHTML = originalContents;
+            window.location.reload(); // Quick restore of SPA bindings
+        },
+
+        // SETTINGS & ROLES
+        async addRole(colName, email, inputKey) {
+            email = email.trim();
+            if (!email) return;
+            try {
+                const docRef = doc(db, 'artifacts', APP_ID, 'settings', colName, 'list', email); 
+                // Using nested logic to match schema. Co-admins use generic "emails" while supervisors use "list" in the stable app.
+                if (colName === 'admins') {
+                    await setDoc(doc(db, 'artifacts', APP_ID, 'settings', colName, 'emails', email), { email, addedAt: serverTimestamp() });
+                } else {
+                    await setDoc(doc(db, 'artifacts', APP_ID, 'settings', colName, 'list', email), { email, addedAt: serverTimestamp() });
+                }
+                toast(`✅ ${email} aggiunto come ${colName}`);
+                this[inputKey] = '';
+            } catch(e) { console.error(e); alert('Errore permessi'); }
+        },
+        async removeRole(colName, email) {
+            if (!confirm(`Rimuovere i privilegi a ${email}?`)) return;
+            try {
+                if (colName === 'admins') {
+                    await deleteDoc(doc(db, 'artifacts', APP_ID, 'settings', colName, 'emails', email));
+                } else {
+                    await deleteDoc(doc(db, 'artifacts', APP_ID, 'settings', colName, 'list', email));
+                }
+                toast(`🗑️ ${email} rimosso`);
+            } catch(e) { console.error(e); alert('Errore permessi'); }
+        }
 
     }));
 });

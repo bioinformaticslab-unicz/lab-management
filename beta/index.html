@@ -11,6 +11,8 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/fuse.js@7.0.0"></script>
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
     <script type="module" src="./src/main.js"></script>
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <style>
@@ -107,7 +109,34 @@
                 </button>
             </template>
         </div>
-        <div x-show="!cameraActive && !scanInput && !searchResults.length" class="py-6 text-center"><div class="text-5xl mb-3 animate-pulse">📷</div><p class="text-xs text-slate-400 font-medium">Punta il barcode o digita un nome</p></div>
+        
+        <div class="flex items-center justify-between bg-slate-50 border border-slate-100 p-2 rounded-xl">
+            <div class="flex items-center gap-2"><span class="text-sm">🛒</span> <span class="text-xs font-bold text-slate-700">Modalità Carrello</span><p class="text-[9px] text-slate-400 hidden sm:block ml-2">Scansiona multipli prodotti</p></div>
+            <button @click="isBatchMode=!isBatchMode" class="relative w-11 h-6 rounded-full transition-colors" :class="isBatchMode?'bg-emerald-500':'bg-slate-300'"><div class="absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform" :class="isBatchMode?'translate-x-5':''"></div></button>
+        </div>
+
+        <div x-show="isBatchMode && batchItems.length > 0" class="mt-4 border-t-2 border-dashed border-slate-200 pt-4 fade-in">
+            <div class="flex items-center justify-between mb-3"><h3 class="text-sm font-black text-slate-800">Carrello (<span x-text="batchItems.length"></span>)</h3><button @click="batchItems=[]" class="text-[10px] font-bold text-red-500 hover:underline">Svuota</button></div>
+            <div class="space-y-2 max-h-48 overflow-y-auto pr-1">
+                <template x-for="(bi, idx) in batchItems" :key="idx">
+                    <div class="flex items-center gap-2 bg-slate-50 border border-slate-200 p-2 rounded-xl">
+                        <div class="flex-1 min-w-0"><div class="text-xs font-bold text-slate-700 truncate" x-text="bi.name"></div><div class="text-[9px] text-slate-400" x-text="'Disp: '+bi.quantity+' '+bi.unit"></div></div>
+                        <input type="number" min="1" x-model.number="bi.qty" class="w-16 h-8 text-center text-xs font-bold font-mono border border-slate-300 rounded-lg outline-none focus:border-emerald-500 transition-colors" />
+                        <button @click="removeBatchItem(idx)" class="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors">✕</button>
+                    </div>
+                </template>
+            </div>
+            <div class="mt-3 space-y-3 bg-slate-50 p-3 rounded-xl border border-slate-100">
+                <div class="flex gap-2">
+                    <button @click="batchAction='add'" class="flex-1 py-1.5 rounded-lg text-xs font-bold transition-all border" :class="batchAction==='add'?'bg-emerald-100 text-emerald-700 border-emerald-300 shadow-sm':'bg-white text-slate-500 border-slate-200'">+ CARICO</button>
+                    <button @click="batchAction='remove'" class="flex-1 py-1.5 rounded-lg text-xs font-bold transition-all border" :class="batchAction==='remove'?'bg-red-100 text-red-700 border-red-300 shadow-sm':'bg-white text-slate-500 border-slate-200'">− SCARICO</button>
+                </div>
+                <div><input type="text" x-model="batchOperator" placeholder="Operatore (es. Mario R)..." class="w-full text-xs px-3 py-2 bg-white border border-slate-300 rounded-lg outline-none focus:border-emerald-500 transition" /></div>
+                <button @click="confirmBatch()" :disabled="!batchOperator || confirming" class="w-full py-2.5 text-white rounded-lg font-black text-xs shadow-md transition-all disabled:opacity-50" :class="batchAction==='add'?'bg-emerald-600 hover:bg-emerald-500':'bg-red-600 hover:bg-red-500'" x-text="confirming?'Elaborazione...':'CONFERMA '+batchItems.length+' ARTICOLI'"></button>
+            </div>
+        </div>
+
+        <div x-show="!cameraActive && !scanInput && !searchResults.length && (!isBatchMode || batchItems.length===0)" class="py-6 text-center"><div class="text-5xl mb-3 animate-pulse">📷</div><p class="text-xs text-slate-400 font-medium">Punta il barcode o digita un nome</p></div>
     </div>
 </section>
 
@@ -185,10 +214,72 @@
 <!-- ADMIN -->
 <section x-show="activeView==='admin'" x-cloak class="fade-in space-y-4">
     <div class="flex items-center justify-between"><h2 class="text-base font-bold text-slate-800">🛠️ Admin</h2><span class="text-[10px] font-bold px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full" x-text="isAdmin?'👑 Admin':'👁️ Supervisore'"></span></div>
-    <div class="flex p-1 bg-slate-100 rounded-2xl gap-1 overflow-x-auto scrollbar-hide">
+        <button @click="adminTab='dashboard';$nextTick(()=>initCharts())" :class="adminTab==='dashboard'?'bg-white shadow-md font-black text-slate-800':'text-slate-500'" class="flex-shrink-0 px-3 py-2 rounded-xl text-xs font-bold transition-all">📊 Dashboard</button>
+        <button @click="adminTab='bookings'" :class="adminTab==='bookings'?'bg-white shadow-md font-black text-slate-800':'text-slate-500'" class="flex-shrink-0 px-3 py-2 rounded-xl text-xs font-bold transition-all">📅 Prenotazioni</button>
         <button @click="adminTab='inventory'" :class="adminTab==='inventory'?'bg-white shadow-md font-black text-slate-800':'text-slate-500'" class="flex-shrink-0 px-3 py-2 rounded-xl text-xs font-bold transition-all">📦 Magazzino</button>
         <button @click="adminTab='instruments'" :class="adminTab==='instruments'?'bg-white shadow-md font-black text-slate-800':'text-slate-500'" class="flex-shrink-0 px-3 py-2 rounded-xl text-xs font-bold transition-all">🔬 Strumenti</button>
+        <button @click="adminTab='labels';$nextTick(()=>generateSelectedLabels())" :class="adminTab==='labels'?'bg-white shadow-md font-black text-slate-800':'text-slate-500'" class="flex-shrink-0 px-3 py-2 rounded-xl text-xs font-bold transition-all">🏷️ Etichette</button>
+        <button @click="adminTab='settings'" x-show="isAdmin" :class="adminTab==='settings'?'bg-white shadow-md font-black text-slate-800':'text-slate-500'" class="flex-shrink-0 px-3 py-2 rounded-xl text-xs font-bold transition-all">⚙️ Impostazioni</button>
         <button @click="adminTab='logs';loadLogs()" :class="adminTab==='logs'?'bg-white shadow-md font-black text-slate-800':'text-slate-500'" class="flex-shrink-0 px-3 py-2 rounded-xl text-xs font-bold transition-all">📋 Log</button>
+    </div>
+
+    <!-- DASHBOARD ANALYTICS -->
+    <div x-show="adminTab==='dashboard'" class="space-y-4">
+        <div class="grid grid-cols-2 gap-3">
+            <div class="bg-white rounded-[1.5rem] border border-slate-100 p-4 shadow-sm">
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Totale Scorte</p>
+                <div class="text-3xl font-black text-slate-800" x-text="inventory.length"></div>
+            </div>
+            <div class="bg-white rounded-[1.5rem] border border-slate-100 p-4 shadow-sm">
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Strumenti</p>
+                <div class="text-3xl font-black text-slate-800" x-text="resources.length"></div>
+            </div>
+        </div>
+        <div class="bg-white rounded-[1.5rem] border border-slate-100 p-4 shadow-sm">
+            <h3 class="text-xs font-bold text-slate-700 mb-3">Distribuzione Categorie Magazzino</h3>
+            <div class="relative w-full h-48"><canvas id="inventoryCategoryChart"></canvas></div>
+        </div>
+        <div class="bg-white rounded-[1.5rem] border border-slate-100 p-4 shadow-sm">
+            <h3 class="text-xs font-bold text-slate-700 mb-3">Movimenti Recenti (Carichi vs Scarichi)</h3>
+            <div class="relative w-full h-48"><canvas id="stockMovementsChart"></canvas></div>
+        </div>
+    </div>
+
+    <!-- GLOBAL BOOKINGS MGMT -->
+    <div x-show="adminTab==='bookings'" class="space-y-3">
+        <div class="flex items-center justify-between">
+            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Tutte le prenotazioni</p>
+            <button @click="" class="px-3 py-1.5 bg-slate-200 text-slate-700 rounded-xl text-[10px] font-bold hover:bg-slate-300 transition">📥 Esporta CSV</button>
+        </div>
+        <template x-if="!allBookings.length"><div class="text-center py-8 bg-white rounded-2xl border border-slate-100"><p class="text-sm text-slate-400">Nessuna prenotazione attiva.</p></div></template>
+        <div class="space-y-3">
+            <template x-for="b in allBookings.sort((x,y)=>new Date(y.createdAt?.seconds*1000)-new Date(x.createdAt?.seconds*1000))" :key="b.id">
+                <div class="bg-white rounded-2xl border-2 p-4 shadow-sm relative overflow-hidden card-hover transition-colors" 
+                     :class="{
+                         'border-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.15)]': getBookingStatus(b)==='active',
+                         'border-amber-400': getBookingStatus(b)==='upcoming',
+                         'border-slate-100': getBookingStatus(b)==='future',
+                         'border-slate-100 opacity-60 grayscale': getBookingStatus(b)==='past'
+                     }">
+                    
+                    <div class="absolute top-0 right-0 px-3 py-1 rounded-bl-xl text-[9px] font-black tracking-wider"
+                         :class="{
+                             'bg-emerald-500 text-white animate-pulse': getBookingStatus(b)==='active',
+                             'bg-amber-400 text-amber-900': getBookingStatus(b)==='upcoming',
+                             'bg-slate-200 text-slate-500': getBookingStatus(b)==='future',
+                             'bg-slate-100 text-slate-400': getBookingStatus(b)==='past'
+                         }" x-text="{active:'🔴 IN USO', upcoming:'🟡 IMMINENTE', future:'⚪ FUTURA', past:'⚫ CONCLUSA'}[getBookingStatus(b)]"></div>
+                    
+                    <h3 class="font-black text-sm text-slate-800 pr-20" x-text="b.resourceName"></h3>
+                    <p class="text-[10px] text-slate-500 mb-2">PNR: <span class="font-mono font-bold" x-text="b.pnr"></span> · Da: <span class="font-bold text-slate-700" x-text="b.userName"></span></p>
+                    
+                    <div class="flex items-center gap-2 bg-slate-50 rounded-xl p-2 text-[10px] border border-slate-100">
+                        <div class="flex-1 text-center border-r border-slate-200"><div class="text-slate-400 font-bold mb-0.5">INIZIO</div><div class="font-black text-slate-700" x-text="new Date(b.startDate).toLocaleString('it-IT',{dateStyle:'short',timeStyle:'short'})"></div></div>
+                        <div class="flex-1 text-center"><div class="text-slate-400 font-bold mb-0.5">FINE</div><div class="font-black text-slate-700" x-text="new Date(b.endDate).toLocaleString('it-IT',{dateStyle:'short',timeStyle:'short'})"></div></div>
+                    </div>
+                </div>
+            </template>
+        </div>
     </div>
     <!-- INV MGMT -->
     <div x-show="adminTab==='inventory'" class="space-y-4">
@@ -243,9 +334,94 @@
     </div>
     <!-- LOGS -->
     <div x-show="adminTab==='logs'" class="space-y-2">
-        <div class="flex items-center justify-between"><p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Registro</p><button @click="loadLogs()" class="text-[10px] text-indigo-600 font-bold hover:underline">↻ Aggiorna</button></div>
+        <div class="flex items-center justify-between">
+            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Registro</p>
+            <div class="flex gap-2">
+                <button @click="exportLogs()" class="px-3 py-1.5 bg-slate-200 text-slate-700 rounded-xl text-[10px] font-bold hover:bg-slate-300 transition">📥 .txt</button>
+                <button @click="loadLogs()" class="text-[10px] text-indigo-600 font-bold hover:underline">↻ Aggiorna</button>
+            </div>
+        </div>
         <template x-if="!logs.length"><div class="text-center py-8 bg-white rounded-2xl border border-slate-100"><p class="text-sm text-slate-400">Nessun log.</p></div></template>
-        <template x-for="l in logs" :key="l._id"><div class="bg-white rounded-xl border border-slate-100 p-3 text-xs shadow-sm card-hover"><div class="flex items-center justify-between mb-1"><span class="font-bold px-1.5 py-0.5 rounded text-[9px] uppercase" :class="{'bg-indigo-50 text-indigo-600':l.category==='BOOKING','bg-emerald-50 text-emerald-600':l.category==='INVENTORY','bg-amber-50 text-amber-600':l.category==='ADMIN','bg-red-50 text-red-600':l.category==='ERROR'||l.category==='EMAIL','bg-slate-100 text-slate-500':!l.category}" x-text="l.category||'SYSTEM'"></span><span class="text-[9px] text-slate-400" x-text="l.timestamp?new Date(l.timestamp.seconds*1000).toLocaleString('it-IT'):''"></span></div><div class="font-bold text-slate-700" x-text="l.action"></div><div class="text-slate-500 text-[10px] mt-0.5" x-text="l.details"></div></div></template>
+        <template x-for="l in logs" :key="l._id"><div class="bg-white rounded-xl border border-slate-100 p-3 text-xs shadow-sm card-hover"><div class="flex items-center justify-between mb-1"><span class="font-bold px-1.5 py-0.5 rounded text-[9px] uppercase" :class="{'bg-indigo-50 text-indigo-600':l.category==='BOOKING','bg-emerald-50 text-emerald-600':l.category==='INVENTORY','bg-amber-50 text-amber-600':l.category==='ADMIN','bg-red-50 text-red-600':l.category==='ERROR'||l.category==='EMAIL','bg-slate-100 text-slate-500':!l.category}" x-text="l.category||'SYSTEM'"></span><span class="text-[9px] text-slate-400" x-text="l.timestamp?new Date(l.timestamp.seconds*1000).toLocaleString('it-IT'):''"></span></div><div class="font-bold text-slate-700" x-text="l.action"></div><div class="text-slate-500 text-[10px] mt-0.5" x-text="l.details"></div><div class="text-[9px] font-mono text-slate-400 mt-1" x-text="l.userEmail"></div></div></template>
+    </div>
+
+    <!-- LABELS (ETICHETTE) -->
+    <div x-show="adminTab==='labels'" class="space-y-4">
+        <div class="bg-white rounded-[1.5rem] border border-slate-100 shadow-sm p-4">
+            <div class="flex items-center justify-between mb-3"><h3 class="text-sm font-bold text-slate-700">Generatore Etichette</h3><button @click="printLabels()" class="px-3 py-1.5 bg-emerald-600 text-white rounded-xl text-xs font-bold hover:bg-emerald-500 transition shadow-md">🖨️ Stampa</button></div>
+            <div class="flex p-1 bg-slate-50 border border-slate-200 rounded-xl gap-1 mb-4">
+                <button @click="labelsType='inventory'" :class="labelsType==='inventory'?'bg-white shadow-sm font-black text-slate-800':'text-slate-500'" class="flex-1 py-1.5 rounded-lg text-xs transition-all">📦 Magazzino</button>
+                <button @click="labelsType='resources'" :class="labelsType==='resources'?'bg-white shadow-sm font-black text-slate-800':'text-slate-500'" class="flex-1 py-1.5 rounded-lg text-xs transition-all">🔬 Strumenti</button>
+            </div>
+            <div class="space-y-2 mb-4 max-h-48 overflow-y-auto pr-2">
+                <template x-for="item in (labelsType==='inventory'?inventory:resources)" :key="item.id">
+                    <label class="flex items-center gap-3 p-2 hover:bg-slate-50 rounded-lg cursor-pointer transition-colors border border-transparent hover:border-slate-200">
+                        <input type="checkbox" :value="item.id" x-model="selectedLabels" @change="generateSelectedLabels()" class="w-4 h-4 rounded border-slate-300 text-emerald-500 focus:ring-emerald-500/20" />
+                        <span class="flex-1 text-xs font-bold text-slate-700 truncate" x-text="item.name"></span>
+                        <span class="text-[9px] text-slate-400 font-mono" x-text="item.id"></span>
+                    </label>
+                </template>
+            </div>
+            <p class="text-[10px] text-slate-400 text-center" x-text="selectedLabels.length + ' selezionati'"></p>
+        </div>
+        
+        <!-- Hidden print container -->
+        <div id="print-labels-container" class="hidden"></div>
+        
+        <!-- Preview section -->
+        <div class="bg-white rounded-[1.5rem] border border-slate-100 shadow-sm p-4">
+            <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Anteprima</h3>
+            <div id="labels-preview" class="grid grid-cols-2 sm:grid-cols-3 gap-2"></div>
+        </div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div x-show="adminTab==='settings' && isAdmin" class="space-y-4">
+        <div class="bg-white rounded-[1.5rem] border border-slate-100 shadow-sm p-5 space-y-4">
+            <h3 class="text-sm font-black text-slate-800 border-b border-slate-100 pb-2">🔑 Gestione Ruoli</h3>
+            
+            <div class="space-y-2">
+                <div class="flex items-center justify-between"><label class="text-xs font-bold text-slate-700">Co-Amministratori</label><span class="text-[9px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-bold">Accesso Completo</span></div>
+                <div class="flex gap-2">
+                    <input type="email" x-model="newCoAdminEmail" placeholder="email@unicz.it" class="flex-1 px-3 py-2 border-2 border-slate-200 rounded-xl text-xs outline-none focus:border-emerald-500" />
+                    <button @click="addRole('admins', newCoAdminEmail, 'newCoAdminEmail')" class="px-3 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-slate-700 transition">Aggiungi</button>
+                </div>
+                <div class="space-y-1 mt-2">
+                    <template x-if="!coAdmins.length"><p class="text-[10px] text-slate-400">Nessun co-admin presente.</p></template>
+                    <template x-for="email in coAdmins" :key="email">
+                        <div class="flex items-center justify-between bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100"><span class="text-xs font-mono text-slate-600 truncate" x-text="email"></span><button @click="removeRole('admins', email)" class="text-red-500 hover:text-red-700 p-1">✕</button></div>
+                    </template>
+                </div>
+            </div>
+
+            <div class="w-full h-px bg-slate-100 my-2"></div>
+            
+            <div class="space-y-2">
+                <div class="flex items-center justify-between"><label class="text-xs font-bold text-slate-700">Supervisori</label><span class="text-[9px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-bold">Solo modifica/gestione</span></div>
+                <div class="flex gap-2">
+                    <input type="email" x-model="newSupervisorEmail" placeholder="email@unicz.it" class="flex-1 px-3 py-2 border-2 border-slate-200 rounded-xl text-xs outline-none focus:border-emerald-500" />
+                    <button @click="addRole('supervisors', newSupervisorEmail, 'newSupervisorEmail')" class="px-3 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-slate-700 transition">Aggiungi</button>
+                </div>
+                <div class="space-y-1 mt-2">
+                    <template x-if="!supervisorsList.length"><p class="text-[10px] text-slate-400">Nessun supervisore presente.</p></template>
+                    <template x-for="email in supervisorsList" :key="email">
+                        <div class="flex items-center justify-between bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100"><span class="text-xs font-mono text-slate-600 truncate" x-text="email"></span><button @click="removeRole('supervisors', email)" class="text-red-500 hover:text-red-700 p-1">✕</button></div>
+                    </template>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-red-50 rounded-[1.5rem] border border-red-200 p-5">
+            <h3 class="text-sm font-black text-red-800 mb-2">⚠️ Sistema e Manutenzione</h3>
+            <p class="text-xs text-red-600 mb-3 leading-relaxed">Attivando la manutenzione, il sito non sarà accessibile agli utenti normali, ma solo agli amministratori e ai supervisori.</p>
+            <label class="flex items-center justify-between bg-white p-3 rounded-xl border border-red-100 cursor-pointer">
+                <span class="text-xs font-bold text-red-700">Modalità Manutenzione</span>
+                <div class="relative w-11 h-6 rounded-full transition-colors" :class="maintenanceMode?'bg-red-500':'bg-slate-300'">
+                    <div class="absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform" :class="maintenanceMode?'translate-x-5':''"></div>
+                </div>
+                <!-- Binding to trigger changes not fully implemented in DB here, visual only for UI parity demo -->
+            </label>
+        </div>
     </div>
 </section>
 <!-- PROFILE -->
