@@ -2529,7 +2529,7 @@
             // Pre-select date and times from existing booking
             if (booking.startDate) {
                 const [dateStr, startTime] = booking.startDate.split('T');
-                document.getElementById('inp-admin-date').value = dateStr;
+                document.getElementById('inp-admin-start-date').value = dateStr;
                 document.getElementById('inp-admin-start').value = booking.startDate;
                 if (startTime) {
                     const startSlotTime = startTime.substring(0, 5);
@@ -2538,15 +2538,17 @@
                 }
             }
             if (booking.endDate) {
+                const [endDateStr, endTime] = booking.endDate.split('T');
+                document.getElementById('inp-admin-end-date').value = endDateStr;
                 document.getElementById('inp-admin-end').value = booking.endDate;
-                const endTime = booking.endDate.split('T')[1];
                 if (endTime) {
                     const endSlotTime = endTime.substring(0, 5);
                     const endBtn = document.querySelector(`#admin-time-slots-end [data-time="${endSlotTime}"]`);
                     if (endBtn) { endBtn.classList.add('bg-indigo-600', 'text-white', 'border-indigo-600'); endBtn.classList.remove('border-slate-200', 'text-slate-600'); }
                 }
             }
-            document.getElementById('inp-admin-date').onchange = () => onDateChange('admin');
+            document.getElementById('inp-admin-start-date').onchange = () => onDateChange('admin', 'start');
+            document.getElementById('inp-admin-end-date').onchange = () => onDateChange('admin', 'end');
             document.getElementById('admin-booking-overlap-warning').classList.add('hidden');
             window._editingAdminBookingId = id;
             document.getElementById('modal-admin-booking').classList.remove('hidden');
