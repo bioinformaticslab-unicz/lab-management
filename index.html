@@ -15,6 +15,9 @@
     <!-- Generazione Codici JS -->
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
 
+    <!-- Ricerca Fuzzy -->
+    <script src="https://cdn.jsdelivr.net/npm/fuse.js@7.0.0"></script>
+
     <!-- Icone -->
     <script src="https://unpkg.com/lucide@latest"></script>
 
@@ -255,13 +258,26 @@
                 <div class="flex gap-2">
                     <button onclick="openCalendarModal()"
                         class="flex-1 py-3 bg-white border border-slate-200 text-slate-700 rounded-xl text-xs font-bold shadow-sm hover:bg-slate-50 transition flex items-center justify-center gap-2">
-                        <i data-lucide="calendar" class="w-4 h-4"></i> Disponibilità
+                        <i data-lucide="calendar" class="w-4 h-4"></i> Lista
                     </button>
                     <button id="btn-main-book" onclick="showBookingForm()"
                         class="flex-1 py-3 bg-emerald-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-emerald-200 hover:bg-emerald-600 transition flex items-center justify-center gap-2">
                         <i data-lucide="plus"></i> PRENOTA
                     </button>
                 </div>
+
+                <!-- CALENDARIO SETTIMANALE INLINE -->
+                <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div class="flex items-center justify-between bg-slate-50 border-b border-slate-100 px-3 py-2">
+                        <button onclick="shiftWeekCalendar(-1)" class="p-1 hover:bg-slate-200 rounded transition"><i data-lucide="chevron-left" class="w-4 h-4 text-slate-500"></i></button>
+                        <span id="week-cal-title" class="text-[10px] font-bold text-slate-600 uppercase tracking-wider">--</span>
+                        <button onclick="shiftWeekCalendar(1)" class="p-1 hover:bg-slate-200 rounded transition"><i data-lucide="chevron-right" class="w-4 h-4 text-slate-500"></i></button>
+                    </div>
+                    <div id="week-cal-grid" class="grid grid-cols-7 text-center text-[9px] font-bold text-slate-500">
+                        <!-- Rendered by JS -->
+                    </div>
+                </div>
+
                 <div id="bookings-list" class="space-y-2 pb-10"></div>
             </div>
         </div>
@@ -410,19 +426,19 @@
                 <i data-lucide="layout-dashboard" class="w-5 h-5 text-indigo-600"></i> Dashboard Admin
             </h2>
 
-            <div class="flex gap-1 text-xs font-bold bg-slate-200 p-1 rounded-lg overflow-x-auto no-scrollbar">
+            <div class="flex gap-1 text-[10px] font-bold bg-slate-200 p-1 rounded-lg overflow-x-auto no-scrollbar">
                 <button onclick="switchAdminTab('bookings')" id="tab-btn-bookings"
-                    class="admin-tab-btn flex-1 py-2 px-3 rounded-md transition whitespace-nowrap">Prenotazioni</button>
+                    class="admin-tab-btn py-2 px-2.5 rounded-md transition whitespace-nowrap">Prenotazioni</button>
                 <button onclick="switchAdminTab('inventory')" id="tab-btn-inventory"
-                    class="admin-tab-btn flex-1 py-2 px-3 rounded-md transition whitespace-nowrap">Magazzino</button>
+                    class="admin-tab-btn py-2 px-2.5 rounded-md transition whitespace-nowrap">Magazzino</button>
                 <button onclick="switchAdminTab('instruments')" id="tab-btn-instruments"
-                    class="admin-tab-btn flex-1 py-2 px-3 rounded-md transition whitespace-nowrap">Strumenti</button>
+                    class="admin-tab-btn py-2 px-2.5 rounded-md transition whitespace-nowrap">Strumenti</button>
                 <button onclick="switchAdminTab('labels')" id="tab-btn-labels"
-                    class="admin-tab-btn flex-1 py-2 px-3 rounded-md transition whitespace-nowrap">Etichette</button>
+                    class="admin-tab-btn py-2 px-2.5 rounded-md transition whitespace-nowrap">Etichette</button>
                 <button onclick="switchAdminTab('settings')" id="tab-btn-settings"
-                    class="admin-tab-btn flex-1 py-2 px-3 rounded-md transition whitespace-nowrap">Settings</button>
+                    class="admin-tab-btn py-2 px-2.5 rounded-md transition whitespace-nowrap">Settings</button>
                 <button onclick="switchAdminTab('logs')" id="tab-btn-logs"
-                    class="admin-tab-btn flex-1 py-2 px-3 rounded-md transition whitespace-nowrap">Log Sistema</button>
+                    class="admin-tab-btn py-2 px-2.5 rounded-md transition whitespace-nowrap">Log</button>
             </div>
 
             <!-- Content: Prenotazioni -->
@@ -716,9 +732,8 @@
                         placeholder="0">
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-slate-500 mb-1">Identificativo Operatore
-                        (Opzionale)</label>
-                    <input type="text" id="inp-stock-user-id"
+                    <label class="block text-xs font-bold text-slate-500 mb-1">Identificativo Operatore</label>
+                    <input type="text" id="inp-stock-user-id" required
                         class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm"
                         placeholder="Nome, PI o Codice...">
                 </div>
@@ -1838,7 +1853,7 @@
             }
         }
 
-        // --- SMART SEARCH (Strumenti + Magazzino) ---
+        // --- SMART SEARCH (Strumenti + Magazzino — Fuse.js Fuzzy) ---
         let _searchTimeout = null;
         window.smartSearch = (term) => {
             clearTimeout(_searchTimeout);
@@ -1848,31 +1863,35 @@
                 return;
             }
             _searchTimeout = setTimeout(() => {
-                const lowerTerm = term.trim().toLowerCase();
+                const searchTerm = term.trim();
                 const results = [];
-                // Search instruments
+
+                // Build instruments list for Fuse
                 const instruments = window.allInstrumentsCache?.length > 0 ? window.allInstrumentsCache : (window.resourcesCache || []);
-                instruments.forEach(inst => {
-                    const desc = (inst.description || '').toLowerCase();
-                    const id = (inst.id || '').toLowerCase();
-                    const contact = (inst.contact || '').toLowerCase();
-                    if (desc.includes(lowerTerm) || id.includes(lowerTerm) || contact.includes(lowerTerm)) {
-                        results.push({ type: 'instrument', id: inst.id, name: inst.description || inst.id, sub: inst.contact || inst.id, imageUrl: inst.imageUrl, bookable: inst.isBookable !== false });
-                    }
-                });
-                // Search inventory
-                (window.allInventoryCache || []).forEach(item => {
-                    const name = (item.name || '').toLowerCase();
-                    const brand = (item.brand || '').toLowerCase();
-                    const id = (item.id || '').toLowerCase();
-                    const cat = (item.category || '').toLowerCase();
-                    if (name.includes(lowerTerm) || brand.includes(lowerTerm) || id.includes(lowerTerm) || cat.includes(lowerTerm)) {
+                if (instruments.length > 0) {
+                    const fuseInst = new Fuse(instruments, { keys: ['description', 'id', 'contact'], threshold: 0.4, includeScore: true });
+                    fuseInst.search(searchTerm).forEach(r => {
+                        const inst = r.item;
+                        results.push({ type: 'instrument', id: inst.id, name: inst.description || inst.id, sub: inst.contact || inst.id, imageUrl: inst.imageUrl, bookable: inst.isBookable !== false, score: r.score });
+                    });
+                }
+
+                // Build inventory list for Fuse
+                const inventory = window.allInventoryCache || [];
+                if (inventory.length > 0) {
+                    const fuseInv = new Fuse(inventory, { keys: ['name', 'brand', 'id', 'category'], threshold: 0.4, includeScore: true });
+                    fuseInv.search(searchTerm).forEach(r => {
+                        const item = r.item;
                         const lowStock = (item.quantity || 0) <= (item.threshold || 0);
-                        results.push({ type: 'inventory', id: item.id, name: item.name, sub: item.brand ? `${item.brand} • ${item.category || ''}` : (item.category || item.id), qty: item.quantity, unit: item.unit || 'pz', lowStock, imageUrl: item.image });
-                    }
-                });
+                        results.push({ type: 'inventory', id: item.id, name: item.name, sub: item.brand ? `${item.brand} \u2022 ${item.category || ''}` : (item.category || item.id), qty: item.quantity, unit: item.unit || 'pz', lowStock, imageUrl: item.image, score: r.score });
+                    });
+                }
+
+                // Sort by best score (lowest = best match)
+                results.sort((a, b) => a.score - b.score);
+
                 if (results.length === 0) {
-                    container.innerHTML = `<div class="p-4 text-center text-xs text-slate-400">Nessun risultato per "${term.trim()}"</div>`;
+                    container.innerHTML = `<div class="p-4 text-center text-xs text-slate-400">Nessun risultato per "${searchTerm}"</div>`;
                 } else {
                     container.innerHTML = results.slice(0, 10).map(r => {
                         if (r.type === 'instrument') {
@@ -1886,7 +1905,7 @@
                                     <p class="text-sm font-bold text-slate-800 truncate">${r.name}</p>
                                     <p class="text-[10px] text-slate-400 truncate font-mono mt-0.5">${r.sub}</p>
                                 </div>
-                                <span class="text-[10px] font-bold px-2 py-1 rounded-full bg-indigo-100 ${r.bookable ? 'text-indigo-600' : 'text-red-500 bg-red-100'} whitespace-nowrap shadow-sm border ${r.bookable ? 'border-indigo-200' : 'border-red-200'}">${r.bookable ? '🔬 Prenota' : 'NON DISP.'}</span>
+                                <span class="text-[10px] font-bold px-2 py-1 rounded-full bg-indigo-100 ${r.bookable ? 'text-indigo-600' : 'text-red-500 bg-red-100'} whitespace-nowrap shadow-sm border ${r.bookable ? 'border-indigo-200' : 'border-red-200'}">${r.bookable ? '\ud83d\udd2c Prenota' : 'NON DISP.'}</span>
                             </button>`;
                         } else {
                             const stockColor = r.lowStock ? 'text-red-700 bg-red-100 border border-red-200' : 'text-emerald-700 bg-emerald-100 border border-emerald-200';
@@ -2359,7 +2378,91 @@
                 } else {
                     listEl.innerHTML = '<div class="text-center py-4"><span class="inline-block px-4 py-2 bg-emerald-100 text-emerald-700 rounded-full text-sm font-black uppercase tracking-wider">✅ LIBERO</span></div>';
                 }
+                // Render inline weekly calendar
+                renderWeekCalendar();
             });
+        }
+
+        // --- CALENDARIO SETTIMANALE INLINE ---
+        let _weekCalOffset = 0; // 0 = this week, 1 = next week, etc.
+
+        window.shiftWeekCalendar = (dir) => {
+            _weekCalOffset += dir;
+            renderWeekCalendar();
+        };
+
+        function getMonday(d) {
+            const dt = new Date(d);
+            const day = dt.getDay();
+            const diff = dt.getDate() - day + (day === 0 ? -6 : 1);
+            dt.setDate(diff);
+            dt.setHours(0, 0, 0, 0);
+            return dt;
+        }
+
+        function renderWeekCalendar() {
+            const bookings = window.calendarBookingsCache || [];
+            const grid = document.getElementById('week-cal-grid');
+            const title = document.getElementById('week-cal-title');
+            if (!grid) return;
+
+            const today = new Date();
+            const monday = getMonday(today);
+            monday.setDate(monday.getDate() + _weekCalOffset * 7);
+            const sunday = new Date(monday);
+            sunday.setDate(sunday.getDate() + 6);
+
+            const dayNames = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'];
+            const months = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'];
+            title.innerText = `${monday.getDate()} ${months[monday.getMonth()]} — ${sunday.getDate()} ${months[sunday.getMonth()]} ${sunday.getFullYear()}`;
+
+            const startHour = 8;
+            const endHour = 20;
+            let html = '';
+
+            // Day header row
+            for (let d = 0; d < 7; d++) {
+                const dt = new Date(monday);
+                dt.setDate(dt.getDate() + d);
+                const isToday = dt.toDateString() === today.toDateString();
+                html += `<div class="py-1.5 border-b border-slate-100 ${isToday ? 'bg-indigo-50 text-indigo-700 font-black' : 'bg-slate-50'}">${dayNames[d]}<br><span class="text-[8px] font-normal">${dt.getDate()}</span></div>`;
+            }
+
+            // Time rows (each row = 1 hour block)
+            for (let h = startHour; h < endHour; h++) {
+                for (let d = 0; d < 7; d++) {
+                    const dt = new Date(monday);
+                    dt.setDate(dt.getDate() + d);
+                    const slotStart = new Date(dt); slotStart.setHours(h, 0, 0, 0);
+                    const slotEnd = new Date(dt); slotEnd.setHours(h + 1, 0, 0, 0);
+
+                    // Check if any booking overlaps this slot
+                    const overlap = bookings.find(b => {
+                        const bs = new Date(b.startDate);
+                        const be = new Date(b.endDate);
+                        return bs < slotEnd && be > slotStart;
+                    });
+
+                    const isPast = slotEnd < today;
+                    let cellClass = 'border-r border-b border-slate-50 py-0.5';
+                    let cellContent = '';
+
+                    if (overlap) {
+                        cellClass += ' bg-red-100 text-red-600';
+                        cellContent = `<span class="text-[7px]">${h}:00</span>`;
+                    } else if (isPast) {
+                        cellClass += ' bg-slate-50 text-slate-300';
+                        cellContent = `<span class="text-[7px]">${h}</span>`;
+                    } else {
+                        cellClass += ' bg-emerald-50 text-emerald-500';
+                        cellContent = `<span class="text-[7px]">${h}</span>`;
+                    }
+
+                    html += `<div class="${cellClass}">${cellContent}</div>`;
+                }
+            }
+
+            grid.innerHTML = html;
         }
 
         // --- TOTEM ---

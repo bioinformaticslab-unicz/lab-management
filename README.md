@@ -11,26 +11,31 @@
 ### 📦 Magazzino (Inventario)
 - Gestione completa dell'inventario con nome, marca, categoria, quantità, soglia minima
 - **Allerta scorte basse** automatiche con notifica visiva
-- Scansione **QR Code** per accesso rapido agli articoli
+- Scansione **QR Code / Barcode** per accesso rapido agli articoli
 - Import/Export **CSV** per backup e migrazione dati
 - Email automatica di riordino quando un articolo scende sotto soglia
+- **Foto prodotto** con URL immagine, visibile nella scheda e nei risultati di ricerca
+- **Operazioni batch (Carrello)**: modalità carico multiplo attivabile dall'admin, con scansione continua e riepilogo carrello
 
 ### 📅 Prenotazioni Strumenti
 - Prenotazione strumenti con selezione data e **slot orari a 30 minuti** (05:00 – 21:00)
+- **Prenotazioni multi-giorno**: supporto Data Inizio e Data Fine separati
 - **Prevenzione automatica sovrapposizioni**: gli slot già occupati appaiono in grigio e non sono selezionabili
 - Codice **PNR** univoco per ogni prenotazione
 - **Email di conferma** con link a Google Calendar
-- Ricerca prenotazione tramite PNR
+- Ricerca prenotazione tramite **PNR o Email** con visualizzazione multipla risultati
 
 ### 🛡️ Pannello Amministratore
-- Accesso basato su **email** (niente PIN)
-- Gestione completa strumenti: aggiungi, modifica, elimina
+- Accesso basato su **email** con sistema **RBAC a 4 livelli** (Main Admin, Co-Admin, Supervisor, Utente)
+- Gestione completa strumenti: aggiungi, modifica, elimina con **foto strumento** e **evidenziazione selezione**
 - **Vista calendario** per ogni strumento con badge "IN USO"
 - Creazione e modifica prenotazioni per conto degli utenti
 - Export prenotazioni in CSV
-- Stampa etichette QR per tutti gli strumenti
-- Gestione lista amministratori via Firestore
+- **Generatore Etichette**: stampa QR Code e/o Barcode (CODE128) per strumenti e articoli, con selezione multipla e finestra di stampa/esportazione PDF dedicata
+- Gestione lista amministratori e supervisori via Firestore
+- **Permessi granulari** per Supervisori (Prenotazioni, Magazzino, Strumenti, Log)
 - Modalità manutenzione attivabile
+- **Modalità Desktop**: ottimizzazione per PC con lettore barcode fisico, navigazione da tastiera e auto-focus
 
 ### 📺 Totem Dashboard
 - Dashboard a schermo intero per monitor in laboratorio
@@ -52,8 +57,10 @@ L'app è un **singolo file HTML** (`index.html`) che include tutto il necessario
 | **Backend/DB** | Firebase Firestore (real-time) |
 | **Autenticazione** | Firebase Auth (Email/Password + Google) |
 | **Email** | EmailJS (conferma prenotazioni, alert riordino) |
-| **QR Code** | html5-qrcode (scanner), goqr.me API (generatore) |
+| **QR Code** | html5-qrcode (scanner), QR Server API (generatore) |
+| **Barcode** | JsBarcode (CODE128, generatore etichette) |
 | **Icone** | Lucide Icons |
+| **Grafici** | Chart.js |
 | **Hosting** | GitHub Pages |
 
 ### Struttura Firestore
@@ -61,10 +68,11 @@ L'app è un **singolo file HTML** (`index.html`) che include tutto il necessario
 artifacts/{appId}/public/data/
 ├── bookings/          # Prenotazioni
 ├── inventory/         # Articoli magazzino
-├── instruments/       # Strumenti del laboratorio
+├── resources/         # Strumenti del laboratorio
 └── settings/
-    ├── global         # Modalità manutenzione, referente
-    └── admins         # Lista email amministratori
+    ├── global         # Manutenzione, referente, batch mode
+    ├── admins         # Lista email co-amministratori
+    └── supervisors    # Supervisori con permessi granulari
 ```
 
 ---
@@ -104,16 +112,18 @@ L'app sarà disponibile su GitHub Pages automaticamente.
 
 ---
 
-## 👤 Ruoli
+## 👤 Ruoli (RBAC a 4 livelli)
 
 | Ruolo | Accesso |
 |---|---|
-| **Utente** | Login, prenotazioni proprie, ricerca PNR, scansione QR |
-| **Amministratore** | Tutto il sopra + gestione strumenti, inventario, prenotazioni, impostazioni |
+| **Utente** | Login (solo domini `@unicz.it` / `@studenti.unicz.it`), prenotazioni proprie, ricerca PNR/email, scansione QR |
+| **Supervisor** | Tutto il sopra + accesso selettivo a Prenotazioni, Magazzino, Strumenti, Log (configurabile dall'Admin) |
+| **Co-Admin** | Tutto il sopra + gestione supervisori, impostazioni |
+| **Main Admin** | Tutto il sopra + gestione co-admin (hardcoded: `vono.niccolo@gmail.com`) |
 
-Gli amministratori sono definiti tramite:
-- Email di default hardcoded (`vono.niccolo@gmail.com`)
-- Lista dinamica in Firestore (`settings/admins`)
+- **Main Admin**: hardcoded nel codice
+- **Co-Admin**: gestiti via Firestore (`settings/admins`)
+- **Supervisori**: gestiti via Firestore (`settings/supervisors`) con permessi granulari via checkbox
 
 ---
 
