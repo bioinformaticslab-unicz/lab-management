@@ -154,8 +154,18 @@
 
         <!-- VISTA 1: SCANNER (Router Intelligente) -->
         <div id="view-scanner" class="fade-in space-y-6">
-            <div
-                class="relative bg-black rounded-3xl overflow-hidden shadow-2xl aspect-square border-4 border-indigo-500/30">
+            <div class="flex justify-between items-end mb-2">
+                <div>
+                    <h2 class="text-sm font-black text-slate-800 tracking-tight">Scannerizza Codice</h2>
+                    <p class="text-[10px] text-slate-500 font-medium">Usa la fotocamera o il lettore hardware</p>
+                </div>
+                <button id="btn-toggle-desktop" onclick="toggleDesktopMode()" class="flex items-center gap-1 text-[10px] font-bold px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg border border-indigo-100 shadow-sm hover:bg-indigo-100 transition">
+                    <i data-lucide="laptop" class="w-3 h-3"></i> <span>MODALITÀ DESKTOP</span>
+                </button>
+            </div>
+            
+            <div id="camera-container"
+                class="relative bg-black rounded-3xl overflow-hidden shadow-2xl aspect-square border-4 border-indigo-500/30 transition-all">
                 <div id="reader" class="w-full h-full object-cover"></div>
                 <div id="camera-overlay"
                     class="absolute inset-0 flex flex-col items-center justify-center bg-slate-900 text-white z-10">
@@ -174,10 +184,20 @@
                     class="hidden absolute bottom-4 left-1/2 -translate-x-1/2 bg-white/20 backdrop-blur-md border border-white/30 text-white px-4 py-1 rounded-full text-xs font-bold z-30">Chiudi</button>
             </div>
 
-            <div class="relative">
-                <div class="flex gap-2">
-                    <input type="text" id="inp-manual-code" placeholder="Cerca strumento o materiale..."
-                        class="flex-1 px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-sm shadow-sm"
+            <div id="desktop-input-container" class="relative">
+                <div class="flex justify-between items-center mb-2">
+                    <div class="flex items-center gap-2">
+                        <button id="btn-toggle-batch" onclick="toggleBatchMode()" style="display:none;" class="flex items-center gap-1 text-[10px] font-bold px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-lg border border-emerald-100 shadow-sm hover:bg-emerald-100 transition">
+                            <i data-lucide="layers" class="w-3 h-3"></i> <span id="lbl-batch-mode">SINGOLO</span>
+                        </button>
+                        <button id="btn-cart" onclick="showBatchCart()" style="display:none;" class="flex items-center gap-1 text-[10px] font-bold px-3 py-1.5 bg-amber-50 text-amber-600 rounded-lg border border-amber-100 shadow-sm hover:bg-amber-100 transition">
+                            <i data-lucide="shopping-cart" class="w-3 h-3"></i> CARRELLO (<span id="cart-count">0</span>)
+                        </button>
+                    </div>
+                </div>
+                <div class="flex gap-2 mt-2">
+                    <input type="text" id="inp-manual-code" placeholder="Cerca strumento o materiale..." autocomplete="off"
+                        class="flex-1 px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-sm shadow-sm transition-all"
                         oninput="smartSearch(this.value)" onkeypress="if(event.key === 'Enter') smartSearchGo()">
                     <button onclick="smartSearchGo()"
                         class="px-4 py-3 bg-slate-800 text-white rounded-xl font-bold shadow-lg hover:bg-slate-700 transition flex items-center justify-center">
@@ -315,6 +335,49 @@
                     <i data-lucide="history" class="w-3 h-3"></i> Ultimi Movimenti
                 </h3>
                 <div id="stock-history-list" class="space-y-2"></div>
+            </div>
+        </div>
+        
+        <!-- VISTA: CARRELLO (BATCH STOCK) -->
+        <div id="view-batch-summary" class="hidden fade-in space-y-4">
+            <div class="flex justify-between items-center border-b pb-2">
+                <h2 class="text-lg font-black text-slate-800 flex items-center gap-2">
+                    <i data-lucide="shopping-cart" class="w-5 h-5 text-amber-600"></i> Carrello Movimenti
+                </h2>
+                <button onclick="clearBatchCart()" class="text-[10px] text-red-500 font-bold hover:underline">SVUOTA</button>
+            </div>
+            
+            <div id="batch-items-container" class="space-y-2 max-h-[50vh] overflow-y-auto pr-1">
+                <!-- Items list -->
+            </div>
+            
+            <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 mt-4">
+                <form onsubmit="confirmBatchMovement(event)" class="space-y-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1">Azione Globale</label>
+                        <div class="flex gap-2">
+                            <label class="flex-1 flex items-center justify-center p-3 border border-emerald-300 bg-emerald-50 rounded-lg cursor-pointer text-emerald-700 font-bold text-xs hover:bg-emerald-100 transition has-[:checked]:bg-emerald-600 has-[:checked]:text-white gap-2">
+                                <input type="radio" name="batch-action" value="add" class="hidden" checked onchange="toggleBatchRemoveOrder()"> <i data-lucide="plus-circle" class="w-4 h-4"></i> CARICO
+                            </label>
+                            <label class="flex-1 flex items-center justify-center p-3 border border-red-300 bg-red-50 rounded-lg cursor-pointer text-red-700 font-bold text-xs hover:bg-red-100 transition has-[:checked]:bg-red-600 has-[:checked]:text-white gap-2">
+                                <input type="radio" name="batch-action" value="remove" class="hidden" onchange="toggleBatchRemoveOrder()"> <i data-lucide="minus-circle" class="w-4 h-4"></i> SCARICO
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div id="div-batch-remove-order" class="flex items-center gap-2 bg-amber-50 p-2 rounded border border-amber-200">
+                        <input type="checkbox" id="inp-batch-remove-order" checked class="h-4 w-4 text-amber-600 rounded">
+                        <label class="text-xs font-bold text-amber-800 lg:leading-tight cursor-pointer" for="inp-batch-remove-order">Rimuovi stato "Ordinato" per gli articoli</label>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1">Identificativo Operatore</label>
+                        <input type="text" id="inp-batch-operator" required class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm" placeholder="Nome, PI o Codice...">
+                    </div>
+                    
+                    <button type="submit" class="w-full py-3 bg-slate-800 text-white rounded-xl font-bold shadow-lg">CONFERMA E SALVA TUTTO</button>
+                    <button type="button" onclick="resetApp()" class="w-full py-2 text-slate-400 text-xs font-bold">ANNULLA</button>
+                </form>
             </div>
         </div>
 
@@ -517,9 +580,11 @@
             <!-- Content: Settings -->
             <div id="admin-content-settings" class="hidden space-y-4">
                 <div class="bg-amber-50 p-4 rounded-xl border border-amber-200 shadow-sm">
-                    <h3 class="text-sm font-bold text-amber-800 mb-2">Manutenzione</h3>
+                    <h3 class="text-sm font-bold text-amber-800 mb-2">Manutenzione & App</h3>
                     <div class="flex items-center gap-2 mb-2"><input type="checkbox" id="inp-maint-active"> <label
                             class="text-xs font-bold">Attiva Manutenzione</label></div>
+                    <div class="flex items-center gap-2 mb-3"><input type="checkbox" id="inp-setting-batch"> <label
+                            class="text-xs font-bold">Abilita Modalità Carrello (Carico Multiplo)</label></div>
                     <input type="text" id="inp-maint-name" class="w-full mb-2 text-xs p-2 border rounded"
                         placeholder="Nome Referente">
                     <input type="email" id="inp-maint-email" class="w-full mb-2 text-xs p-2 border rounded"
@@ -921,6 +986,32 @@
         // Nuove variabili RBAC
         let userRole = 'user'; // 'main_admin', 'co_admin', 'supervisor', 'user'
         let supervisorPermissions = {};
+        let isDesktopMode = localStorage.getItem('desktopMode') === 'true';
+        let isBatchMode = false;
+        let batchCart = [];
+        let globalSettingsCache = {};
+
+        // Setup globale tastiera
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                const modals = ['modal-stock', 'modal-order', 'modal-booking', 'modal-calendar', 'modal-admin-booking'];
+                modals.forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el && !el.classList.contains('hidden')) el.classList.add('hidden');
+                });
+                return;
+            }
+            // Auto-focus manual code logic
+            if (isDesktopMode && !document.getElementById('view-scanner').classList.contains('hidden')) {
+                const active = document.activeElement;
+                if (active && active.tagName !== 'INPUT' && active.tagName !== 'TEXTAREA') {
+                    const inp = document.getElementById('inp-manual-code');
+                    if (e.key.length === 1 && !e.ctrlKey && !e.metaKey) {
+                        inp.focus();
+                    }
+                }
+            }
+        });
 
         window.currentFoundBooking = null;
         window.currentInstrumentData = {};
@@ -1101,7 +1192,9 @@
 
         // --- SCANNER ROUTER ---
         const onScanSuccess = (decodedText) => {
-            stopScanner();
+            if (!isBatchMode) {
+                stopScanner();
+            }
             let finalCode = decodedText;
             if (decodedText.includes("?r=")) {
                 try {
@@ -1114,6 +1207,36 @@
         };
         // MAKE GLOBAL FOR CLICK EVENTS
         window.handleScannedCode = async function (code) {
+            
+            // --- BATCH MODE ---
+            if (isBatchMode) {
+                const invItem = window.allInventoryCache.find(i => i.id === code || i.id === code.replace(/\//g, '_'));
+                if (invItem) {
+                    const existing = batchCart.find(i => i.id === invItem.id);
+                    if (existing) {
+                        existing.qtyToAdd += 1;
+                    } else {
+                        batchCart.push({ ...invItem, qtyToAdd: 1 });
+                    }
+                    updateBatchUI();
+                    
+                    const toast = document.createElement('div');
+                    toast.className = 'fixed top-5 right-5 bg-emerald-600 text-white px-4 py-2 rounded shadow-lg z-[200] text-xs font-bold fade-in';
+                    toast.innerHTML = `<i data-lucide="check" class="inline w-3 h-3"></i> ${invItem.name} aggiunto!`;
+                    document.body.appendChild(toast);
+                    setTimeout(() => toast.remove(), 2000);
+                    
+                    document.getElementById('inp-manual-code').value = '';
+                    setTimeout(() => document.getElementById('inp-manual-code').focus(), 50);
+                    return;
+                } else {
+                    alert('Codice non trovato nel Magazzino per il Carrello.');
+                    document.getElementById('inp-manual-code').value = '';
+                    return;
+                }
+            }
+
+            // --- STANDARD MODE ---
             currentItem = code;
 
             // 1. Cerca nei Tools (Exact ID)
@@ -1790,8 +1913,36 @@
             if (tab === 'logs') loadAdminLogs();
         };
 
-        // --- COPIED FROM V3.5 (Preserving all previous functionality) ---
-        // (Function implementations condensed for brevity but functionally identical)
+        window.toggleDesktopMode = () => {
+            isDesktopMode = !isDesktopMode;
+            localStorage.setItem('desktopMode', isDesktopMode);
+            applyDesktopMode();
+        };
+        
+        window.applyDesktopMode = () => {
+            const btn = document.getElementById('btn-toggle-desktop');
+            const cam = document.getElementById('camera-container');
+            const inp = document.getElementById('inp-manual-code');
+            
+            if (isDesktopMode) {
+                if(btn) btn.innerHTML = '<i data-lucide="smartphone" class="w-3 h-3"></i> <span>MODALITÀ MOBILE</span>';
+                if(cam) cam.classList.add('hidden');
+                if(inp) {
+                    inp.classList.add('text-lg', 'py-6', 'font-black', 'shadow-2xl', 'text-center');
+                    inp.placeholder = "Punta il lettore barcode qua...";
+                    setTimeout(() => inp.focus(), 300);
+                }
+            } else {
+                if(btn) btn.innerHTML = '<i data-lucide="laptop" class="w-3 h-3"></i> <span>MODALITÀ DESKTOP</span>';
+                if(cam) cam.classList.remove('hidden');
+                if(inp) {
+                    inp.classList.remove('text-lg', 'py-6', 'font-black', 'shadow-2xl', 'text-center');
+                    inp.placeholder = "Cerca strumento o materiale...";
+                }
+            }
+            if(window.lucide) lucide.createIcons();
+        };
+
         window.resetApp = () => {
             if (window.history.pushState) window.history.pushState({ path: window.location.href.split('?')[0] }, '', window.location.href.split('?')[0]);
             window.switchView('view-scanner');
@@ -1800,10 +1951,15 @@
             document.getElementById('inp-manual-code').value = '';
             adminMode = false;
             loadGlobalSettings();
+            applyDesktopMode();
         };
         window.switchView = (id) => {
-            ['view-scanner', 'view-details', 'view-admin', 'view-my-booking', 'view-inventory', 'view-inventory-list'].forEach(v => document.getElementById(v).classList.add('hidden'));
-            document.getElementById(id).classList.remove('hidden');
+            ['view-scanner', 'view-details', 'view-admin', 'view-my-booking', 'view-inventory', 'view-inventory-list', 'view-batch-summary'].forEach(v => {
+                const el = document.getElementById(v);
+                if (el) el.classList.add('hidden');
+            });
+            const target = document.getElementById(id);
+            if(target) target.classList.remove('hidden');
         };
         window.startScanner = async () => {
             document.getElementById('camera-overlay').classList.add('hidden');
@@ -2044,6 +2200,7 @@
             document.getElementById('inp-date').value = '';
             document.getElementById('inp-date').onchange = () => onDateChange('user');
             document.getElementById('booking-overlap-warning').classList.add('hidden');
+            setTimeout(() => document.getElementById('inp-name').focus(), 100);
         };
         window.hideBookingForm = () => document.getElementById('modal-booking').classList.add('hidden');
         window.handleBooking = async (e) => {
@@ -2241,15 +2398,41 @@
 
         function loadGlobalSettings() {
             onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'global'), (doc) => {
-                if (doc.exists() && doc.data().maintenanceMode && !adminMode) document.getElementById('view-maintenance').classList.remove('hidden');
-                else document.getElementById('view-maintenance').classList.add('hidden');
-                if (doc.exists()) document.getElementById('maint-ref-name').innerText = doc.data().referentName;
+                if (doc.exists()) {
+                    globalSettingsCache = doc.data();
+                    
+                    if (doc.data().maintenanceMode && !adminMode) {
+                        document.getElementById('view-maintenance').classList.remove('hidden');
+                    } else {
+                        document.getElementById('view-maintenance').classList.add('hidden');
+                    }
+                    
+                    document.getElementById('maint-ref-name').innerText = doc.data().referentName || '';
+                    document.getElementById('inp-maint-active').checked = doc.data().maintenanceMode === true;
+                    document.getElementById('inp-setting-batch').checked = doc.data().batchInventoryEnabled === true;
+                    document.getElementById('inp-maint-name').value = doc.data().referentName || '';
+                    document.getElementById('inp-maint-email').value = doc.data().referentEmail || '';
+                    
+                    const batchBtn = document.getElementById('btn-toggle-batch');
+                    if(batchBtn) batchBtn.style.display = doc.data().batchInventoryEnabled ? 'flex' : 'none';
+                    if(!doc.data().batchInventoryEnabled) { isBatchMode = false; updateBatchUI(); }
+                }
             });
         }
         window.saveGlobalSettings = async () => {
             const active = document.getElementById('inp-maint-active').checked;
-            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'global'), { maintenanceMode: active, referentName: document.getElementById('inp-maint-name').value, referentEmail: document.getElementById('inp-maint-email').value });
-            logAction('UPDATE', 'SETTINGS', `Global settings updated. Maintenance: ${active}`);
+            const batchEn = document.getElementById('inp-setting-batch').checked;
+            const refName = document.getElementById('inp-maint-name').value;
+            const refEmail = document.getElementById('inp-maint-email').value;
+            
+            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'global'), { 
+                maintenanceMode: active, 
+                batchInventoryEnabled: batchEn,
+                referentName: refName, 
+                referentEmail: refEmail 
+            }, { merge: true });
+            
+            logAction('UPDATE', 'SETTINGS', `Global settings updated. Maintenance: ${active}, Batch Enabled: ${batchEn}`);
             alert("Settings salvati.");
         };
         window.deleteBooking = async (id) => {
@@ -2341,6 +2524,7 @@
             document.getElementById('inp-admin-date').onchange = () => onDateChange('admin');
             document.getElementById('admin-booking-overlap-warning').classList.add('hidden');
             document.getElementById('modal-admin-booking').classList.remove('hidden');
+            setTimeout(() => document.getElementById('inp-admin-name').focus(), 100);
             lucide.createIcons();
         };
         window.closeAdminBookingModal = () => {
@@ -2393,6 +2577,166 @@
                 closeAdminBookingModal();
                 loadAdminBookings();
             } catch (err) { alert('Errore: ' + err.message); }
+        };
+
+        // --- BATCH CART LOGIC ---
+        window.toggleBatchMode = () => {
+            isBatchMode = !isBatchMode;
+            updateBatchUI();
+        };
+
+        window.updateBatchUI = () => {
+            const lbl = document.getElementById('lbl-batch-mode');
+            const cartBtn = document.getElementById('btn-cart');
+            const count = document.getElementById('cart-count');
+            
+            if(lbl) lbl.innerText = isBatchMode ? 'MULTI' : 'SINGOLO';
+            
+            if (isBatchMode && batchCart.length > 0) {
+                cartBtn.style.display = 'flex';
+                count.innerText = batchCart.length;
+            } else {
+                cartBtn.style.display = 'none';
+            }
+            
+            if(!isBatchMode && batchCart.length > 0) {
+                if(confirm('Attenzione: il carrello contiene articoli. Svuotare il carrello per tornare alla modalità singola?')) {
+                    batchCart = [];
+                    updateBatchUI();
+                } else {
+                    isBatchMode = true; 
+                    if(lbl) lbl.innerText = 'MULTI';
+                }
+            }
+        };
+
+        window.showBatchCart = () => {
+             document.getElementById('view-scanner').classList.add('hidden');
+             importBatchItemsHTML();
+             window.switchView('view-batch-summary');
+             setTimeout(() => document.getElementById('inp-batch-operator').focus(), 100);
+        };
+
+        function importBatchItemsHTML() {
+            const container = document.getElementById('batch-items-container');
+            if (batchCart.length === 0) {
+                container.innerHTML = '<p class="text-xs text-center text-slate-400">Carrello vuoto.</p>';
+                return;
+            }
+            container.innerHTML = batchCart.map((i, idx) => `
+                <div class="flex justify-between items-center bg-white border border-slate-200 p-3 rounded-xl shadow-sm">
+                    <div class="flex-1">
+                        <div class="text-xs font-bold text-slate-800 break-all">${i.name}</div>
+                        <div class="text-[10px] text-slate-500 font-mono">${i.id || ''}</div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <input type="number" step="0.01" min="0.01" value="${i.qtyToAdd}" onchange="updateBatchQty(${idx}, this.value)" class="w-16 px-2 py-1 text-center font-mono font-bold border border-slate-300 rounded focus:ring-2 focus:ring-emerald-500 text-xs">
+                        <span class="text-[10px] text-slate-500 w-8">${i.unit || 'pz'}</span>
+                        <button type="button" onclick="removeBatchItem(${idx})" class="text-red-500 p-1 hover:bg-red-50 rounded"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                    </div>
+                </div>
+            `).join('');
+            if(window.lucide) lucide.createIcons();
+        }
+
+        window.updateBatchQty = (idx, val) => {
+            const num = parseFloat(val);
+            if(num > 0) batchCart[idx].qtyToAdd = num;
+        };
+
+        window.removeBatchItem = (idx) => {
+            batchCart.splice(idx, 1);
+            importBatchItemsHTML();
+            updateBatchUI();
+            if(batchCart.length === 0) resetApp();
+        };
+
+        window.clearBatchCart = () => {
+            if(confirm("Svuotare il carrello?")) {
+                batchCart = [];
+                resetApp();
+            }
+        };
+
+        window.toggleBatchRemoveOrder = () => {
+            const action = document.querySelector('input[name="batch-action"]:checked').value;
+            const div = document.getElementById('div-batch-remove-order');
+            if(action === 'add') div.style.display = 'flex';
+            else div.style.display = 'none';
+        };
+
+        window.confirmBatchMovement = async (e) => {
+            e.preventDefault();
+            if (batchCart.length === 0) return alert("Carrello vuoto.");
+            const action = document.querySelector('input[name="batch-action"]:checked').value; 
+            const operator = document.getElementById('inp-batch-operator').value.trim();
+            const removeOrder = document.getElementById('inp-batch-remove-order').checked;
+
+            if(!operator) return alert("Inserire Operatore.");
+
+            try {
+                const toast = document.createElement('div');
+                toast.id = 'batch-loading-toast';
+                toast.className = 'fixed inset-0 bg-slate-900/50 flex items-center justify-center z-[500] backdrop-blur-sm';
+                toast.innerHTML = '<div class="bg-white p-6 rounded-2xl shadow-2xl flex flex-col items-center"><div class="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-3"></div><p class="font-bold text-slate-700">Salvataggio in batch...</p></div>';
+                document.body.appendChild(toast);
+
+                await runTransaction(db, async (t) => {
+                    const docRefs = batchCart.map(item => doc(db, 'artifacts', appId, 'public', 'data', 'inventory', item.id.replace(/\//g, '_')));
+                    const docsSnap = [];
+                    for(let ref of docRefs) {
+                        const snap = await t.get(ref);
+                        if(!snap.exists()) throw `Articolo ${ref.id} non trovato.`;
+                        docsSnap.push(snap);
+                    }
+
+                    batchCart.forEach((item, index) => {
+                        const snap = docsSnap[index];
+                        const d = snap.data();
+                        let currentQty = parseFloat(d.quantity || 0);
+                        let finalQty = currentQty;
+                        let updates = {};
+
+                        if(action === 'add') {
+                            finalQty += item.qtyToAdd;
+                            if(removeOrder && d.isOrdered) {
+                                updates.isOrdered = false;
+                                updates.orderBy = null;
+                                updates.orderDate = null;
+                            }
+                        } else {
+                            if(currentQty < item.qtyToAdd) throw `Scorte insufficienti per ${d.name}! Disp: ${currentQty}`;
+                            finalQty -= item.qtyToAdd;
+                        }
+
+                        updates.quantity = finalQty;
+                        t.update(snap.ref, updates);
+
+                        const moveRef = doc(collection(db, 'artifacts', appId, 'public', 'data', 'stock_movements'));
+                        t.set(moveRef, {
+                            itemId: item.id,
+                            itemName: d.name,
+                            action: action,
+                            amount: item.qtyToAdd,
+                            unit: d.unit || 'pz',
+                            user: currentUser.uid,
+                            operatorName: operator,
+                            timestamp: serverTimestamp(),
+                            isBatch: true
+                        });
+                    });
+                });
+
+                document.getElementById('batch-loading-toast')?.remove();
+                alert(`${batchCart.length} movimenti processati con successo!`);
+                logAction('UPDATE', 'INVENTORY', `Batch ${action} completed for ${batchCart.length} items. Operator: ${operator}`);
+                
+                batchCart = [];
+                resetApp();
+            } catch (err) { 
+                document.getElementById('batch-loading-toast')?.remove();
+                alert("Errore Transazione: " + err); 
+            }
         };
 
         // --- CO-ADMIN EMAIL MANAGEMENT ---
