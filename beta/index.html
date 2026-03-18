@@ -9,456 +9,560 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
-            theme: {
-                extend: {
-                    borderRadius: { '2xl': '1rem', '3xl': '1.5rem', '4xl': '2rem' },
-                    animation: { 'fade-in': 'fadeIn 0.25s ease-out' },
-                    keyframes: {
-                        fadeIn: { '0%': { opacity: 0, transform: 'translateY(8px)' }, '100%': { opacity: 1, transform: 'translateY(0)' } }
-                    }
-                }
-            }
+            theme: { extend: {
+                borderRadius: { '4xl': '2rem' },
+                animation: { 'fade-in': 'fadeIn 0.25s ease-out' },
+                keyframes: { fadeIn: { '0%': { opacity: 0, transform: 'translateY(8px)' }, '100%': { opacity: 1 } } }
+            }}
         }
     </script>
 
-    <!-- App Logic BEFORE Alpine so alpine:init fires correctly -->
     <script type="module" src="./src/main.js"></script>
-
-    <!-- Alpine.js (deferred, must come AFTER main.js in document order) -->
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
-
-    <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
 
     <style>
-        [x-cloak] { display: none !important; }
-        body { -webkit-tap-highlight-color: transparent; }
-        .fade-in { animation: fadeIn 0.25s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; } }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        .beta-badge {
-            position: fixed; bottom: 76px; right: 12px; z-index: 9999;
-            background: #f59e0b; color: #fff; font-size: 9px; font-weight: 900;
-            padding: 3px 8px; border-radius: 999px; letter-spacing: 0.06em;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.2); pointer-events: none;
-        }
+        [x-cloak]{display:none!important}
+        body{-webkit-tap-highlight-color:transparent}
+        .fade-in{animation:fadeIn .25s ease-out}
+        @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1}}
+        .scrollbar-hide::-webkit-scrollbar{display:none}
+        .scrollbar-hide{-ms-overflow-style:none;scrollbar-width:none}
+        .beta-badge{position:fixed;bottom:72px;right:10px;z-index:9999;background:#f59e0b;color:#fff;font-size:9px;font-weight:900;padding:3px 8px;border-radius:999px;letter-spacing:.06em;box-shadow:0 2px 8px rgba(0,0,0,.2);pointer-events:none}
     </style>
 </head>
 
 <body class="bg-slate-50 text-slate-800 font-sans min-h-screen pb-24" x-data="labApp()" x-init="init()" x-cloak>
 
-    <!-- BETA BADGE -->
-    <div class="beta-badge" x-show="user">⚗️ BETA v2</div>
+<div class="beta-badge" x-show="user">⚗️ BETA v2</div>
 
-    <!-- ===== AUTH GATE ===== -->
-    <div x-show="!user" class="min-h-screen flex flex-col items-center justify-center p-6 space-y-6">
-        <!-- Logo / Branding -->
-        <div class="text-center space-y-2">
-            <div class="inline-flex items-center justify-center w-20 h-20 bg-slate-900 rounded-[1.5rem] shadow-xl mb-2">
-                <svg class="w-10 h-10 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/>
-                </svg>
-            </div>
-            <h1 class="text-3xl font-black italic tracking-tighter text-slate-900">
-                LAB<span class="text-emerald-500">SCAN</span>
-            </h1>
-            <p class="text-xs text-slate-400 font-medium">Gestione Laboratorio · Beta v2</p>
+<!-- ═══════════════════════════════ AUTH GATE ═══════════════════════════════ -->
+<div x-show="!user" class="min-h-screen flex flex-col items-center justify-center p-6 space-y-6">
+    <div class="text-center space-y-2">
+        <div class="inline-flex items-center justify-center w-20 h-20 bg-slate-900 rounded-[1.5rem] shadow-xl mb-2">
+            <svg class="w-10 h-10 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/>
+            </svg>
         </div>
-
-        <!-- Login Card -->
-        <div class="bg-white w-full max-w-sm rounded-[1.5rem] shadow-xl p-6 space-y-4">
-            <div class="text-center">
-                <p class="text-sm font-bold text-slate-700">Accedi con il tuo account universitario</p>
-                <p class="text-[10px] text-slate-400 mt-0.5">Solo indirizzi @unicz.it o @studenti.unicz.it</p>
-            </div>
-
-            <button @click="signIn()" :disabled="authLoading"
-                class="w-full flex items-center justify-center gap-3 py-3 px-4 bg-slate-900 text-white rounded-xl text-sm font-bold hover:bg-slate-700 active:scale-[0.98] transition-all shadow-md disabled:opacity-50">
-                <svg class="w-5 h-5 bg-white rounded-full p-0.5" viewBox="0 0 24 24">
-                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-                </svg>
-                <span x-text="authLoading ? 'Accesso in corso...' : 'Accedi con Google'"></span>
-            </button>
-
-            <p x-show="authError" x-text="authError"
-                class="text-[10px] text-red-600 font-bold text-center bg-red-50 px-3 py-2 rounded-xl border border-red-200"></p>
-        </div>
-
-        <a href="../" class="text-[10px] text-slate-400 hover:text-slate-600 transition underline">
-            ← Versione stabile
-        </a>
+        <h1 class="text-3xl font-black italic tracking-tighter text-slate-900">LAB<span class="text-emerald-500">SCAN</span></h1>
+        <p class="text-xs text-slate-400 font-medium">Gestione Laboratorio · Beta v2</p>
     </div>
+    <div class="bg-white w-full max-w-sm rounded-[1.5rem] shadow-xl p-6 space-y-4">
+        <div class="text-center">
+            <p class="text-sm font-bold text-slate-700">Accedi con il tuo account universitario</p>
+            <p class="text-[10px] text-slate-400 mt-0.5">Solo indirizzi @unicz.it o @studenti.unicz.it</p>
+        </div>
+        <button @click="signIn()" :disabled="authLoading"
+            class="w-full flex items-center justify-center gap-3 py-3 px-4 bg-slate-900 text-white rounded-xl text-sm font-bold hover:bg-slate-700 active:scale-[.98] transition-all shadow-md disabled:opacity-50">
+            <svg class="w-5 h-5 bg-white rounded-full p-0.5" viewBox="0 0 24 24">
+                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+            </svg>
+            <span x-text="authLoading ? 'Accesso in corso...' : 'Accedi con Google'"></span>
+        </button>
+        <p x-show="authError" x-text="authError" class="text-[10px] text-red-600 font-bold text-center bg-red-50 px-3 py-2 rounded-xl border border-red-200"></p>
+    </div>
+    <a href="../" class="text-[10px] text-slate-400 hover:text-slate-600 transition underline">← Versione stabile</a>
+</div>
 
-    <!-- ===== MAIN APP ===== -->
-    <div x-show="user">
+<!-- ═══════════════════════════════ MAIN APP ═══════════════════════════════ -->
+<div x-show="user">
 
-        <!-- HEADER — slate-900, sticky, rounded bottom -->
-        <header class="bg-slate-900 text-white px-5 pt-5 pb-6 rounded-b-[2rem] shadow-xl sticky top-0 z-50">
-            <div class="max-w-3xl mx-auto flex justify-between items-center">
-                <div class="flex items-center gap-2">
-                    <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/>
-                    </svg>
-                    <h1 class="text-lg font-black italic tracking-tighter">LAB<span class="text-emerald-400">SCAN</span></h1>
-                </div>
-                <div class="flex items-center gap-3">
-                    <span class="text-[10px] text-slate-400 hidden sm:inline"
-                        x-text="user?.email?.split('@')[0]"></span>
-                    <button @click="signOut()"
-                        class="text-[10px] text-slate-400 hover:text-red-400 transition font-bold">Esci</button>
-                </div>
+    <!-- HEADER -->
+    <header class="bg-slate-900 text-white px-5 pt-5 pb-6 rounded-b-[2rem] shadow-xl sticky top-0 z-50">
+        <div class="max-w-3xl mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-2">
+                <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/>
+                </svg>
+                <h1 class="text-lg font-black italic tracking-tighter">LAB<span class="text-emerald-400">SCAN</span></h1>
             </div>
-
-            <!-- DESKTOP INLINE NAV (hidden on mobile) -->
-            <div class="hidden sm:flex max-w-3xl mx-auto mt-4 gap-2">
-                <template x-for="tab in visibleTabs" :key="tab.id">
-                    <button @click="activeView = tab.id"
-                        :class="activeView === tab.id
-                            ? 'bg-emerald-500 text-white shadow-md'
-                            : 'text-slate-400 hover:text-white hover:bg-white/10'"
-                        class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all">
-                        <span x-text="tab.icon"></span>
-                        <span x-text="tab.label"></span>
-                    </button>
-                </template>
+            <div class="flex items-center gap-3">
+                <span class="text-[10px] text-slate-400 hidden sm:inline" x-text="user?.email?.split('@')[0]"></span>
+                <button @click="signOut()" class="text-[10px] text-slate-400 hover:text-red-400 transition font-bold">Esci</button>
             </div>
-        </header>
+        </div>
+        <!-- Desktop nav -->
+        <div class="hidden sm:flex max-w-3xl mx-auto mt-4 gap-2">
+            <template x-for="tab in visibleTabs" :key="tab.id">
+                <button @click="activeView = tab.id"
+                    :class="activeView === tab.id ? 'bg-emerald-500 text-white shadow-md' : 'text-slate-400 hover:text-white hover:bg-white/10'"
+                    class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all">
+                    <span x-text="tab.icon"></span><span x-text="tab.label"></span>
+                </button>
+            </template>
+        </div>
+    </header>
 
-        <!-- MAIN CONTENT -->
-        <main class="max-w-3xl mx-auto px-4 pt-5 pb-6 space-y-4">
+    <!-- CONTENT -->
+    <main class="max-w-3xl mx-auto px-4 pt-5 pb-4 space-y-4">
 
-            <!-- ── VIEW: SCANNER ── -->
-            <section x-show="activeView === 'scanner'" class="fade-in space-y-4">
-                <div class="bg-white rounded-[1.5rem] border border-slate-100 shadow-sm p-5">
-                    <h2 class="text-base font-bold text-slate-800 mb-4 flex items-center gap-2">
-                        <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/></svg>
-                        Scanner QR / Barcode
-                    </h2>
-                    <input type="text"
-                        x-model="scanInput"
-                        @keyup.enter="handleScan()"
-                        @input.debounce.250ms="handleScan()"
-                        class="w-full text-center text-sm font-mono px-4 py-3 border-2 border-slate-200 rounded-xl outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition-all bg-slate-50"
-                        placeholder="Scansiona il QR Code / Barcode..."
-                        id="scanner-input"
-                        autocomplete="off" />
-
-                    <!-- Smart search results -->
-                    <div x-show="searchResults.length > 0" class="mt-3 space-y-2">
-                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">Risultati</p>
-                        <template x-for="r in searchResults" :key="r.id">
-                            <button @click="openItem(r)"
-                                class="w-full flex items-center gap-3 p-3 bg-slate-50 hover:bg-emerald-50 border border-slate-200 hover:border-emerald-300 rounded-xl transition-all text-left active:scale-[0.98]">
-                                <div class="w-9 h-9 rounded-xl flex items-center justify-center text-base flex-shrink-0"
-                                    :class="r.type === 'instrument' ? 'bg-indigo-50' : 'bg-emerald-50'">
-                                    <span x-text="r.type === 'instrument' ? '🔬' : '📦'"></span>
-                                </div>
-                                <div class="flex-1 min-w-0">
-                                    <div class="font-bold text-sm text-slate-800 truncate" x-text="r.name"></div>
-                                    <div class="text-[10px] text-slate-400 font-mono mt-0.5" x-text="r.id"></div>
-                                </div>
-                                <span class="text-[9px] font-bold px-2 py-0.5 rounded-full flex-shrink-0"
-                                    :class="r.type === 'instrument' ? 'bg-indigo-100 text-indigo-700' : 'bg-emerald-100 text-emerald-700'"
-                                    x-text="r.type === 'instrument' ? 'Strumento' : 'Magazzino'"></span>
-                            </button>
-                        </template>
-                    </div>
-
-                    <!-- Empty state when input is clear -->
-                    <div x-show="!scanInput && searchResults.length === 0" class="py-6 text-center">
-                        <div class="text-4xl mb-2">📷</div>
-                        <p class="text-xs text-slate-400 font-medium">Punta il barcode o QR qui sopra</p>
-                        <p class="text-[10px] text-slate-300 mt-1">oppure digita manualmente nome o ID</p>
-                    </div>
-                </div>
-            </section>
-
-            <!-- ── VIEW: INVENTORY ── -->
-            <section x-show="activeView === 'inventory'" class="fade-in space-y-4">
-                <!-- Header row -->
-                <div class="flex items-center justify-between gap-3 flex-wrap">
-                    <div>
-                        <h2 class="text-base font-bold text-slate-800">Magazzino Lab</h2>
-                        <p class="text-[10px] text-slate-400 mt-0.5"
-                            x-text="filteredInventory.length + ' ' + (inventoryTab === 'reorder' ? 'in ordine' : 'articoli')"></p>
-                    </div>
-                    <button x-show="isAdmin || isSupervisor" @click="openOrderModal(null)"
-                        class="flex items-center gap-1.5 px-3 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold shadow hover:bg-slate-700 active:scale-[0.97] transition-all">
-                        🚚 Aggiungi Ordine
-                    </button>
-                </div>
-
-                <!-- Sub-tabs -->
-                <div class="flex p-1 bg-slate-100 rounded-2xl gap-1">
-                    <button @click="inventoryTab = 'all'"
-                        :class="inventoryTab === 'all' ? 'bg-white shadow font-black text-slate-800' : 'text-slate-500 font-bold'"
-                        class="flex-1 py-2 rounded-xl text-xs transition-all">
-                        Tutti gli Articoli
-                    </button>
-                    <button @click="inventoryTab = 'reorder'"
-                        :class="inventoryTab === 'reorder' ? 'bg-white shadow font-black text-slate-800' : 'text-slate-500 font-bold'"
-                        class="flex-1 py-2 rounded-xl text-xs transition-all">
-                        🚚 In Ordine
-                    </button>
-                </div>
-
-                <!-- Search -->
-                <input type="text" x-model="inventorySearch" placeholder="Cerca articolo, brand, categoria..."
-                    class="w-full px-4 py-2.5 text-sm border-2 border-slate-200 rounded-xl outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 bg-white transition-all" />
-
-                <!-- Inventory List -->
-                <div class="space-y-3">
-                    <template x-if="filteredInventory.length === 0">
-                        <div class="text-center py-12">
-                            <div class="text-4xl mb-2">📭</div>
-                            <p class="text-sm text-slate-400 font-medium">Nessun articolo trovato.</p>
-                        </div>
-                    </template>
-
-                    <template x-for="item in filteredInventory" :key="item.id">
-                        <div class="bg-white rounded-[1.5rem] border border-slate-100 shadow-sm p-4 hover:shadow-md hover:border-slate-200 transition-all">
-                            <div class="flex items-start gap-3">
-                                <!-- Image or placeholder -->
-                                <template x-if="item.image">
-                                    <img :src="item.image" :alt="item.name" class="w-12 h-12 rounded-xl object-cover flex-shrink-0 border border-slate-100" />
-                                </template>
-                                <template x-if="!item.image">
-                                    <div class="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center flex-shrink-0 text-xl">📦</div>
-                                </template>
-
-                                <!-- Content -->
-                                <div class="flex-1 min-w-0">
-                                    <div class="flex items-start justify-between gap-2 mb-1">
-                                        <div class="min-w-0">
-                                            <h3 class="font-black text-sm text-slate-800 leading-tight" x-text="item.name"></h3>
-                                            <p class="text-[10px] text-slate-400 font-mono mt-0.5 truncate" x-text="item.id"></p>
-                                        </div>
-                                        <!-- Qty badge -->
-                                        <div class="flex-shrink-0 text-right">
-                                            <span class="text-lg font-black leading-none"
-                                                :class="item.quantity <= item.threshold ? 'text-red-500' : 'text-emerald-600'"
-                                                x-text="item.quantity"></span>
-                                            <span class="text-[10px] text-slate-400 ml-0.5" x-text="item.unit"></span>
-                                        </div>
-                                    </div>
-
-                                    <!-- Tags -->
-                                    <div class="flex gap-1.5 flex-wrap mb-2">
-                                        <template x-if="item.brand">
-                                            <span class="text-[9px] px-1.5 py-0.5 bg-slate-100 text-slate-500 rounded-full font-medium" x-text="item.brand"></span>
-                                        </template>
-                                        <template x-if="item.category">
-                                            <span class="text-[9px] px-1.5 py-0.5 bg-indigo-50 text-indigo-500 rounded-full font-medium" x-text="item.category"></span>
-                                        </template>
-                                        <template x-if="item.location">
-                                            <span class="text-[9px] px-1.5 py-0.5 bg-amber-50 text-amber-600 rounded-full font-medium" x-text="'📍 ' + item.location"></span>
-                                        </template>
-                                        <template x-if="item.isOrdered">
-                                            <span class="text-[9px] px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded-full font-bold">
-                                                🚚 In Ordine
-                                                <template x-if="item.orderQuantity">
-                                                    <span x-text="'(+' + item.orderQuantity + ' ' + item.unit + ')'"></span>
-                                                </template>
-                                            </span>
-                                        </template>
-                                        <template x-if="item.quantity <= item.threshold">
-                                            <span class="text-[9px] px-1.5 py-0.5 bg-red-50 text-red-500 rounded-full font-bold">⚠️ Scorta Bassa</span>
-                                        </template>
-                                    </div>
-
-                                    <!-- Progress bar (stock level) -->
-                                    <div class="h-1 bg-slate-100 rounded-full overflow-hidden mb-2">
-                                        <div class="h-full rounded-full transition-all"
-                                            :class="item.quantity <= item.threshold ? 'bg-red-400' : 'bg-emerald-500'"
-                                            :style="'width: ' + Math.min(100, Math.round((item.quantity / Math.max(item.threshold * 3, item.quantity, 1)) * 100)) + '%'">
-                                        </div>
-                                    </div>
-
-                                    <!-- Actions -->
-                                    <div class="flex gap-2 mt-1">
-                                        <button @click="openStockModal(item, 'add')"
-                                            class="flex-1 py-1.5 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-xl text-[10px] font-bold hover:bg-emerald-100 active:scale-[0.97] transition-all">
-                                            + CARICO
-                                        </button>
-                                        <button @click="openStockModal(item, 'remove')"
-                                            class="flex-1 py-1.5 bg-red-50 border border-red-200 text-red-600 rounded-xl text-[10px] font-bold hover:bg-red-100 active:scale-[0.97] transition-all">
-                                            − SCARICO
-                                        </button>
-                                        <template x-if="item.isOrdered">
-                                            <button @click="confirmArrival(item)"
-                                                class="flex-1 py-1.5 bg-blue-600 text-white rounded-xl text-[10px] font-bold hover:bg-blue-500 active:scale-[0.97] transition-all shadow-sm">
-                                                ✅ ARRIVO
-                                            </button>
-                                        </template>
-                                    </div>
-                                </div>
+        <!-- ══ SCANNER ══ -->
+        <section x-show="activeView === 'scanner'" class="fade-in space-y-4">
+            <div class="bg-white rounded-[1.5rem] border border-slate-100 shadow-sm p-5">
+                <h2 class="text-base font-bold text-slate-800 mb-4 flex items-center gap-2">
+                    <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4"/></svg>
+                    Scanner QR / Barcode
+                </h2>
+                <input type="text" x-model="scanInput" @keyup.enter="handleScan()" @input.debounce.250ms="handleScan()"
+                    class="w-full text-center text-sm font-mono px-4 py-3 border-2 border-slate-200 rounded-xl outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 bg-slate-50 transition-all"
+                    placeholder="Scansiona il QR Code / Barcode..." id="scanner-input" autocomplete="off" />
+                <div x-show="searchResults.length" class="mt-3 space-y-2">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">Risultati</p>
+                    <template x-for="r in searchResults" :key="r.id">
+                        <button @click="openItem(r)" class="w-full flex items-center gap-3 p-3 bg-slate-50 hover:bg-emerald-50 border border-slate-200 hover:border-emerald-300 rounded-xl transition-all text-left active:scale-[.98]">
+                            <div class="w-9 h-9 rounded-xl flex items-center justify-center text-base flex-shrink-0" :class="r.type === 'instrument' ? 'bg-indigo-50' : 'bg-emerald-50'">
+                                <span x-text="r.type === 'instrument' ? '🔬' : '📦'"></span>
                             </div>
-                        </div>
-                    </template>
-                </div>
-            </section>
-
-            <!-- ── VIEW: PROFILE ── -->
-            <section x-show="activeView === 'profile'" class="fade-in space-y-4">
-                <h2 class="text-base font-bold text-slate-800">Il Mio Profilo</h2>
-
-                <div class="bg-white rounded-[1.5rem] border border-slate-100 shadow-sm p-5">
-                    <div class="flex items-center gap-4">
-                        <template x-if="user?.photoURL">
-                            <img :src="user.photoURL" class="w-14 h-14 rounded-2xl border-2 border-slate-200" />
-                        </template>
-                        <template x-if="!user?.photoURL">
-                            <div class="w-14 h-14 rounded-2xl bg-slate-900 flex items-center justify-center text-white text-xl font-black"
-                                x-text="(user?.displayName || user?.email || '?')[0].toUpperCase()"></div>
-                        </template>
-                        <div class="flex-1 min-w-0">
-                            <div class="font-black text-slate-800 truncate" x-text="user?.displayName || user?.email?.split('@')[0]"></div>
-                            <div class="text-[10px] text-slate-400 truncate" x-text="user?.email"></div>
-                            <div class="mt-1.5">
-                                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full"
-                                    :class="{
-                                        'bg-amber-100 text-amber-700': isAdmin,
-                                        'bg-emerald-100 text-emerald-700': isSupervisor && !isAdmin,
-                                        'bg-slate-100 text-slate-600': !isAdmin && !isSupervisor
-                                    }"
-                                    x-text="isAdmin ? '👑 Amministratore' : (isSupervisor ? '👁️ Supervisore' : '👤 Utente')">
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Inventory movements -->
-                <div class="bg-white rounded-[1.5rem] border border-slate-100 shadow-sm p-5">
-                    <h3 class="text-xs font-bold text-slate-700 mb-3 flex items-center gap-2">
-                        <svg class="w-3.5 h-3.5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
-                        Ultimi movimenti magazzino
-                    </h3>
-                    <template x-if="recentMovements.length === 0">
-                        <p class="text-[10px] text-slate-400 text-center py-4">Nessun movimento registrato.</p>
-                    </template>
-                    <template x-for="m in recentMovements.slice(0, 10)" :key="m._id">
-                        <div class="flex items-center gap-3 py-2 border-b border-slate-50 last:border-0">
-                            <span class="text-sm font-black w-6 text-center"
-                                :class="m.action === 'add' ? 'text-emerald-600' : 'text-red-500'"
-                                x-text="m.action === 'add' ? '+' : '−'"></span>
                             <div class="flex-1 min-w-0">
-                                <div class="text-xs font-bold text-slate-700 truncate" x-text="m.itemName"></div>
-                                <div class="text-[9px] text-slate-400" x-text="m.timestamp ? new Date(m.timestamp.seconds * 1000).toLocaleString('it-IT') : ''"></div>
+                                <div class="font-bold text-sm text-slate-800 truncate" x-text="r.name"></div>
+                                <div class="text-[10px] text-slate-400 font-mono mt-0.5" x-text="r.id"></div>
                             </div>
-                            <span class="text-xs font-black text-slate-600"
-                                x-text="m.amount + ' ' + (m.unit || '')"></span>
+                            <span class="text-[9px] font-bold px-2 py-0.5 rounded-full flex-shrink-0"
+                                :class="r.type === 'instrument' ? 'bg-indigo-100 text-indigo-700' : 'bg-emerald-100 text-emerald-700'"
+                                x-text="r.type === 'instrument' ? 'Strumento' : 'Magazzino'"></span>
+                        </button>
+                    </template>
+                </div>
+                <div x-show="!scanInput && !searchResults.length" class="py-6 text-center">
+                    <div class="text-4xl mb-2">📷</div>
+                    <p class="text-xs text-slate-400 font-medium">Punta il barcode o QR qui sopra</p>
+                    <p class="text-[10px] text-slate-300 mt-1">oppure digita manualmente nome o ID</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ══ INVENTORY ══ -->
+        <section x-show="activeView === 'inventory'" class="fade-in space-y-4">
+            <div class="flex items-center justify-between gap-3 flex-wrap">
+                <div>
+                    <h2 class="text-base font-bold text-slate-800">Magazzino Lab</h2>
+                    <p class="text-[10px] text-slate-400 mt-0.5" x-text="filteredInventory.length + ' ' + (inventoryTab === 'reorder' ? 'in ordine' : 'articoli')"></p>
+                </div>
+                <button x-show="isAdmin || isSupervisor" @click="openOrderModal(null)"
+                    class="flex items-center gap-1.5 px-3 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold shadow hover:bg-slate-700 active:scale-[.97] transition-all">
+                    🚚 Aggiungi Ordine
+                </button>
+            </div>
+            <div class="flex p-1 bg-slate-100 rounded-2xl gap-1">
+                <button @click="inventoryTab = 'all'" :class="inventoryTab === 'all' ? 'bg-white shadow font-black text-slate-800' : 'text-slate-500 font-bold'" class="flex-1 py-2 rounded-xl text-xs transition-all">Tutti gli Articoli</button>
+                <button @click="inventoryTab = 'reorder'" :class="inventoryTab === 'reorder' ? 'bg-white shadow font-black text-slate-800' : 'text-slate-500 font-bold'" class="flex-1 py-2 rounded-xl text-xs transition-all">🚚 In Ordine</button>
+            </div>
+            <input type="text" x-model="inventorySearch" placeholder="Cerca articolo, brand, categoria..."
+                class="w-full px-4 py-2.5 text-sm border-2 border-slate-200 rounded-xl outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 bg-white transition-all" />
+            <div class="space-y-3">
+                <template x-if="filteredInventory.length === 0">
+                    <div class="text-center py-12"><div class="text-4xl mb-2">📭</div><p class="text-sm text-slate-400 font-medium">Nessun articolo trovato.</p></div>
+                </template>
+                <template x-for="item in filteredInventory" :key="item.id">
+                    <div class="bg-white rounded-[1.5rem] border border-slate-100 shadow-sm p-4 hover:shadow-md hover:border-slate-200 transition-all">
+                        <div class="flex items-start gap-3">
+                            <template x-if="item.image"><img :src="item.image" :alt="item.name" class="w-12 h-12 rounded-xl object-cover flex-shrink-0 border border-slate-100" /></template>
+                            <template x-if="!item.image"><div class="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center flex-shrink-0 text-xl">📦</div></template>
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-start justify-between gap-2 mb-1">
+                                    <div class="min-w-0">
+                                        <h3 class="font-black text-sm text-slate-800 leading-tight" x-text="item.name"></h3>
+                                        <p class="text-[10px] text-slate-400 font-mono mt-0.5 truncate" x-text="item.id"></p>
+                                    </div>
+                                    <div class="flex-shrink-0 text-right">
+                                        <span class="text-lg font-black leading-none" :class="item.quantity <= item.threshold ? 'text-red-500' : 'text-emerald-600'" x-text="item.quantity"></span>
+                                        <span class="text-[10px] text-slate-400 ml-0.5" x-text="item.unit"></span>
+                                    </div>
+                                </div>
+                                <div class="flex gap-1.5 flex-wrap mb-2">
+                                    <template x-if="item.brand"><span class="text-[9px] px-1.5 py-0.5 bg-slate-100 text-slate-500 rounded-full font-medium" x-text="item.brand"></span></template>
+                                    <template x-if="item.category"><span class="text-[9px] px-1.5 py-0.5 bg-indigo-50 text-indigo-500 rounded-full font-medium" x-text="item.category"></span></template>
+                                    <template x-if="item.location"><span class="text-[9px] px-1.5 py-0.5 bg-amber-50 text-amber-600 rounded-full font-medium" x-text="'📍 ' + item.location"></span></template>
+                                    <template x-if="item.isOrdered"><span class="text-[9px] px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded-full font-bold">🚚 In Ordine<template x-if="item.orderQuantity"><span x-text="' (+' + item.orderQuantity + ' ' + item.unit + ')'"></span></template></span></template>
+                                    <template x-if="item.quantity <= item.threshold"><span class="text-[9px] px-1.5 py-0.5 bg-red-50 text-red-500 rounded-full font-bold">⚠️ Scorta Bassa</span></template>
+                                </div>
+                                <div class="h-1 bg-slate-100 rounded-full overflow-hidden mb-2">
+                                    <div class="h-full rounded-full transition-all" :class="item.quantity <= item.threshold ? 'bg-red-400' : 'bg-emerald-500'" :style="'width:' + Math.min(100, Math.round(item.quantity / Math.max(item.threshold * 3, item.quantity, 1) * 100)) + '%'"></div>
+                                </div>
+                                <div class="flex gap-2 mt-1">
+                                    <button @click="openStockModal(item, 'add')" class="flex-1 py-1.5 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-xl text-[10px] font-bold hover:bg-emerald-100 active:scale-[.97] transition-all">+ CARICO</button>
+                                    <button @click="openStockModal(item, 'remove')" class="flex-1 py-1.5 bg-red-50 border border-red-200 text-red-600 rounded-xl text-[10px] font-bold hover:bg-red-100 active:scale-[.97] transition-all">− SCARICO</button>
+                                    <template x-if="item.isOrdered"><button @click="confirmArrival(item)" class="flex-1 py-1.5 bg-blue-600 text-white rounded-xl text-[10px] font-bold hover:bg-blue-500 active:scale-[.97] transition-all shadow-sm">✅ ARRIVO</button></template>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </section>
+
+        <!-- ══ BOOKINGS ══ -->
+        <section x-show="activeView === 'bookings'" class="fade-in space-y-4">
+            <div>
+                <h2 class="text-base font-bold text-slate-800">Prenota Strumento</h2>
+                <p class="text-[10px] text-slate-400 mt-0.5" x-text="instruments.length + ' strumenti disponibili'"></p>
+            </div>
+            <input type="text" x-model="instrumentSearch" placeholder="Cerca strumento..."
+                class="w-full px-4 py-2.5 text-sm border-2 border-slate-200 rounded-xl outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/20 bg-white transition-all" />
+            <div class="space-y-3">
+                <template x-if="filteredInstruments.length === 0">
+                    <div class="text-center py-12"><div class="text-4xl mb-2">🔬</div><p class="text-sm text-slate-400 font-medium">Nessuno strumento trovato.</p></div>
+                </template>
+                <template x-for="inst in filteredInstruments" :key="inst.id">
+                    <div class="bg-white rounded-[1.5rem] border border-slate-100 shadow-sm p-4 hover:shadow-md transition-all">
+                        <div class="flex items-start gap-3">
+                            <template x-if="inst.imageUrl"><img :src="inst.imageUrl" :alt="inst.name" class="w-14 h-14 rounded-xl object-cover flex-shrink-0 border border-slate-100" /></template>
+                            <template x-if="!inst.imageUrl"><div class="w-14 h-14 rounded-xl bg-indigo-50 flex items-center justify-center flex-shrink-0 text-2xl">🔬</div></template>
+                            <div class="flex-1 min-w-0">
+                                <h3 class="font-black text-sm text-slate-800 leading-tight" x-text="inst.name"></h3>
+                                <p class="text-[10px] text-slate-400 font-mono mt-0.5" x-text="inst.id"></p>
+                                <template x-if="inst.location || inst.brand">
+                                    <div class="flex gap-1.5 flex-wrap mt-1.5 mb-2">
+                                        <template x-if="inst.brand"><span class="text-[9px] px-1.5 py-0.5 bg-slate-100 text-slate-500 rounded-full" x-text="inst.brand"></span></template>
+                                        <template x-if="inst.location"><span class="text-[9px] px-1.5 py-0.5 bg-amber-50 text-amber-600 rounded-full" x-text="'📍 ' + inst.location"></span></template>
+                                    </div>
+                                </template>
+                                <button @click="openBookingModal(inst)"
+                                    class="w-full mt-1 py-2 bg-indigo-600 text-white rounded-xl text-xs font-bold hover:bg-indigo-500 active:scale-[.97] transition-all shadow-sm">
+                                    📅 PRENOTA
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </section>
+
+        <!-- ══ ADMIN ══ -->
+        <section x-show="activeView === 'admin'" x-cloak class="fade-in space-y-4">
+            <div class="flex items-center justify-between">
+                <h2 class="text-base font-bold text-slate-800">Admin Dashboard</h2>
+                <span class="text-[10px] font-bold px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full"
+                    x-text="isAdmin ? '👑 Admin' : '👁️ Supervisore'"></span>
+            </div>
+
+            <!-- Admin sub-tabs -->
+            <div class="flex p-1 bg-slate-100 rounded-2xl gap-1 scrollbar-hide overflow-x-auto">
+                <button @click="adminTab = 'inventory'" :class="adminTab === 'inventory' ? 'bg-white shadow font-black text-slate-800' : 'text-slate-500'" class="flex-shrink-0 px-3 py-2 rounded-xl text-xs font-bold transition-all">📦 Magazzino</button>
+                <button @click="adminTab = 'instruments'" :class="adminTab === 'instruments' ? 'bg-white shadow font-black text-slate-800' : 'text-slate-500'" class="flex-shrink-0 px-3 py-2 rounded-xl text-xs font-bold transition-all">🔬 Strumenti</button>
+                <button @click="adminTab = 'logs'; loadLogs()" :class="adminTab === 'logs' ? 'bg-white shadow font-black text-slate-800' : 'text-slate-500'" class="flex-shrink-0 px-3 py-2 rounded-xl text-xs font-bold transition-all">📋 Log</button>
+            </div>
+
+            <!-- Inventory management -->
+            <div x-show="adminTab === 'inventory'" class="space-y-4">
+                <!-- Add/Edit form -->
+                <div class="bg-white rounded-[1.5rem] border border-slate-100 shadow-sm p-5">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-sm font-black text-slate-800" x-text="editingItem ? 'Modifica: ' + editingItem.name : 'Nuovo Articolo'"></h3>
+                        <button x-show="editingItem" @click="clearItemForm()" class="text-[10px] text-indigo-600 font-bold">NUOVO</button>
+                    </div>
+                    <form @submit.prevent="saveInventoryItem()" class="space-y-3">
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Nome *</label>
+                                <input type="text" x-model="itemForm.name" required class="w-full px-3 py-2 border-2 border-slate-200 focus:border-emerald-500 rounded-xl text-sm outline-none" />
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase">ID *</label>
+                                <input type="text" x-model="itemForm.id" :disabled="!!editingItem" required class="w-full px-3 py-2 border-2 border-slate-200 focus:border-emerald-500 rounded-xl text-sm outline-none disabled:bg-slate-50 disabled:text-slate-400" />
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Brand</label>
+                                <input type="text" x-model="itemForm.brand" class="w-full px-3 py-2 border-2 border-slate-200 focus:border-emerald-500 rounded-xl text-sm outline-none" />
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Categoria</label>
+                                <input type="text" x-model="itemForm.category" class="w-full px-3 py-2 border-2 border-slate-200 focus:border-emerald-500 rounded-xl text-sm outline-none" />
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-3 gap-3">
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Qtà *</label>
+                                <input type="number" step="0.01" x-model.number="itemForm.quantity" required class="w-full px-3 py-2 border-2 border-slate-200 focus:border-emerald-500 rounded-xl text-sm outline-none" />
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Unità *</label>
+                                <input type="text" x-model="itemForm.unit" required placeholder="pz, ml, g…" class="w-full px-3 py-2 border-2 border-slate-200 focus:border-emerald-500 rounded-xl text-sm outline-none" />
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Soglia</label>
+                                <input type="number" step="0.01" x-model.number="itemForm.threshold" class="w-full px-3 py-2 border-2 border-slate-200 focus:border-emerald-500 rounded-xl text-sm outline-none" />
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Posizione</label>
+                            <input type="text" x-model="itemForm.location" placeholder="es. Scaffale A3, Frigo 2…" class="w-full px-3 py-2 border-2 border-slate-200 focus:border-emerald-500 rounded-xl text-sm outline-none" />
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Email notifica scorte</label>
+                            <input type="email" x-model="itemForm.restockEmail" placeholder="email@lab.it" class="w-full px-3 py-2 border-2 border-slate-200 focus:border-emerald-500 rounded-xl text-sm outline-none" />
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase">URL Immagine</label>
+                            <input type="url" x-model="itemForm.image" placeholder="https://…" class="w-full px-3 py-2 border-2 border-slate-200 focus:border-emerald-500 rounded-xl text-sm outline-none" />
+                        </div>
+                        <button type="submit" :disabled="saving"
+                            class="w-full py-3 bg-slate-900 text-white rounded-xl font-black text-sm hover:bg-slate-700 active:scale-[.98] transition-all shadow disabled:opacity-60"
+                            x-text="saving ? 'Salvataggio...' : (editingItem ? 'AGGIORNA ARTICOLO' : 'SALVA NUOVO ARTICOLO')">
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Inventory list (admin) -->
+                <div class="space-y-2">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Articoli nel database (<span x-text="inventory.length"></span>)</p>
+                    <template x-for="item in inventory" :key="item.id">
+                        <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-3 flex items-center gap-3 hover:border-slate-200 transition-all">
+                            <div class="flex-1 min-w-0">
+                                <div class="font-bold text-sm text-slate-800 truncate" x-text="item.name"></div>
+                                <div class="text-[10px] text-slate-400 font-mono" x-text="item.id + ' · ' + item.quantity + ' ' + item.unit"></div>
+                            </div>
+                            <div class="flex gap-1 flex-shrink-0">
+                                <button @click="editItem(item)" class="px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg text-[10px] font-bold hover:bg-indigo-100 transition">Modifica</button>
+                                <button @click="deleteItem(item)" x-show="isAdmin" class="px-3 py-1.5 bg-red-50 text-red-500 rounded-lg text-[10px] font-bold hover:bg-red-100 transition">Elimina</button>
+                            </div>
                         </div>
                     </template>
                 </div>
+            </div>
 
-                <!-- Sign out -->
-                <button @click="signOut()"
-                    class="w-full py-3 bg-white border-2 border-slate-200 text-red-500 rounded-2xl font-bold text-sm hover:bg-red-50 hover:border-red-200 active:scale-[0.98] transition-all shadow-sm">
-                    Esci dall'Account
-                </button>
-            </section>
-
-            <!-- ── VIEW: ADMIN PLACEHOLDER ── -->
-            <section x-show="activeView === 'admin'" class="fade-in">
-                <div class="bg-white rounded-[1.5rem] border border-slate-100 shadow-sm p-8 text-center space-y-3">
-                    <div class="text-5xl">🛠️</div>
-                    <h2 class="text-base font-bold text-slate-800">Admin Dashboard</h2>
-                    <p class="text-xs text-slate-400 max-w-xs mx-auto">Questa sezione è in costruzione per la Beta v2. Le funzionalità admin sono disponibili nell'app principale.</p>
-                    <a href="../"
-                        class="inline-block mt-2 px-5 py-2.5 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-slate-700 transition">
-                        ← Vai alla versione stabile
-                    </a>
+            <!-- Instruments management -->
+            <div x-show="adminTab === 'instruments'" class="space-y-4">
+                <div class="bg-white rounded-[1.5rem] border border-slate-100 shadow-sm p-5">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-sm font-black text-slate-800" x-text="editingInstrument ? 'Modifica: ' + editingInstrument.name : 'Nuovo Strumento'"></h3>
+                        <button x-show="editingInstrument" @click="clearInstrumentForm()" class="text-[10px] text-indigo-600 font-bold">NUOVO</button>
+                    </div>
+                    <form @submit.prevent="saveInstrument()" class="space-y-3">
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Nome *</label>
+                                <input type="text" x-model="instrumentForm.name" required class="w-full px-3 py-2 border-2 border-slate-200 focus:border-indigo-500 rounded-xl text-sm outline-none" />
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase">ID / IP *</label>
+                                <input type="text" x-model="instrumentForm.id" :disabled="!!editingInstrument" required class="w-full px-3 py-2 border-2 border-slate-200 focus:border-indigo-500 rounded-xl text-sm outline-none disabled:bg-slate-50 disabled:text-slate-400" />
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Marca</label>
+                                <input type="text" x-model="instrumentForm.brand" class="w-full px-3 py-2 border-2 border-slate-200 focus:border-indigo-500 rounded-xl text-sm outline-none" />
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Posizione</label>
+                                <input type="text" x-model="instrumentForm.location" class="w-full px-3 py-2 border-2 border-slate-200 focus:border-indigo-500 rounded-xl text-sm outline-none" />
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase">URL Foto</label>
+                            <input type="url" x-model="instrumentForm.imageUrl" placeholder="https://…" class="w-full px-3 py-2 border-2 border-slate-200 focus:border-indigo-500 rounded-xl text-sm outline-none" />
+                        </div>
+                        <button type="submit" :disabled="saving"
+                            class="w-full py-3 bg-indigo-600 text-white rounded-xl font-black text-sm hover:bg-indigo-500 active:scale-[.98] transition-all shadow disabled:opacity-60"
+                            x-text="saving ? 'Salvataggio...' : (editingInstrument ? 'AGGIORNA STRUMENTO' : 'SALVA NUOVO STRUMENTO')">
+                        </button>
+                    </form>
                 </div>
-            </section>
+                <div class="space-y-2">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Strumenti (<span x-text="instruments.length"></span>)</p>
+                    <template x-for="inst in instruments" :key="inst.id">
+                        <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-3 flex items-center gap-3 hover:border-slate-200 transition-all">
+                            <div class="flex-1 min-w-0">
+                                <div class="font-bold text-sm text-slate-800 truncate" x-text="inst.name"></div>
+                                <div class="text-[10px] text-slate-400 font-mono" x-text="inst.id + (inst.location ? ' · ' + inst.location : '')"></div>
+                            </div>
+                            <div class="flex gap-1 flex-shrink-0">
+                                <button @click="editInstrument(inst)" class="px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg text-[10px] font-bold hover:bg-indigo-100 transition">Modifica</button>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
 
-        </main>
-
-        <!-- ── BOTTOM NAV (mobile) ── -->
-        <nav class="sm:hidden fixed bottom-0 inset-x-0 bg-white border-t border-slate-100 shadow-[0_-4px_24px_rgba(0,0,0,0.06)] z-50">
-            <div class="flex items-stretch">
-                <template x-for="tab in visibleTabs" :key="tab.id">
-                    <button @click="activeView = tab.id"
-                        :class="activeView === tab.id ? 'text-emerald-600' : 'text-slate-400'"
-                        class="flex-1 flex flex-col items-center justify-center py-3 gap-0.5 transition-colors active:bg-slate-50">
-                        <span class="text-lg leading-none" x-text="tab.icon"></span>
-                        <span class="text-[9px] font-bold leading-none" x-text="tab.label"></span>
-                    </button>
+            <!-- Logs -->
+            <div x-show="adminTab === 'logs'" class="space-y-2">
+                <div class="flex items-center justify-between">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Registro Attività</p>
+                    <button @click="loadLogs()" class="text-[10px] text-indigo-600 font-bold hover:underline">Aggiorna</button>
+                </div>
+                <template x-if="logs.length === 0">
+                    <div class="text-center py-8"><p class="text-sm text-slate-400">Nessun log.</p></div>
+                </template>
+                <template x-for="l in logs.slice(0, 60)" :key="l._id">
+                    <div class="bg-white rounded-xl border border-slate-100 p-3 text-xs shadow-sm">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="font-bold px-1.5 py-0.5 rounded text-[9px] uppercase tracking-wider"
+                                :class="{
+                                    'bg-indigo-50 text-indigo-600': l.category==='BOOKING',
+                                    'bg-emerald-50 text-emerald-600': l.category==='INVENTORY',
+                                    'bg-amber-50 text-amber-600': l.category==='ADMIN',
+                                    'bg-slate-100 text-slate-500': !l.category
+                                }"
+                                x-text="l.category || 'SYSTEM'"></span>
+                            <span class="text-[9px] text-slate-400" x-text="l.timestamp ? new Date(l.timestamp.seconds * 1000).toLocaleString('it-IT') : ''"></span>
+                        </div>
+                        <div class="font-bold text-slate-700" x-text="l.action"></div>
+                        <div class="text-slate-500 text-[10px] mt-0.5" x-text="l.details"></div>
+                    </div>
                 </template>
             </div>
-        </nav>
+        </section>
 
-    </div><!-- /main app -->
-
-    <!-- ===== MODAL: STOCK MOVEMENT ===== -->
-    <div x-show="stockModal.open" x-cloak
-        class="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] flex items-end sm:items-center justify-center"
-        @click.self="stockModal.open = false">
-        <div class="bg-white w-full sm:max-w-sm rounded-t-[2rem] sm:rounded-[2rem] p-6 shadow-2xl fade-in">
-            <!-- Handle bar (mobile) -->
-            <div class="sm:hidden mx-auto mb-4 w-10 h-1 bg-slate-200 rounded-full"></div>
-
-            <div class="flex items-center gap-3 mb-5">
-                <div class="w-10 h-10 rounded-2xl flex items-center justify-center text-lg"
-                    :class="stockModal.action === 'add' ? 'bg-emerald-50' : 'bg-red-50'">
-                    <span x-text="stockModal.action === 'add' ? '📦' : '📤'"></span>
-                </div>
-                <div>
-                    <h3 class="text-base font-black text-slate-800"
-                        x-text="stockModal.action === 'add' ? 'Carico Magazzino' : 'Scarico Magazzino'"></h3>
-                    <p class="text-[10px] text-slate-400" x-text="stockModal.item?.name"></p>
+        <!-- ══ PROFILE ══ -->
+        <section x-show="activeView === 'profile'" class="fade-in space-y-4">
+            <h2 class="text-base font-bold text-slate-800">Il Mio Profilo</h2>
+            <div class="bg-white rounded-[1.5rem] border border-slate-100 shadow-sm p-5">
+                <div class="flex items-center gap-4">
+                    <template x-if="user?.photoURL">
+                        <img :src="user.photoURL" class="w-14 h-14 rounded-2xl border-2 border-slate-200" />
+                    </template>
+                    <template x-if="!user?.photoURL">
+                        <div class="w-14 h-14 rounded-2xl bg-slate-900 flex items-center justify-center text-white text-xl font-black" x-text="(user?.displayName || user?.email || '?')[0].toUpperCase()"></div>
+                    </template>
+                    <div class="flex-1 min-w-0">
+                        <div class="font-black text-slate-800 truncate" x-text="user?.displayName || user?.email?.split('@')[0]"></div>
+                        <div class="text-[10px] text-slate-400 truncate" x-text="user?.email"></div>
+                        <span class="mt-1.5 inline-block text-[10px] font-bold px-2 py-0.5 rounded-full"
+                            :class="{ 'bg-amber-100 text-amber-700': isAdmin, 'bg-emerald-100 text-emerald-700': isSupervisor && !isAdmin, 'bg-slate-100 text-slate-600': !isAdmin && !isSupervisor }"
+                            x-text="isAdmin ? '👑 Amministratore' : (isSupervisor ? '👁️ Supervisore' : '👤 Utente')">
+                        </span>
+                    </div>
                 </div>
             </div>
+            <div class="bg-white rounded-[1.5rem] border border-slate-100 shadow-sm p-5">
+                <h3 class="text-xs font-bold text-slate-700 mb-3">📊 Ultimi movimenti magazzino</h3>
+                <template x-if="recentMovements.length === 0"><p class="text-[10px] text-slate-400 text-center py-4">Nessun movimento registrato.</p></template>
+                <template x-for="m in recentMovements.slice(0, 10)" :key="m._id">
+                    <div class="flex items-center gap-3 py-2 border-b border-slate-50 last:border-0">
+                        <span class="text-sm font-black w-6 text-center" :class="m.action === 'add' ? 'text-emerald-600' : 'text-red-500'" x-text="m.action === 'add' ? '+' : '−'"></span>
+                        <div class="flex-1 min-w-0">
+                            <div class="text-xs font-bold text-slate-700 truncate" x-text="m.itemName"></div>
+                            <div class="text-[9px] text-slate-400" x-text="m.timestamp ? new Date(m.timestamp.seconds * 1000).toLocaleString('it-IT') : ''"></div>
+                        </div>
+                        <span class="text-xs font-black text-slate-600" x-text="m.amount + ' ' + (m.unit || '')"></span>
+                    </div>
+                </template>
+            </div>
+            <button @click="signOut()" class="w-full py-3 bg-white border-2 border-slate-200 text-red-500 rounded-2xl font-bold text-sm hover:bg-red-50 hover:border-red-200 active:scale-[.98] transition-all shadow-sm">Esci dall'Account</button>
+        </section>
 
-            <div class="space-y-4">
-                <!-- Current stock info -->
-                <div class="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs">
-                    <span class="text-slate-500 font-medium">Disponibili ora</span>
-                    <span class="font-black text-slate-800"
-                        x-text="(stockModal.item?.quantity || 0) + ' ' + (stockModal.item?.unit || '')"></span>
-                </div>
+    </main>
 
-                <!-- Quantity -->
-                <div>
-                    <label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase tracking-wide">
-                        Quantità (<span x-text="stockModal.item?.unit"></span>)
-                    </label>
-                    <input type="number" step="0.01" min="0.01" x-model.number="stockModal.qty"
-                        class="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 rounded-xl text-2xl font-black font-mono text-center outline-none transition-all"
-                        placeholder="0"
-                        id="stock-modal-qty" />
-                </div>
-
-                <!-- Operator -->
-                <div>
-                    <label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase tracking-wide">Identificativo Operatore</label>
-                    <input type="text" x-model="stockModal.operator"
-                        class="w-full px-4 py-2.5 bg-slate-50 border-2 border-slate-200 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 rounded-xl text-sm outline-none transition-all"
-                        placeholder="Nome, PI o Codice..." />
-                </div>
-
-                <button @click="confirmStockMovement()"
-                    :disabled="!stockModal.qty || !stockModal.operator || confirming"
-                    :class="stockModal.action === 'add'
-                        ? 'bg-emerald-600 hover:bg-emerald-500 disabled:bg-emerald-300'
-                        : 'bg-red-600 hover:bg-red-500 disabled:bg-red-300'"
-                    class="w-full py-3.5 text-white rounded-xl font-black shadow-lg active:scale-[0.98] transition-all disabled:cursor-not-allowed">
-                    <span x-text="confirming ? 'Salvataggio...' : 'CONFERMA'"></span>
+    <!-- BOTTOM NAV -->
+    <nav class="sm:hidden fixed bottom-0 inset-x-0 bg-white border-t border-slate-100 shadow-[0_-4px_24px_rgba(0,0,0,.06)] z-50">
+        <div class="flex items-stretch">
+            <template x-for="tab in visibleTabs" :key="tab.id">
+                <button @click="activeView = tab.id"
+                    :class="activeView === tab.id ? 'text-emerald-600' : 'text-slate-400'"
+                    class="flex-1 flex flex-col items-center justify-center py-3 gap-0.5 transition-colors active:bg-slate-50">
+                    <span class="text-lg leading-none" x-text="tab.icon"></span>
+                    <span class="text-[9px] font-bold leading-none" x-text="tab.label"></span>
                 </button>
+            </template>
+        </div>
+    </nav>
+</div>
 
-                <button @click="stockModal.open = false"
-                    class="w-full py-2 text-slate-400 text-xs font-bold hover:text-slate-600 transition">
-                    ANNULLA
-                </button>
+<!-- ═══════════════════════════════ MODALS ═══════════════════════════════ -->
+
+<!-- STOCK MOVEMENT MODAL -->
+<div x-show="stockModal.open" x-cloak class="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] flex items-end sm:items-center justify-center" @click.self="stockModal.open = false">
+    <div class="bg-white w-full sm:max-w-sm rounded-t-[2rem] sm:rounded-[2rem] p-6 shadow-2xl fade-in">
+        <div class="sm:hidden mx-auto mb-4 w-10 h-1 bg-slate-200 rounded-full"></div>
+        <div class="flex items-center gap-3 mb-5">
+            <div class="w-10 h-10 rounded-2xl flex items-center justify-center text-lg" :class="stockModal.action === 'add' ? 'bg-emerald-50' : 'bg-red-50'">
+                <span x-text="stockModal.action === 'add' ? '📦' : '📤'"></span>
+            </div>
+            <div>
+                <h3 class="text-base font-black text-slate-800" x-text="stockModal.action === 'add' ? 'Carico Magazzino' : 'Scarico Magazzino'"></h3>
+                <p class="text-[10px] text-slate-400" x-text="stockModal.item?.name"></p>
             </div>
         </div>
+        <div class="space-y-4">
+            <div class="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs">
+                <span class="text-slate-500 font-medium">Disponibili ora</span>
+                <span class="font-black text-slate-800" x-text="(stockModal.item?.quantity || 0) + ' ' + (stockModal.item?.unit || '')"></span>
+            </div>
+            <div>
+                <label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase tracking-wide">Quantità (<span x-text="stockModal.item?.unit"></span>)</label>
+                <input type="number" step="0.01" min="0.01" x-model.number="stockModal.qty"
+                    class="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 rounded-xl text-2xl font-black font-mono text-center outline-none transition-all"
+                    placeholder="0" id="stock-modal-qty" />
+            </div>
+            <div>
+                <label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase tracking-wide">Identificativo Operatore</label>
+                <input type="text" x-model="stockModal.operator"
+                    class="w-full px-4 py-2.5 bg-slate-50 border-2 border-slate-200 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 rounded-xl text-sm outline-none transition-all"
+                    placeholder="Nome, PI o Codice..." />
+            </div>
+            <button @click="confirmStockMovement()" :disabled="!stockModal.qty || !stockModal.operator || confirming"
+                :class="stockModal.action === 'add' ? 'bg-emerald-600 hover:bg-emerald-500' : 'bg-red-600 hover:bg-red-500'"
+                class="w-full py-3.5 text-white rounded-xl font-black shadow-lg active:scale-[.98] transition-all disabled:opacity-50">
+                <span x-text="confirming ? 'Salvataggio...' : 'CONFERMA'"></span>
+            </button>
+            <button @click="stockModal.open = false" class="w-full py-2 text-slate-400 text-xs font-bold hover:text-slate-600 transition">ANNULLA</button>
+        </div>
     </div>
+</div>
+
+<!-- BOOKING MODAL -->
+<div x-show="bookingModal.open" x-cloak class="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] flex items-end sm:items-center justify-center" @click.self="bookingModal.open = false">
+    <div class="bg-white w-full sm:max-w-sm rounded-t-[2rem] sm:rounded-[2rem] p-6 shadow-2xl fade-in">
+        <div class="sm:hidden mx-auto mb-4 w-10 h-1 bg-slate-200 rounded-full"></div>
+        <div class="flex items-center gap-3 mb-5">
+            <div class="w-10 h-10 rounded-2xl bg-indigo-50 flex items-center justify-center text-lg">🔬</div>
+            <div>
+                <h3 class="text-base font-black text-slate-800" x-text="bookingModal.instrument?.name"></h3>
+                <p class="text-[10px] text-slate-400" x-text="bookingModal.instrument?.id"></p>
+            </div>
+        </div>
+        <div class="space-y-4">
+            <div>
+                <label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase tracking-wide">La tua Email</label>
+                <input type="email" x-model="bookingModal.email" placeholder="nome@unicz.it"
+                    class="w-full px-4 py-2.5 bg-slate-50 border-2 border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/20 rounded-xl text-sm outline-none transition-all" />
+            </div>
+            <div>
+                <label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase tracking-wide">Il tuo Nome</label>
+                <input type="text" x-model="bookingModal.userName" placeholder="Nome Cognome"
+                    class="w-full px-4 py-2.5 bg-slate-50 border-2 border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/20 rounded-xl text-sm outline-none transition-all" />
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase tracking-wide">Data Inizio</label>
+                    <input type="datetime-local" x-model="bookingModal.startDate"
+                        class="w-full px-3 py-2 bg-slate-50 border-2 border-slate-200 focus:border-indigo-500 rounded-xl text-xs outline-none transition-all" />
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase tracking-wide">Data Fine</label>
+                    <input type="datetime-local" x-model="bookingModal.endDate"
+                        class="w-full px-3 py-2 bg-slate-50 border-2 border-slate-200 focus:border-indigo-500 rounded-xl text-xs outline-none transition-all" />
+                </div>
+            </div>
+            <div>
+                <label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase tracking-wide">Note (opzionale)</label>
+                <input type="text" x-model="bookingModal.notes" placeholder="Scopo utilizzo…"
+                    class="w-full px-4 py-2.5 bg-slate-50 border-2 border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/20 rounded-xl text-sm outline-none transition-all" />
+            </div>
+            <!-- PNR result -->
+            <div x-show="bookingModal.pnr" class="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-center">
+                <p class="text-[10px] text-emerald-700 font-medium">Prenotazione confermata! Codice PNR:</p>
+                <p class="text-2xl font-black text-emerald-600 tracking-widest mt-1" x-text="bookingModal.pnr"></p>
+                <p class="text-[10px] text-slate-500 mt-1">Conserva questo codice per modificare o cancellare</p>
+            </div>
+            <template x-if="!bookingModal.pnr">
+                <button @click="confirmBooking()" :disabled="!bookingModal.email || !bookingModal.userName || !bookingModal.startDate || !bookingModal.endDate || confirming"
+                    class="w-full py-3.5 bg-indigo-600 text-white rounded-xl font-black shadow-lg hover:bg-indigo-500 active:scale-[.98] transition-all disabled:opacity-50">
+                    <span x-text="confirming ? 'Salvataggio...' : 'CONFERMA PRENOTAZIONE'"></span>
+                </button>
+            </template>
+            <button @click="bookingModal.open = false; bookingModal.pnr = ''" class="w-full py-2 text-slate-400 text-xs font-bold hover:text-slate-600 transition">
+                <span x-text="bookingModal.pnr ? 'CHIUDI' : 'ANNULLA'"></span>
+            </button>
+        </div>
+    </div>
+</div>
 
 </body>
 </html>
