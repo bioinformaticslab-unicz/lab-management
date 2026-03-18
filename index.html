@@ -440,9 +440,14 @@
 
         <!-- VISTA: LISTA MAGAZZINO PUBBLICA -->
         <div id="view-inventory-list" class="hidden fade-in space-y-4">
-            <h2 class="text-lg font-black text-slate-800 flex items-center gap-2 border-b pb-2">
-                <i data-lucide="package" class="w-5 h-5 text-emerald-600"></i> Magazzino Lab
+            <h2 class="text-lg font-black text-slate-800 flex justify-between items-center border-b pb-2">
+                <div class="flex items-center gap-2"><i data-lucide="package" class="w-5 h-5 text-emerald-600"></i> Magazzino Lab</div>
+                <button id="btn-add-reorder-public" onclick="openOrderModal()" class="hidden text-[10px] font-bold px-3 py-1.5 bg-indigo-50 text-indigo-700 rounded-lg border border-indigo-100 shadow-sm hover:bg-indigo-100 transition"><i data-lucide="plus" class="w-3 h-3 inline"></i> AGGIUNGI ORDINE</button>
             </h2>
+            <div class="flex gap-2">
+                <button onclick="switchPublicInventoryTab('all')" id="tab-inv-all" class="flex-1 py-2 bg-emerald-600 text-white rounded-lg text-xs font-bold transition shadow-sm">Tutti gli Articoli</button>
+                <button onclick="switchPublicInventoryTab('reorder')" id="tab-inv-reorder" class="flex-1 py-2 bg-white text-slate-600 hover:bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold transition shadow-sm">🚚 In Ordine / Riordino</button>
+            </div>
             <div class="relative">
                 <i data-lucide="search" class="absolute left-3 top-2.5 w-4 h-4 text-slate-400"></i>
                 <input type="text" onkeyup="filterInventoryList(this.value)"
@@ -811,21 +816,34 @@
     <div id="modal-order"
         class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
         <div class="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl">
-            <h3 class="text-lg font-bold text-slate-800 mb-4">Segna come Ordinato</h3>
+            <h3 class="text-lg font-bold text-slate-800 mb-4">Aggiungi Ordine (Riordino)</h3>
             <form onsubmit="confirmOrder(event)" class="space-y-4">
                 <div>
-                    <label class="block text-xs font-bold text-slate-500 mb-1">Ordinato da (Nome)</label>
-                    <input type="text" id="inp-order-by" required
-                        class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm"
-                        placeholder="Nome...">
+                    <label class="block text-xs font-bold text-slate-500 mb-1">Articolo</label>
+                    <select id="inp-order-item" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 appearance-none"></select>
+                    <p class="text-[9px] text-right mt-1"><a href="#" onclick="document.getElementById('modal-order').classList.add('hidden'); switchAdminTab('inventory'); clearInventoryForm();" class="text-indigo-600 font-bold hover:underline">Nuovo Prodotto? Crealo in Admin &rarr;</a></p>
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-slate-500 mb-1">Data Ordine</label>
-                    <input type="date" id="inp-order-date" required
-                        class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+                    <label class="block text-xs font-bold text-slate-500 mb-1">Quantità Ordinata (in <span id="lbl-order-unit">unità</span>)</label>
+                    <input type="number" id="inp-order-qty" required min="1" step="0.01"
+                        class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm"
+                        placeholder="Es. 10">
+                </div>
+                <div class="flex gap-2">
+                    <div class="flex-1">
+                        <label class="block text-xs font-bold text-slate-500 mb-1">Ordinato da</label>
+                        <input type="text" id="inp-order-by" required
+                            class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm"
+                            placeholder="Nome...">
+                    </div>
+                    <div class="flex-1">
+                        <label class="block text-xs font-bold text-slate-500 mb-1">Data Ordine</label>
+                        <input type="date" id="inp-order-date" required
+                            class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+                    </div>
                 </div>
                 <button type="submit"
-                    class="w-full py-3 bg-amber-500 text-white rounded-xl font-bold shadow-lg">CONFERMA ORDINE</button>
+                    class="w-full py-3 bg-indigo-600 text-white rounded-xl font-bold shadow-lg hover:bg-indigo-700">CONFERMA ORDINE</button>
                 <button type="button" onclick="document.getElementById('modal-order').classList.add('hidden')"
                     class="w-full py-2 text-slate-400 text-xs font-bold">ANNULLA</button>
             </form>
@@ -1458,7 +1476,7 @@
             // Show Order Status Banner
             if (data.isOrdered) {
                 document.getElementById('inv-alert-ordered').classList.remove('hidden');
-                document.getElementById('inv-ordered-text').innerText = `Ordinato il ${data.orderDate || '?'} da ${data.orderBy || '?'}`;
+                document.getElementById('inv-ordered-text').innerText = `Ordinato il ${data.orderDate || '?'} da ${data.orderBy || '?'} (Q.tà: ${data.orderQuantity || '?'})`;
             } else {
                 document.getElementById('inv-alert-ordered').classList.add('hidden');
             }
@@ -1487,30 +1505,56 @@
             document.getElementById('inp-stock-qty').focus();
         };
 
-        window.openOrderModal = () => {
-            document.getElementById('inp-order-by').value = '';
+        window.openOrderModal = (itemId) => {
+            const selectEl = document.getElementById('inp-order-item');
+            if (itemId) {
+                // Opened from a specific item detail
+                const itemData = window.currentInventoryData;
+                selectEl.innerHTML = `<option value="${itemId}" selected>${itemData.name}</option>`;
+                selectEl.disabled = true;
+                selectEl.classList.add('bg-slate-100');
+                document.getElementById('lbl-order-unit').innerText = itemData.unit === 'pacco' ? 'pacchi' : (itemData.unit || 'pz');
+            } else {
+                // Opened globally
+                selectEl.innerHTML = '<option value="">-- Seleziona Articolo --</option>' + (window.allInventoryCache || []).map(i => `<option value="${i.id}">${i.name} (${i.id})</option>`).join('');
+                selectEl.disabled = false;
+                selectEl.classList.remove('bg-slate-100');
+                document.getElementById('lbl-order-unit').innerText = 'unità';
+            }
+            
+            document.getElementById('inp-order-qty').value = '';
+            document.getElementById('inp-order-by').value = currentUser ? (currentUser.displayName || '') : '';
             document.getElementById('inp-order-date').valueAsDate = new Date();
             document.getElementById('modal-order').classList.remove('hidden');
         };
 
         window.confirmOrder = async (e) => {
             e.preventDefault();
+            const itemId = document.getElementById('inp-order-item').value;
+            const qty = parseFloat(document.getElementById('inp-order-qty').value);
             const by = document.getElementById('inp-order-by').value;
             const date = document.getElementById('inp-order-date').value;
-            const safeId = currentItem.replace(/\//g, '_');
+
+            if (!itemId) return alert("Seleziona un articolo.");
+            if (!qty || qty <= 0) return alert("Quantità non valida.");
+
+            const safeId = itemId.replace(/\//g, '_');
 
             try {
                 await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'inventory', safeId), {
                     isOrdered: true,
+                    orderQuantity: qty,
                     orderBy: by,
                     orderDate: date
                 });
-                alert("Stato Ordine salvato.");
+                alert("Ordine salvato in Riordino.");
                 document.getElementById('modal-order').classList.add('hidden');
-                // Refresh view
-                const snap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'inventory', safeId));
-                showInventoryView(currentItem, snap.data());
-                logAction('UPDATE', 'INVENTORY', `Order status updated for ${safeId}: Ordered by ${by} on ${date}`);
+                // Refresh view if in detail view
+                if (!document.getElementById('view-details').classList.contains('hidden')) {
+                    const snap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'inventory', safeId));
+                    showInventoryView(currentItem, snap.data());
+                }
+                logAction('UPDATE', 'INVENTORY', `Order status updated for ${safeId}: ${qty} ordered by ${by} on ${date}`);
             } catch (e) { alert(e); }
         };
 
@@ -1537,6 +1581,7 @@
                         newQty += qty;
                         if (removeOrder && sfDoc.data().isOrdered) {
                             updates.isOrdered = false;
+                            updates.orderQuantity = null;
                             updates.orderBy = null;
                             updates.orderDate = null;
                         }
@@ -1652,6 +1697,27 @@
             // loadPublicInventory called on init
             renderInventoryList(window.allInventoryCache, document.getElementById('public-inventory-container'), false);
         }
+        let currentInventoryTab = 'all';
+
+        window.switchPublicInventoryTab = (tab) => {
+            currentInventoryTab = tab;
+            if (tab === 'reorder') {
+                document.getElementById('tab-inv-reorder').classList.replace('bg-white', 'bg-emerald-600');
+                document.getElementById('tab-inv-reorder').classList.replace('text-slate-600', 'text-white');
+                document.getElementById('tab-inv-all').classList.replace('bg-emerald-600', 'bg-white');
+                document.getElementById('tab-inv-all').classList.replace('text-white', 'text-slate-600');
+                if (window.currentUser && ['main_admin', 'co_admin', 'supervisor'].includes(window.currentUserRole)) {
+                    document.getElementById('btn-add-reorder-public').classList.remove('hidden');
+                }
+            } else {
+                document.getElementById('tab-inv-all').classList.replace('bg-white', 'bg-emerald-600');
+                document.getElementById('tab-inv-all').classList.replace('text-slate-600', 'text-white');
+                document.getElementById('tab-inv-reorder').classList.replace('bg-emerald-600', 'bg-white');
+                document.getElementById('tab-inv-reorder').classList.replace('text-white', 'text-slate-600');
+                document.getElementById('btn-add-reorder-public').classList.add('hidden');
+            }
+            filterInventoryList(document.querySelector('#view-inventory-list input[type="text"]').value || '');
+        };
 
         window.loadPublicInventory = () => {
             const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'inventory'));
@@ -1659,36 +1725,41 @@
                 window.allInventoryCache = [];
                 snapshot.forEach(doc => window.allInventoryCache.push(doc.data()));
                 loadInventoryCategories(); // Update options for Admin form when cache updates
-                // If view is active, rerender
-                if (!document.getElementById('view-inventory-list').classList.contains('hidden')) {
-                    renderInventoryList(window.allInventoryCache, document.getElementById('public-inventory-container'), false);
-                }
+                
+                // If public view or admin view is active, rerender using filter
+                filterInventoryList(document.querySelector('#view-inventory-list input[type="text"]').value || '');
             });
         }
 
         window.filterInventoryList = (term) => {
-            term = term.toLowerCase();
-            const filtered = window.allInventoryCache.filter(i =>
+            term = (term || '').toLowerCase();
+            const isAdminView = document.getElementById('view-inventory-list').classList.contains('hidden');
+            const container = document.getElementById(isAdminView ? 'inventory-list' : 'public-inventory-container');
+            
+            let filtered = window.allInventoryCache.filter(i =>
                 i.name.toLowerCase().includes(term) ||
                 i.id.toLowerCase().includes(term) ||
                 (i.brand && i.brand.toLowerCase().includes(term)) ||
                 (i.category && i.category.toLowerCase().includes(term))
             );
-            const container = document.getElementById(document.getElementById('view-inventory-list').classList.contains('hidden') ? 'inventory-list' : 'public-inventory-container');
-            const isAdmin = !document.getElementById('view-inventory-list').classList.contains('hidden') ? false : true;
-            renderInventoryList(filtered, container, isAdmin);
+
+            if (!isAdminView && currentInventoryTab === 'reorder') {
+                filtered = filtered.filter(i => i.isOrdered);
+            }
+
+            renderInventoryList(filtered, container, isAdminView);
         }
 
         function renderInventoryList(items, container, isAdmin) {
+            const isReorderTab = currentInventoryTab === 'reorder';
+            
             if (items.length === 0) {
-                container.innerHTML = '<p class="text-center text-xs text-slate-400">Nessun articolo trovato.</p>';
+                container.innerHTML = '<p class="text-center text-xs text-slate-400">Nessun articolo trovato in questa vista.</p>';
                 return;
             }
 
             container.innerHTML = items.map(i => {
                 const isLow = (i.quantity || 0) <= (i.threshold || 0);
-                // clickAction logic: if admin view (Admin tab) -> edit, if public list view -> handleScannedCode (view details)
-                // Need to pass image param now
                 const clickAction = isAdmin
                     ? `editInventoryItem('${i.id}', '${i.name.replace(/'/g, "\\'")}', '${i.unit}', '${i.threshold}', '${(i.location || '').replace(/'/g, "\\'")}', '${i.packSize || ''}', '${(i.brand || '').replace(/'/g, "\\'")}', '${(i.category || '').replace(/'/g, "\\'")}', '${(i.image || '').replace(/'/g, "\\'")}', '${i.quantity}', '${(i.restockEmail || '').replace(/'/g, "\\'")}')`
                     : `handleScannedCode('${i.id}')`;
@@ -1699,27 +1770,80 @@
                     quantityDisplay = `${i.quantity} pacchi <span class="block text-[9px] text-slate-400">(${total} pz tot)</span>`;
                 }
 
+                // In Reorder tab, show order info
+                let orderBadge = '';
+                if (isReorderTab) {
+                    orderBadge = `
+                    <div class="mt-2 text-xs font-bold text-indigo-700 bg-indigo-50 p-2 rounded border border-indigo-100 flex justify-between items-center">
+                        <span><i data-lucide="truck" class="w-3 h-3 inline"></i> Ordinato: +${i.orderQuantity} ${i.unit === 'pacco' ? 'pacchi' : (i.unit||'pz')} (${i.orderDate || ''})</span>
+                        ${!isAdmin ? `<button onclick="event.stopPropagation(); confirmArrival('${i.id}', ${i.orderQuantity})" class="px-2 py-1 bg-indigo-600 text-white rounded text-[10px] hover:bg-indigo-700 transition">CONFERMA ARRIVO</button>` : ''}
+                    </div>`;
+                }
+
                 return `
-                <div onclick="${clickAction}" class="bg-white p-3 rounded-lg border ${isLow ? 'border-red-300 bg-red-50' : 'border-slate-100'} flex justify-between items-center shadow-sm cursor-pointer hover:border-indigo-300">
-                    <div class="flex-1">
-                        <div class="flex items-center gap-2">
-                             <div class="text-xs font-bold text-slate-700">${i.name}</div>
-                             ${i.category ? `<span class="text-[8px] bg-slate-200 px-1 rounded text-slate-500 uppercase">${i.category}</span>` : ''}
+                <div onclick="${clickAction}" class="bg-white p-3 rounded-lg border ${isLow ? 'border-red-300 bg-red-50' : 'border-slate-100'} flex flex-col shadow-sm cursor-pointer hover:border-indigo-300">
+                    <div class="flex justify-between items-center w-full">
+                        <div class="flex-1">
+                            <div class="flex items-center gap-2">
+                                 <div class="text-xs font-bold text-slate-700">${i.name}</div>
+                                 ${i.category ? `<span class="text-[8px] bg-slate-200 px-1 rounded text-slate-500 uppercase">${i.category}</span>` : ''}
+                            </div>
+                            <div class="text-[10px] text-slate-500 font-medium">${i.brand || ''}</div>
+                            <div class="text-[10px] text-slate-400 font-mono">${i.id} | ${i.location || '-'}</div>
                         </div>
-                        <div class="text-[10px] text-slate-500 font-medium">${i.brand || ''}</div>
-                        <div class="text-[10px] text-slate-400 font-mono">${i.id} | ${i.location || '-'}</div>
-                    </div>
-                    <div class="text-right flex items-center gap-2">
-                        <div>
-                            <p class="text-sm font-bold ${isLow ? 'text-red-600' : 'text-slate-800'}">${quantityDisplay}</p>
-                            ${isLow ? '<p class="text-[9px] text-red-500 font-bold uppercase">SCORTA BASSA</p>' : ''}
+                        <div class="text-right flex items-center gap-2">
+                            <div>
+                                <p class="text-sm font-bold ${isLow ? 'text-red-600' : 'text-slate-800'}">${quantityDisplay}</p>
+                                ${isLow ? '<p class="text-[9px] text-red-500 font-bold uppercase">SCORTA BASSA</p>' : ''}
+                            </div>
+                            ${isAdmin && !isReorderTab ? `<button onclick="event.stopPropagation(); deleteInventoryItem('${i.id}')" class="p-2 bg-red-100 text-red-600 rounded-lg"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : ''}
                         </div>
-                        ${isAdmin ? `<button onclick="event.stopPropagation(); deleteInventoryItem('${i.id}')" class="p-2 bg-red-100 text-red-600 rounded-lg"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : ''}
                     </div>
+                    ${orderBadge}
                 </div>`;
             }).join('');
             lucide.createIcons();
         }
+
+        // --- RIORDINO CONFIRMATION ALGORITHM ---
+        window.confirmArrival = async (id, orderQty) => {
+            if (!confirm(`Confermare l'arrivo di in magazzino di +${orderQty} unità per l'articolo ${id}?`)) return;
+            const safeId = id.replace(/\//g, '_');
+            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'inventory', safeId);
+            
+            try {
+                await runTransaction(db, async (transaction) => {
+                    const sfDoc = await transaction.get(docRef);
+                    if (!sfDoc.exists()) throw "Articolo non trovato!";
+                    const d = sfDoc.data();
+                    
+                    const newQty = parseFloat(d.quantity || 0) + parseFloat(orderQty);
+                    
+                    transaction.update(docRef, {
+                        quantity: newQty,
+                        isOrdered: false,
+                        orderQuantity: null,
+                        orderBy: null,
+                        orderDate: null
+                    });
+                    
+                    const moveRef = doc(collection(db, 'artifacts', appId, 'public', 'data', 'stock_movements'));
+                    transaction.set(moveRef, {
+                        itemId: id,
+                        itemName: d.name,
+                        action: 'add',
+                        amount: parseFloat(orderQty),
+                        unit: d.unit || 'pz',
+                        user: currentUser ? currentUser.uid : 'system',
+                        operatorName: currentUser ? currentUser.displayName || currentUser.email : 'Utente',
+                        timestamp: serverTimestamp(),
+                        isArrival: true
+                    });
+                });
+                alert('Arrivo confermato! Le scorte sono state aggiornate.');
+                logAction('UPDATE', 'INVENTORY', `Arrival confirmed for ${id}: added +${orderQty} units.`);
+            } catch (err) { alert("Errore: " + err); }
+        };
 
         // --- ADMIN INVENTORY ---
         window.checkNewCategory = (select) => {
