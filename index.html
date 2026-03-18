@@ -217,14 +217,15 @@
                 <div class="absolute top-0 right-0 p-4 opacity-10"><i data-lucide="microscope" class="w-24 h-24"></i>
                 </div>
                 <div class="flex justify-between items-start relative z-10">
-                    <div>
+                    <div class="w-full pr-4">
                         <div class="flex items-center gap-2 mb-1">
                             <p class="text-xs font-bold text-indigo-600 uppercase">Strumento Lab</p>
-                            <span id="badge-status"
-                                class="hidden text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-black uppercase">NON
-                                PRENOTABILE</span>
+                            <span id="badge-status" class="hidden text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-black uppercase">NON PRENOTABILE</span>
                         </div>
-                        <h2 id="item-title" class="text-2xl font-black text-slate-800 break-all leading-tight">---</h2>
+                        <div id="inst-public-image" class="hidden my-3 w-full h-32 rounded-xl overflow-hidden shadow-sm border border-slate-200">
+                            <img id="inst-public-img-tag" src="" class="w-full h-full object-cover">
+                        </div>
+                        <h2 id="item-title" class="text-xl font-black text-slate-800 break-all leading-tight">---</h2>
                         <p id="item-subtitle" class="text-sm font-mono text-slate-400 mt-1">ID: ---</p>
                     </div>
                     <button onclick="reportIssue()" class="text-amber-500 p-2 hover:bg-amber-50 rounded-full"
@@ -549,10 +550,10 @@
             <div id="admin-content-instruments" class="hidden space-y-4">
                 <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm relative">
                     <div class="flex justify-between items-center mb-3">
-                        <h3 class="text-sm font-bold text-slate-700 flex items-center gap-2"><i data-lucide="settings-2"
-                                class="w-4 h-4"></i> Configura</h3>
-                        <button onclick="clearInstrumentForm()"
-                            class="text-[10px] text-indigo-600 font-bold hover:underline">NUOVO</button>
+                        <h3 id="inst-form-title" class="text-sm font-bold text-slate-700 flex items-center gap-2"><i data-lucide="settings-2"
+                                class="w-4 h-4"></i> Configura Nuovo</h3>
+                        <button type="button" onclick="clearInstrumentForm()"
+                            class="text-[10px] text-indigo-600 font-bold hover:underline">NUOVO LOG</button>
                     </div>
                     <form onsubmit="saveInstrument(event)" class="space-y-3">
                         <input type="text" id="inp-inst-id" required
@@ -563,7 +564,10 @@
                             placeholder="Nome Strumento">
                         <input type="text" id="inp-inst-contact"
                             class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs"
-                            placeholder="Referente">
+                            placeholder="Referente (Email o Nome)">
+                        <input type="url" id="inp-inst-image"
+                            class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs"
+                            placeholder="URL Foto Strumento (Opzionale)">
                         <div class="flex items-center gap-2"><input type="checkbox" id="inp-inst-bookable" checked>
                             <label class="text-xs">Prenotabile</label>
                         </div>
@@ -653,12 +657,12 @@
 
         <!-- VISTA 5: RICERCA -->
         <div id="view-my-booking" class="hidden fade-in flex flex-col items-center justify-center py-10 space-y-4">
-            <h2 class="text-lg font-bold text-slate-800">Gestione Prenotazione</h2>
-            <input type="text" id="inp-pnr-search" placeholder="Codice PNR"
-                class="w-full max-w-xs text-center text-xl font-mono uppercase px-4 py-3 border-2 border-slate-200 rounded-xl">
-            <button onclick="searchBookingByPNR()"
-                class="w-full max-w-xs py-3 bg-emerald-600 text-white rounded-xl font-bold shadow-lg">CERCA</button>
-            <div id="pnr-result" class="w-full max-w-xs mt-6"></div>
+            <h2 class="text-lg font-bold text-slate-800">Cerca Prenotazioni</h2>
+            <input type="text" id="inp-pnr-search" placeholder="Codice PNR o Tua Email"
+                class="w-full max-w-xs text-center text-sm font-bold px-4 py-3 border-2 border-slate-200 rounded-xl outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition-all">
+            <button onclick="searchMyBooking()"
+                class="w-full max-w-xs py-3 bg-emerald-600 text-white rounded-xl font-bold shadow-lg hover:bg-emerald-500 transition">CERCA PRENOTAZIONE</button>
+            <div id="pnr-result" class="w-full max-w-xs mt-6 space-y-3"></div>
         </div>
 
     </main>
@@ -741,23 +745,30 @@
                     <option>Altro</option>
                 </select>
                 <div class="space-y-3">
-                    <div>
-                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">📅 Data</label>
-                        <input type="date" id="inp-date" required
-                            class="w-full border rounded-lg p-2.5 text-sm bg-slate-50">
+                    <div class="flex gap-2">
+                        <div class="flex-1">
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">📅 Dal Giorno</label>
+                            <input type="date" id="inp-start-date" required class="w-full border border-slate-200 rounded-lg p-2 text-xs font-bold text-slate-700 bg-white focus:ring-2 focus:ring-indigo-500 outline-none">
+                        </div>
+                        <div class="flex-1">
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">📅 Al Giorno</label>
+                            <input type="date" id="inp-end-date" required class="w-full border border-slate-200 rounded-lg p-2 text-xs font-bold text-slate-700 bg-white focus:ring-2 focus:ring-indigo-500 outline-none">
+                        </div>
                     </div>
-                    <div>
-                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">🕐 Ora inizio</label>
-                        <div id="time-slots-start" class="grid grid-cols-4 gap-1 max-h-32 overflow-y-auto"></div>
-                        <input type="hidden" id="inp-start" required>
-                    </div>
-                    <div>
-                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">🕐 Ora fine</label>
-                        <div id="time-slots-end" class="grid grid-cols-4 gap-1 max-h-32 overflow-y-auto"></div>
-                        <input type="hidden" id="inp-end" required>
+                    <div class="flex gap-2">
+                        <div class="flex-1">
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">🕐 Ora inizio</label>
+                            <div id="time-slots-start" class="grid grid-cols-3 gap-1 max-h-32 overflow-y-auto pr-1"></div>
+                            <input type="hidden" id="inp-start" required>
+                        </div>
+                        <div class="flex-1">
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">🕐 Ora fine</label>
+                            <div id="time-slots-end" class="grid grid-cols-3 gap-1 max-h-32 overflow-y-auto pr-1"></div>
+                            <input type="hidden" id="inp-end" required>
+                        </div>
                     </div>
                     <div id="booking-overlap-warning"
-                        class="hidden text-xs text-red-600 bg-red-50 p-2 rounded-lg font-bold">⚠️ Orario non
+                        class="hidden text-xs text-red-600 bg-red-50 p-2 rounded-lg font-bold border border-red-100">⚠️ Orario non
                         disponibile!</div>
                 </div>
                 <button type="submit"
@@ -846,23 +857,30 @@
                     <option>Altro</option>
                 </select>
                 <div class="space-y-3">
-                    <div>
-                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">📅 Data</label>
-                        <input type="date" id="inp-admin-date" required
-                            class="w-full border rounded-lg p-2.5 text-sm bg-slate-50">
+                    <div class="flex gap-2">
+                        <div class="flex-1">
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">📅 Dal Giorno</label>
+                            <input type="date" id="inp-admin-start-date" required class="w-full border border-slate-200 rounded-lg p-2 text-xs font-bold text-slate-700 bg-white focus:ring-2 focus:ring-indigo-500 outline-none">
+                        </div>
+                        <div class="flex-1">
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">📅 Al Giorno</label>
+                            <input type="date" id="inp-admin-end-date" required class="w-full border border-slate-200 rounded-lg p-2 text-xs font-bold text-slate-700 bg-white focus:ring-2 focus:ring-indigo-500 outline-none">
+                        </div>
                     </div>
-                    <div>
-                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">🕐 Ora inizio</label>
-                        <div id="admin-time-slots-start" class="grid grid-cols-4 gap-1 max-h-32 overflow-y-auto"></div>
-                        <input type="hidden" id="inp-admin-start" required>
-                    </div>
-                    <div>
-                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">🕐 Ora fine</label>
-                        <div id="admin-time-slots-end" class="grid grid-cols-4 gap-1 max-h-32 overflow-y-auto"></div>
-                        <input type="hidden" id="inp-admin-end" required>
+                    <div class="flex gap-2">
+                        <div class="flex-1">
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">🕐 Ora inizio</label>
+                            <div id="admin-time-slots-start" class="grid grid-cols-3 gap-1 max-h-32 overflow-y-auto pr-1"></div>
+                            <input type="hidden" id="inp-admin-start" required>
+                        </div>
+                        <div class="flex-1">
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">🕐 Ora fine</label>
+                            <div id="admin-time-slots-end" class="grid grid-cols-3 gap-1 max-h-32 overflow-y-auto pr-1"></div>
+                            <input type="hidden" id="inp-admin-end" required>
+                        </div>
                     </div>
                     <div id="admin-booking-overlap-warning"
-                        class="hidden text-xs text-red-600 bg-red-50 p-2 rounded-lg font-bold">⚠️ Orario non
+                        class="hidden text-xs text-red-600 bg-red-50 p-2 rounded-lg font-bold border border-red-100">⚠️ Orario non
                         disponibile!</div>
                 </div>
                 <button type="submit"
