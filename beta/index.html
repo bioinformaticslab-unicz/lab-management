@@ -393,7 +393,7 @@
                 <template x-for="item in (labelsType==='inventory'?inventory:resources)" :key="item.id">
                     <label class="flex items-center gap-3 p-2 hover:bg-slate-50 rounded-lg cursor-pointer transition-colors border border-transparent hover:border-slate-200">
                         <input type="checkbox" :value="item.id" x-model="selectedLabels" @change="generateSelectedLabels()" class="w-4 h-4 rounded border border-slate-300 text-emerald-500 focus:ring-emerald-500/20" />
-                        <span class="flex-1 text-xs font-bold text-slate-700 truncate" x-text="item.name"></span>
+                        <span class="flex-1 text-xs font-bold text-slate-700 truncate" x-text="item.description || item.name || 'Senza Nome'"></span>
                         <span class="text-[9px] text-slate-400 font-mono" x-text="item.id"></span>
                     </label>
                 </template>

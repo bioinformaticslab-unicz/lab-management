@@ -571,62 +571,93 @@ document.addEventListener('alpine:init', () => {
             }
 
             toGenerate.forEach(item => {
-                // Wrapper per preview UI
+                const displayName = (item.description || item.name || 'Senza Nome').toUpperCase();
+                
+                // --- PREVIEW UI ---
                 const wrapperUI = document.createElement('div');
-                wrapperUI.className = 'bg-slate-50 border border-slate-200 rounded-xl p-2 flex flex-col items-center justify-center';
+                wrapperUI.className = 'bg-slate-50 border border-slate-200 rounded-xl p-3 flex flex-col items-center justify-center gap-2';
                 
-                // SVG for Barcode
+                const previewTitle = document.createElement('div');
+                previewTitle.className = 'text-[9px] font-black text-slate-600 truncate w-full text-center';
+                previewTitle.textContent = displayName;
+                
                 const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-                svg.className = 'w-full max-w-[120px] h-auto';
+                svg.className = 'w-full max-h-[40px]';
                 
-                // Print wrapper
+                wrapperUI.appendChild(previewTitle);
+                wrapperUI.appendChild(svg);
+                container.appendChild(wrapperUI);
+                JsBarcode(svg, String(item.id), { format: "CODE128", width: 1.5, height: 30, displayValue: true, fontSize: 10, margin: 2 });
+
+                // --- PRINT UI (Hidden) ---
                 const printWrap = document.createElement('div');
-                printWrap.style.cssText = 'border:1px solid #000; padding:10px; text-align:center; width: 4cm; height: 2cm; page-break-inside: avoid; margin: 2px;';
+                printWrap.className = 'label-card';
                 
-                const printTitle = document.createElement('div');
-                printTitle.style.cssText = 'font-size:8pt; font-family:sans-serif; font-weight:bold; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;';
-                printTitle.textContent = item.name.substring(0,25);
+                const printTitle = document.createElement('h3');
+                printTitle.textContent = displayName;
                 
                 const printSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                printSvg.className = 'label-barcode';
                 
-                JsBarcode(svg, String(item.id).substring(0,30), { format: "CODE128", width: 1.5, height: 35, displayValue: true, fontSize: 10, margin: 2 });
-                JsBarcode(printSvg, String(item.id).substring(0,30), { format: "CODE128", width: 1.2, height: 25, displayValue: true, fontSize: 8, margin: 0 });
-                
-                wrapperUI.appendChild(svg);
+                const printId = document.createElement('p');
+                printId.className = 'label-id';
+                printId.textContent = item.id;
                 
                 printWrap.appendChild(printTitle);
                 printWrap.appendChild(printSvg);
-                
-                container.appendChild(wrapperUI);
+                printWrap.appendChild(printId);
                 printCont.appendChild(printWrap);
+                
+                JsBarcode(printSvg, String(item.id), { format: "CODE128", width: 2, height: 55, displayValue: false, margin: 0 });
             });
         },
 
         printLabels() {
             if (!this.selectedLabels.length) return;
-            const printContents = `<div style="display:flex; flex-wrap:wrap; gap:5px;">` + document.getElementById('print-labels-container').innerHTML + `</div>`;
-            const printWin = window.open('', '_blank', 'width=800,height=600');
+            const printContents = document.getElementById('print-labels-container').innerHTML;
+            const printWin = window.open('', '_blank', 'width=900,height=700');
             printWin.document.write(`
 <!DOCTYPE html>
 <html>
 <head>
-<title>Stampa Etichette</title>
+<title>Etichette - LabScan Beta</title>
 <style>
-  body { font-family: sans-serif; padding: 20px; }
-  .no-print { text-align:center; margin-bottom:16px; }
-  .no-print button { padding: 10px 20px; font-weight: bold; cursor: pointer; border-radius: 8px; border: none; background: #4f46e5; color: white; display:inline-block; }
-  @media print { .no-print { display:none; } }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: system-ui, -apple-system, sans-serif; padding: 20px; background: #fff; }
+  h1 { text-align:center; font-size:18px; margin-bottom:16px; color:#1e293b; text-transform:uppercase; font-weight:900; }
+  .grid { display:grid; grid-template-columns: repeat(3, 1fr); gap:16px; }
+  .label-card {
+    border: 2px solid #1e293b; border-radius: 12px; padding: 16px;
+    text-align: center; page-break-inside: avoid; break-inside: avoid; background:#fff;
+  }
+  .label-card h3 { font-size:14px; font-weight:900; text-transform:uppercase; margin-bottom:8px; line-height:1.2; color:#0f172a; }
+  .label-card .label-id { font-family: monospace; font-size:11px; font-weight:700; margin-top:8px; letter-spacing:1px; color:#475569; }
+  .label-barcode { display:block; margin:4px auto; max-width:100%; height: auto; }
+  .no-print { text-align:center; margin-bottom:20px; padding-bottom:10px; border-bottom:1px solid #e2e8f0; }
+  .no-print button {
+    padding: 12px 24px; font-size:13px; font-weight:700; border:none; border-radius:10px;
+    cursor:pointer; margin:0 6px; transition: all 0.2s;
+  }
+  .btn-print { background:#4f46e5; color:#fff; box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.2); }
+  .btn-print:hover { background:#4338ca; transform: translateY(-1px); }
+  .btn-close { background:#f1f5f9; color:#475569; }
+  .btn-close:hover { background:#e2e8f0; }
+  @media print {
+    .no-print { display:none; }
+    body { padding: 0; }
+    .grid { gap: 12px; }
+  }
 </style>
 </head>
 <body>
 <div class="no-print">
-  <button onclick="window.print()">STAMPA ETICHETTE</button>
+  <button class="btn-print" onclick="window.print()">🖨️ STAMPA / SALVA PDF</button>
+  <button class="btn-close" onclick="window.close()">✕ CHIUDI</button>
 </div>
-${printContents}
+<h1>Etichette ${this.labelsType === 'inventory' ? 'Magazzino' : 'Strumenti'}</h1>
+<div class="grid">${printContents}</div>
 </body></html>`);
             printWin.document.close();
-            
-            // Deselect items after print preview is generated
             this.selectedLabels = [];
         },
 
