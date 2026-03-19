@@ -604,12 +604,30 @@ document.addEventListener('alpine:init', () => {
 
         printLabels() {
             if (!this.selectedLabels.length) return;
-            const originalContents = document.body.innerHTML;
             const printContents = `<div style="display:flex; flex-wrap:wrap; gap:5px;">` + document.getElementById('print-labels-container').innerHTML + `</div>`;
-            document.body.innerHTML = printContents;
-            window.print();
-            document.body.innerHTML = originalContents;
-            window.location.reload(); // Quick restore of SPA bindings
+            const printWin = window.open('', '_blank', 'width=800,height=600');
+            printWin.document.write(`
+<!DOCTYPE html>
+<html>
+<head>
+<title>Stampa Etichette</title>
+<style>
+  body { font-family: sans-serif; padding: 20px; }
+  .no-print { text-align:center; margin-bottom:16px; }
+  .no-print button { padding: 10px 20px; font-weight: bold; cursor: pointer; border-radius: 8px; border: none; background: #4f46e5; color: white; display:inline-block; }
+  @media print { .no-print { display:none; } }
+</style>
+</head>
+<body>
+<div class="no-print">
+  <button onclick="window.print()">STAMPA ETICHETTE</button>
+</div>
+${printContents}
+</body></html>`);
+            printWin.document.close();
+            
+            // Deselect items after print preview is generated
+            this.selectedLabels = [];
         },
 
         // SETTINGS & ROLES
