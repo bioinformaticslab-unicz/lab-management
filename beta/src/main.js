@@ -47,13 +47,13 @@ document.addEventListener('alpine:init', () => {
         // Navigation
         activeView: 'scanner',
         tabs: [
-            { id: 'scanner',   icon: '📷', label: 'Scanner',    roles: ['user','supervisor','co_admin','main_admin'] },
-            { id: 'inventory', icon: '📦', label: 'Magazzino',   roles: ['user','supervisor','co_admin','main_admin'] },
-            { id: 'strumenti', icon: '🔬', label: 'Strumenti',   roles: ['user','supervisor','co_admin','main_admin'] },
-            { id: 'admin',     icon: '🛠️', label: 'Admin',      roles: ['supervisor','co_admin','main_admin'] },
-            { id: 'profile',   icon: '👤', label: 'Profilo',     roles: ['user','supervisor','co_admin','main_admin'] },
+            { id: 'scanner',   icon: 'scan-line',       label: 'Scanner',    roles: ['user','supervisor','co_admin','main_admin'] },
+            { id: 'inventory', icon: 'package',         label: 'Magazzino',   roles: ['user','supervisor','co_admin','main_admin'] },
+            { id: 'strumenti', icon: 'microscope',      label: 'Strumenti',   roles: ['user','supervisor','co_admin','main_admin'] },
+            { id: 'admin',     icon: 'layout-dashboard',label: 'Admin',      roles: ['supervisor','co_admin','main_admin'] },
+            { id: 'profile',   icon: 'user',            label: 'Profilo',     roles: ['user','supervisor','co_admin','main_admin'] },
         ],
-        adminTab: 'inventory',
+        adminTab: 'dashboard',
 
         // Data
         inventory: [], resources: [], recentMovements: [], logs: [],
@@ -144,6 +144,7 @@ document.addEventListener('alpine:init', () => {
             if (this.activeView === 'scanner' && id !== 'scanner') this.stopCamera();
             this.activeView = id;
             if (id === 'scanner') this.$nextTick(() => document.getElementById('scanner-input')?.focus());
+            this.$nextTick(() => { if (typeof lucide !== 'undefined') lucide.createIcons(); });
         },
 
         // AUTH
@@ -215,7 +216,7 @@ document.addEventListener('alpine:init', () => {
 
         exportLogs() {
             if (!this.logs.length) return;
-            const text = this.logs.map(l => `[${l.timestamp ? new Date(l.timestamp.seconds*1000).toLocaleString('it-IT') : ''}] [${l.category||'SYSTEM'}] [${l.userEmail||'N/A'}] ${l.action} - ${l.details}`).join('\n');
+            const text = this.logs.map(l => `[${l.timestamp?.seconds ? new Date(l.timestamp.seconds*1000).toLocaleString('it-IT') : 'N/A'}] [${l.category||'SYSTEM'}] [${l.userEmail||'N/A'}] ${l.action} - ${l.details}`).join('\n');
             const blob = new Blob([text], { type: 'text/plain' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -278,7 +279,7 @@ document.addEventListener('alpine:init', () => {
                 if (this.isBatchMode) {
                     const ex = this.batchItems.find(i => i.id === safe);
                     if (ex) ex.qty++; else this.batchItems.push({...data, qty: 1});
-                    toast(`🛒 Aggiunto al carrello: ${data.name}`);
+                    toast(`Aggiunto al carrello: ${data.name}`);
                     if (this.cameraActive) {
                         try { await qrScanner.resume(); } catch(e){} // Quick resume if possible
                     }
@@ -336,7 +337,7 @@ document.addEventListener('alpine:init', () => {
             }
 
             this.confirming = false;
-            toast(errors > 0 ? `⚠️ ${success} salvati, ${errors} falliti.` : `✅ Batch completato! (${success} articoli)`);
+            toast(errors > 0 ? `${success} salvati, ${errors} falliti.` : `Batch completato! (${success} articoli)`, errors > 0 ? 'amber' : 'emerald');
             if (errors === 0) { this.batchItems = []; this.batchOperator = ''; this.isBatchMode = false; }
         },
 
@@ -350,7 +351,7 @@ document.addEventListener('alpine:init', () => {
                 await updateDoc(dbDoc('inventory', item.id), { quantity: newQty });
                 await addDoc(dbCol('stock_movements'), { itemId:item.id, itemName:item.name, action, amount:qty, unit:item.unit, operatorName:operator, userEmail:this.user?.email||'', user:this.user?.uid||'', timestamp:serverTimestamp() });
                 await addDoc(dbCol('logs'), { category:'INVENTORY', action:`${action==='add' ? 'CARICO':'SCARICO'}: ${item.name}`, details:`${action==='add'?'+':'-'}${qty} ${item.unit} | Op: ${operator}`, userEmail:this.user?.email||'', timestamp:serverTimestamp() });
-                toast(`${action==='add' ? '📦 Caricati' : '📤 Scaricati'} ${qty} ${item.unit} di ${item.name}`);
+                toast(`${action==='add' ? 'Caricati' : 'Scaricati'} ${qty} ${item.unit} di ${item.name}`);
                 this.stockModal.open = false;
 
                 // Check low stock and send email
@@ -363,7 +364,7 @@ document.addEventListener('alpine:init', () => {
         async checkAndSendRestockEmail(itemData) {
             if (itemData.quantity > (itemData.threshold || 0)) return;
             if (itemData.restockEmail && typeof emailjs !== 'undefined') {
-                toast(`📧 Invio email scorte basse (${itemData.name})...`, 'indigo');
+                toast(`Invio email scorte basse (${itemData.name})...`, 'indigo');
                 try {
                     await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_RESTOCK_TEMPLATE, {
                         to_email: itemData.restockEmail,
@@ -373,14 +374,14 @@ document.addEventListener('alpine:init', () => {
                         unit: itemData.unit === 'pacco' ? 'pacchi' : (itemData.unit || 'pz'),
                         from_name: 'LABSCAN Lab'
                     });
-                    toast(`✅ Email inviata per ${itemData.name}!`, 'green');
+                    toast(`Email inviata per ${itemData.name}!`, 'emerald');
                     await addDoc(dbCol('logs'), { category:'EMAIL', action:`Restock alert: ${itemData.name}`, details:`Email a ${itemData.restockEmail}, qty: ${itemData.quantity}`, userEmail:this.user?.email||'', timestamp:serverTimestamp() });
                 } catch(e) {
                     console.warn('Email failed:', e);
                     await addDoc(dbCol('logs'), { category:'ERROR', action:`Email failed: ${itemData.name}`, details:e.text||String(e), userEmail:this.user?.email||'', timestamp:serverTimestamp() });
                 }
             } else if (itemData.quantity <= (itemData.threshold||0)) {
-                toast(`⚠️ Scorte basse: ${itemData.name} (nessuna email configurata)`, 'amber');
+                toast(`Scorte basse: ${itemData.name} (nessuna email configurata)`, 'amber');
             }
         },
 
@@ -390,7 +391,7 @@ document.addEventListener('alpine:init', () => {
             try {
                 await updateDoc(dbDoc('inventory', item.id), { quantity:newQty, isOrdered:false, orderQuantity:null, orderBy:null, orderDate:null });
                 await addDoc(dbCol('stock_movements'), { itemId:item.id, itemName:item.name, action:'add', amount:item.orderQuantity, unit:item.unit, operatorName:this.user?.email||'', userEmail:this.user?.email||'', isArrival:true, timestamp:serverTimestamp() });
-                toast(`✅ Arrivo confermato: +${item.orderQuantity} ${item.unit} di ${item.name}`);
+                toast(`Arrivo confermato: +${item.orderQuantity} ${item.unit} di ${item.name}`);
             } catch(e) { console.error(e); alert('Errore.'); }
         },
 
@@ -418,7 +419,7 @@ document.addEventListener('alpine:init', () => {
 
             // Overlap check (same logic as stable app)
             const hasOverlap = await this.checkBookingOverlap(resource.id, startDate, endDate, null);
-            if (hasOverlap) { alert('⚠️ Orario non disponibile! C\'è già una prenotazione in questo intervallo.'); return; }
+            if (hasOverlap) { alert('Orario non disponibile! C\'è già una prenotazione in questo intervallo.'); return; }
 
             this.confirming = true;
             try {
@@ -436,7 +437,7 @@ document.addEventListener('alpine:init', () => {
                 });
                 await addDoc(dbCol('logs'), { category:'BOOKING', action:`Prenotazione: ${resourceName}`, details:`${userName} · ${new Date(startDate).toLocaleString('it-IT')} → ${new Date(endDate).toLocaleString('it-IT')} · PNR: ${pnr}`, userEmail:email, timestamp:serverTimestamp() });
                 this.bookingModal.pnr = pnr;
-                toast(`📅 Prenotazione confermata! PNR: ${pnr}`);
+                toast(`Prenotazione confermata! PNR: ${pnr}`);
 
                 // Send booking confirmation email
                 if (email && typeof emailjs !== 'undefined') {
@@ -481,7 +482,7 @@ document.addEventListener('alpine:init', () => {
                 if (this.editingItem) { await updateDoc(dbDoc('inventory', this.editingItem.id), data); }
                 else { await setDoc(dbDoc('inventory', safeid(f.id)), {...data, id:safeid(f.id), isOrdered:false}); }
                 await addDoc(dbCol('logs'), { category:'ADMIN', action:`${this.editingItem?'Modifica':'Nuovo'} articolo: ${f.name}`, details:`ID: ${f.id}`, userEmail:this.user?.email||'', timestamp:serverTimestamp() });
-                toast(this.editingItem ? '✅ Articolo aggiornato' : '✅ Articolo aggiunto');
+                toast(this.editingItem ? 'Articolo aggiornato' : 'Articolo aggiunto');
                 this.clearItemForm();
             } catch(e) { console.error(e); alert('Errore.'); }
             finally { this.saving = false; }
@@ -492,7 +493,7 @@ document.addEventListener('alpine:init', () => {
             try {
                 await deleteDoc(dbDoc('inventory', item.id));
                 await addDoc(dbCol('logs'), { category:'ADMIN', action:`Eliminazione: ${item.name}`, details:`ID: ${item.id}`, userEmail:this.user?.email||'', timestamp:serverTimestamp() });
-                toast('🗑️ Articolo eliminato', 'red');
+                toast('Articolo eliminato', 'red');
             } catch(e) { console.error(e); alert('Errore.'); }
         },
 
@@ -513,7 +514,7 @@ document.addEventListener('alpine:init', () => {
                 if (this.editingInstrument) { await updateDoc(dbDoc('resources', this.editingInstrument.id), data); }
                 else { await setDoc(dbDoc('resources', safeid(f.id)), {...data, id:safeid(f.id)}); }
                 await addDoc(dbCol('logs'), { category:'ADMIN', action:`${this.editingInstrument?'Modifica':'Nuovo'} strumento: ${f.name}`, details:`ID: ${f.id}`, userEmail:this.user?.email||'', timestamp:serverTimestamp() });
-                toast(this.editingInstrument ? '✅ Strumento aggiornato' : '✅ Strumento aggiunto');
+                toast(this.editingInstrument ? 'Strumento aggiornato' : 'Strumento aggiunto');
                 this.clearInstrumentForm();
             } catch(e) { console.error(e); alert('Errore.'); }
             finally { this.saving = false; }
@@ -623,7 +624,7 @@ document.addEventListener('alpine:init', () => {
                 } else {
                     await setDoc(doc(db, 'artifacts', APP_ID, 'settings', colName, 'list', email), { email, addedAt: serverTimestamp() });
                 }
-                toast(`✅ ${email} aggiunto come ${colName}`);
+                toast(`${email} aggiunto come ${colName}`);
                 this[inputKey] = '';
             } catch(e) { console.error(e); alert('Errore permessi'); }
         },
@@ -635,7 +636,7 @@ document.addEventListener('alpine:init', () => {
                 } else {
                     await deleteDoc(doc(db, 'artifacts', APP_ID, 'settings', colName, 'list', email));
                 }
-                toast(`🗑️ ${email} rimosso`);
+                toast(`${email} rimosso`, 'red');
             } catch(e) { console.error(e); alert('Errore permessi'); }
         }
 

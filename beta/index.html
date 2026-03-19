@@ -6,7 +6,7 @@
     <title>LABSCAN Lab · Beta v2</title>
     <meta name="description" content="LABSCAN Lab Beta v2 — Gestione laboratorio." />
     <script src="https://cdn.tailwindcss.com"></script>
-    <script>tailwind.config={theme:{extend:{animation:{'fade-in':'fadeIn .25s ease-out','pulse-slow':'pulse 3s cubic-bezier(.4,0,.6,1) infinite','gradient':'gradient 6s ease infinite'},keyframes:{fadeIn:{'0%':{opacity:0,transform:'translateY(8px)'},'100%':{opacity:1}},gradient:{'0%,100%':{backgroundPosition:'0% 50%'},'50%':{backgroundPosition:'100% 50%'}}}}}}</script>
+    <script>tailwind.config={safelist:['bg-emerald-600','bg-red-600','bg-amber-600','bg-indigo-600'],theme:{extend:{animation:{'fade-in':'fadeIn .25s ease-out','pulse-slow':'pulse 3s cubic-bezier(.4,0,.6,1) infinite','gradient':'gradient 6s ease infinite'},keyframes:{fadeIn:{'0%':{opacity:0,transform:'translateY(8px)'},'100%':{opacity:1}},gradient:{'0%,100%':{backgroundPosition:'0% 50%'},'50%':{backgroundPosition:'100% 50%'}}}}}}</script>
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/fuse.js@7.0.0"></script>
@@ -18,10 +18,14 @@
     <style>
         [x-cloak]{display:none!important}
         body{-webkit-tap-highlight-color:transparent}
-        .fade-in{animation:fadeIn .25s ease-out}
-        @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-        .scrollbar-hide::-webkit-scrollbar{display:none}
-        .scrollbar-hide{-ms-overflow-style:none;scrollbar-width:none}
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        [x-cloak] { display: none !important; }
+        body { -webkit-tap-highlight-color: transparent; }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+        .shimmer { background: #f6f7f8; background-image: linear-gradient(to right, #f6f7f8 0%, #edeef1 20%, #f6f7f8 40%, #f6f7f8 100%); background-repeat: no-repeat; background-size: 800px 104px; display: inline-block; position: relative; animation-duration: 2s; animation-fill-mode: forwards; animation-iteration-count: infinite; animation-name: placeholderShimmer; animation-timing-function: linear; }
+        @keyframes placeholderShimmer { 0% { background-position: -468px 0; } 100% { background-position: 468px 0; } }
         .beta-badge{position:fixed;bottom:72px;right:10px;z-index:9999;background:linear-gradient(135deg,#f59e0b,#ef4444);color:#fff;font-size:9px;font-weight:900;padding:3px 8px;border-radius:999px;letter-spacing:.06em;box-shadow:0 2px 8px rgba(0,0,0,.25);pointer-events:none;animation:pulse-slow 3s infinite}
         @keyframes pulse-slow{0%,100%{opacity:1}50%{opacity:.7}}
         #qr-reader video{width:100%!important;border-radius:1rem}
@@ -30,14 +34,38 @@
         .card-hover{transition:all .2s}
         .card-hover:hover{transform:translateY(-2px);box-shadow:0 8px 25px rgba(0,0,0,.08)}
         .gradient-header{background:linear-gradient(-45deg,#0f172a,#1e293b,#0f172a,#1e3a5f);background-size:300% 300%;animation:gradient 6s ease infinite}
-        .shimmer{background:linear-gradient(90deg,#f1f5f9 25%,#e2e8f0 50%,#f1f5f9 75%);background-size:200% 100%;animation:shimmer 1.5s infinite}
-        @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
         .glow-emerald{box-shadow:0 0 15px rgba(16,185,129,.15)}
         .active-tab{position:relative}
         .active-tab::after{content:'';position:absolute;bottom:-2px;left:50%;transform:translateX(-50%);width:4px;height:4px;background:#10b981;border-radius:50%}
     </style>
 </head>
-<body class="bg-slate-50 text-slate-800 font-sans min-h-screen pb-24" x-data="labApp()" x-init="init()" x-cloak>
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen pb-24 selection:bg-emerald-200">
+
+<div x-data="labApp()" x-init="init()" x-cloak class="relative min-h-screen">
+
+<!-- MAIN HEADER (STABLE STYLE) -->
+<header id="main-header" class="bg-slate-900 text-white p-6 rounded-b-[2rem] shadow-xl sticky top-0 z-50">
+    <div class="flex justify-between items-center max-w-3xl mx-auto">
+        <div @click="switchView('scanner')" class="cursor-pointer">
+            <h1 class="text-xl font-black italic tracking-tighter flex items-center gap-2">
+                <i data-lucide="scan-line" class="w-5 h-5 text-emerald-400"></i> LABSCAN
+            </h1>
+            <p class="text-slate-400 text-[10px] font-medium uppercase tracking-widest">Lab & Stock Beta v2</p>
+        </div>
+        <div class="flex gap-3 items-center">
+            <span x-show="user" class="text-[10px] text-slate-400 font-mono hidden sm:inline-block" x-text="user?.email"></span>
+            <button x-show="user" @click="switchView('profile')" class="p-2 bg-slate-800 rounded-full hover:bg-slate-700 transition" title="Profilo">
+                <i data-lucide="user" class="w-4 h-4"></i>
+            </button>
+            <button x-show="user" @click="signOut()" class="hidden p-2 bg-slate-800 rounded-full hover:bg-red-700 transition" title="Logout">
+                <i data-lucide="log-out" class="w-4 h-4"></i>
+            </button>
+            <div class="w-3 h-3 rounded-full self-center" :class="user ? 'bg-emerald-500' : 'bg-red-500 animate-pulse'" title="Stato Connessione"></div>
+        </div>
+    </div>
+</header>
+
+<main class="p-5 max-w-md lg:max-w-3xl mx-auto relative mt-2">
 <div class="beta-badge" x-show="user">⚗️ BETA v2</div>
 <!-- AUTH GATE -->
 <div x-show="!user" class="min-h-screen flex flex-col items-center justify-center p-6 space-y-6 relative overflow-hidden">
@@ -87,32 +115,37 @@
 
 <!-- SCANNER -->
 <section x-show="activeView==='scanner'" class="fade-in space-y-4">
-    <div class="bg-white rounded-[1.5rem] border border-slate-100 shadow-sm p-5 space-y-4 card-hover">
+    <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5 space-y-4 card-hover">
         <div class="flex items-center justify-between">
-            <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">📷 Scanner</h2>
-            <button @click="toggleCamera()" :class="cameraActive ? 'bg-red-500 text-white border-red-500 shadow-lg shadow-red-500/30' : 'bg-emerald-50 text-emerald-700 border-emerald-200'" class="px-3 py-1.5 rounded-xl text-xs font-bold border active:scale-[.95] transition-all">
-                <span x-text="cameraActive ? '⏹ Stop' : '📷 Camera'"></span>
+            <h2 class="text-base font-bold text-slate-800 flex items-center gap-2"><i data-lucide="scan-line" class="w-5 h-5 text-indigo-600"></i> Scanner</h2>
+            <button @click="toggleCamera()" :class="cameraActive ? 'bg-red-50 text-red-600 border-red-200' : 'bg-indigo-50 text-indigo-700 border-indigo-200'" class="px-3 py-1.5 rounded-lg text-xs font-bold border active:scale-[.95] transition-all flex items-center gap-1.5">
+                <i :data-lucide="cameraActive ? 'square' : 'camera'" class="w-4 h-4"></i>
+                <span x-text="cameraActive ? 'Stop' : 'Camera'"></span>
             </button>
         </div>
-        <div x-show="cameraActive" class="rounded-2xl overflow-hidden bg-black ring-2 ring-emerald-500/30"><div id="qr-reader"></div></div>
-        <div>
-            <input type="text" x-model="scanInput" @keyup.enter="handleManualScan()" @input.debounce.300ms="handleSearchInput()" class="w-full text-center text-sm font-mono px-4 py-3 border-2 border-slate-200 rounded-xl outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 bg-slate-50 transition-all" placeholder="🔍 Cerca per nome, ID o scansiona..." id="scanner-input" autocomplete="off" />
-            <p class="text-[10px] text-slate-300 text-center mt-1.5">Ricerca intelligente con tolleranza errori di battitura</p>
+        <div x-show="cameraActive" class="rounded-xl overflow-hidden bg-black ring-2 ring-indigo-500/30"><div id="qr-reader"></div></div>
+        <div class="relative">
+            <i data-lucide="search" class="absolute left-3 top-3 w-5 h-5 text-slate-400"></i>
+            <input type="text" x-model="scanInput" @keyup.enter="handleManualScan()" @input.debounce.300ms="handleSearchInput()" class="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 bg-slate-50 transition-all text-sm" placeholder="Cerca per nome, ID o scansiona..." id="scanner-input" autocomplete="off" />
+            <p class="text-[10px] text-slate-400 text-center mt-1.5">Ricerca intelligente con tolleranza errori di battitura</p>
         </div>
         <div x-show="searchResults.length" class="space-y-2">
             <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Risultati</p>
             <template x-for="r in searchResults" :key="r.id">
-                <button @click="openItem(r)" class="w-full flex items-center gap-3 p-3 bg-slate-50 hover:bg-emerald-50 border border-slate-200 hover:border-emerald-300 rounded-xl transition-all text-left active:scale-[.97] card-hover">
-                    <div class="w-10 h-10 rounded-xl flex items-center justify-center text-lg flex-shrink-0" :class="r.type==='resource' ? 'bg-indigo-50 ring-1 ring-indigo-100' : 'bg-emerald-50 ring-1 ring-emerald-100'"><span x-text="r.type==='resource' ? '🔬' : '📦'"></span></div>
+                <button @click="openItem(r)" class="w-full flex items-center gap-3 p-3 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl transition-all text-left active:scale-[.97]">
+                    <div class="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0" :class="r.type==='resource' ? 'bg-indigo-50 text-indigo-600' : 'bg-emerald-50 text-emerald-600'"><i :data-lucide="r.type==='resource' ? 'microscope' : 'package'" class="w-5 h-5"></i></div>
                     <div class="flex-1 min-w-0"><div class="font-bold text-sm text-slate-800 truncate" x-text="r.name"></div><div class="text-[10px] text-slate-400 font-mono mt-0.5" x-text="r.id"></div></div>
-                    <span class="text-[9px] font-bold px-2 py-0.5 rounded-full flex-shrink-0" :class="r.type==='resource' ? 'bg-indigo-100 text-indigo-700' : 'bg-emerald-100 text-emerald-700'" x-text="r.type==='resource' ? 'Strumento' : 'Magazzino'"></span>
+                    <span class="text-[9px] font-bold px-2 py-0.5 rounded-md border" :class="r.type==='resource' ? 'bg-indigo-50 text-indigo-700 border-indigo-100' : 'bg-emerald-50 text-emerald-700 border-emerald-100'" x-text="r.type==='resource' ? 'Strumento' : 'Magazzino'"></span>
                 </button>
             </template>
         </div>
         
-        <div class="flex items-center justify-between bg-slate-50 border border-slate-100 p-2 rounded-xl">
-            <div class="flex items-center gap-2"><span class="text-sm">🛒</span> <span class="text-xs font-bold text-slate-700">Modalità Carrello</span><p class="text-[9px] text-slate-400 hidden sm:block ml-2">Scansiona multipli prodotti</p></div>
-            <button @click="isBatchMode=!isBatchMode" class="relative w-11 h-6 rounded-full transition-colors" :class="isBatchMode?'bg-emerald-500':'bg-slate-300'"><div class="absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform" :class="isBatchMode?'translate-x-5':''"></div></button>
+        <div class="flex items-center justify-between bg-amber-50 border border-amber-100 p-3 rounded-xl mt-4">
+            <div class="flex items-center gap-2"><i data-lucide="shopping-cart-check" class="w-4 h-4 text-amber-600"></i><span class="text-xs font-bold text-amber-800">Modalità Carrello</span><p class="text-[9px] text-amber-600/70 hidden sm:block ml-2">Scansiona multipli prodotti</p></div>
+            <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" x-model="isBatchMode" class="sr-only peer">
+                <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+            </label>
         </div>
 
         <div x-show="isBatchMode && batchItems.length > 0" class="mt-4 border-t-2 border-dashed border-slate-200 pt-4 fade-in">
@@ -136,46 +169,49 @@
             </div>
         </div>
 
-        <div x-show="!cameraActive && !scanInput && !searchResults.length && (!isBatchMode || batchItems.length===0)" class="py-6 text-center"><div class="text-5xl mb-3 animate-pulse">📷</div><p class="text-xs text-slate-400 font-medium">Punta il barcode o digita un nome</p></div>
+        <div x-show="!cameraActive && !scanInput && !searchResults.length && (!isBatchMode || batchItems.length===0)" class="py-10 text-center opacity-50"><i data-lucide="scan-line" class="w-12 h-12 mx-auto mb-3 text-slate-400"></i><p class="text-xs text-slate-400 font-bold">Punta il barcode o effettua una ricerca</p></div>
     </div>
 </section>
 
 <!-- INVENTORY -->
 <section x-show="activeView==='inventory'" class="fade-in space-y-4">
-    <div class="flex items-center justify-between gap-3 flex-wrap">
-        <div><h2 class="text-base font-bold text-slate-800">📦 Magazzino</h2><p class="text-[10px] text-slate-400 mt-0.5" x-text="filteredInventory.length + (inventoryTab==='reorder' ? ' in ordine' : ' articoli')"></p></div>
-        <button x-show="isAdmin||isSupervisor" @click="switchView('admin');adminTab='inventory'" class="flex items-center gap-1.5 px-3 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold shadow-lg hover:bg-slate-700 active:scale-[.97] transition-all hover:shadow-xl">⚙️ Gestisci</button>
+    <div class="flex items-center justify-between gap-3 flex-wrap border-b border-slate-200 pb-2">
+        <div><h2 class="text-lg font-black text-slate-800 flex items-center gap-2"><i data-lucide="package" class="w-5 h-5 text-emerald-600"></i> Magazzino Lab</h2><p class="text-[10px] text-slate-400 mt-0.5" x-text="filteredInventory.length + (inventoryTab==='reorder' ? ' in ordine' : ' articoli')"></p></div>
+        <button x-show="isAdmin||isSupervisor" @click="switchView('admin');adminTab='inventory'" class="text-[10px] font-bold px-3 py-1.5 bg-indigo-50 text-indigo-700 rounded-lg border border-indigo-100 shadow-sm hover:bg-indigo-100 transition"><i data-lucide="settings" class="w-3 h-3 inline mr-1"></i> GESTISCI</button>
     </div>
-    <div class="flex p-1 bg-slate-100 rounded-2xl gap-1">
-        <button @click="inventoryTab='all'" :class="inventoryTab==='all' ? 'bg-white shadow-md font-black text-slate-800' : 'text-slate-500 font-bold'" class="flex-1 py-2.5 rounded-xl text-xs transition-all">Tutti</button>
-        <button @click="inventoryTab='reorder'" :class="inventoryTab==='reorder' ? 'bg-white shadow-md font-black text-slate-800' : 'text-slate-500 font-bold'" class="flex-1 py-2.5 rounded-xl text-xs transition-all">🚚 In Ordine</button>
+    <div class="flex gap-2">
+        <button @click="inventoryTab='all'" :class="inventoryTab==='all' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'" class="flex-1 py-2 rounded-lg text-xs font-bold transition">Tutti gli Articoli</button>
+        <button @click="inventoryTab='reorder'" :class="inventoryTab==='reorder' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'" class="flex-1 py-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1"><i data-lucide="truck" class="w-3.5 h-3.5 inline"></i> In Ordine</button>
     </div>
-    <input type="text" x-model="inventorySearch" placeholder="🔍 Cerca (tollerante errori)..." class="w-full px-4 py-2.5 text-sm border-2 border-slate-200 rounded-xl outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 bg-white transition-all" />
+    <div class="relative">
+        <i data-lucide="search" class="absolute left-3 top-2.5 w-4 h-4 text-slate-400"></i>
+        <input type="text" x-model="inventorySearch" placeholder="Cerca materiale, marchio o cat..." class="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-xl outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 bg-white transition-all text-sm" />
+    </div>
     <div class="space-y-3">
-        <template x-if="!inventory.length"><div class="space-y-3"><template x-for="i in 3"><div class="bg-white rounded-[1.5rem] border border-slate-100 p-4"><div class="flex gap-3"><div class="w-12 h-12 rounded-xl shimmer"></div><div class="flex-1 space-y-2"><div class="h-4 w-3/4 shimmer rounded"></div><div class="h-3 w-1/2 shimmer rounded"></div></div></div></div></template></div></template>
-        <template x-if="inventory.length && !filteredInventory.length"><div class="text-center py-12"><div class="text-4xl mb-2">📭</div><p class="text-sm text-slate-400">Nessun risultato.</p></div></template>
+        <template x-if="!inventory.length"><div class="space-y-3"><template x-for="i in 3"><div class="bg-white rounded-xl border border-slate-100 p-4"><div class="flex gap-3"><div class="w-12 h-12 rounded-lg shimmer"></div><div class="flex-1 space-y-2"><div class="h-4 w-3/4 shimmer rounded"></div><div class="h-3 w-1/2 shimmer rounded"></div></div></div></div></template></div></template>
+        <template x-if="inventory.length && !filteredInventory.length"><div class="text-center py-12 opacity-50"><i data-lucide="package-search" class="w-12 h-12 mx-auto mb-2 text-slate-400"></i><p class="text-sm text-slate-400 font-bold">Nessun risultato.</p></div></template>
         <template x-for="item in filteredInventory" :key="item.id">
-            <div class="bg-white rounded-[1.5rem] border border-slate-100 shadow-sm p-4 card-hover">
+            <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-4 card-hover">
                 <div class="flex items-start gap-3">
-                    <template x-if="item.image"><img :src="item.image" :alt="item.name" class="w-12 h-12 rounded-xl object-cover flex-shrink-0 border border-slate-100" /></template>
-                    <template x-if="!item.image"><div class="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 text-xl" :class="item.quantity<=item.threshold ? 'bg-red-50 ring-2 ring-red-100' : 'bg-slate-100'">📦</div></template>
+                    <template x-if="item.image"><img :src="item.image" :alt="item.name" class="w-12 h-12 rounded-lg object-cover flex-shrink-0 border border-slate-100" /></template>
+                    <template x-if="!item.image"><div class="w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0" :class="item.quantity<=item.threshold ? 'bg-red-50 text-red-400 ring-1 ring-red-100' : 'bg-slate-50 text-slate-400 border border-slate-100'"><i data-lucide="package" class="w-6 h-6"></i></div></template>
                     <div class="flex-1 min-w-0">
                         <div class="flex items-start justify-between gap-2 mb-1">
                             <div class="min-w-0"><h3 class="font-black text-sm text-slate-800 leading-tight" x-text="item.name"></h3><p class="text-[10px] text-slate-400 font-mono mt-0.5 truncate" x-text="item.id"></p></div>
                             <div class="flex-shrink-0 text-right"><span class="text-lg font-black leading-none" :class="item.quantity<=item.threshold ? 'text-red-500' : 'text-emerald-600'" x-text="item.quantity"></span><span class="text-[10px] text-slate-400 ml-0.5" x-text="item.unit"></span></div>
                         </div>
                         <div class="flex gap-1.5 flex-wrap mb-2">
-                            <template x-if="item.brand"><span class="text-[9px] px-1.5 py-0.5 bg-slate-100 text-slate-500 rounded-full" x-text="item.brand"></span></template>
-                            <template x-if="item.category"><span class="text-[9px] px-1.5 py-0.5 bg-indigo-50 text-indigo-500 rounded-full" x-text="item.category"></span></template>
-                            <template x-if="item.location"><span class="text-[9px] px-1.5 py-0.5 bg-amber-50 text-amber-600 rounded-full" x-text="'📍'+item.location"></span></template>
-                            <template x-if="item.isOrdered"><span class="text-[9px] px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded-full font-bold animate-pulse">🚚 In ordine</span></template>
-                            <template x-if="item.quantity<=item.threshold"><span class="text-[9px] px-1.5 py-0.5 bg-red-50 text-red-500 rounded-full font-bold">⚠️ Scorta bassa</span></template>
+                            <template x-if="item.brand"><span class="text-[9px] px-1.5 py-0.5 border border-slate-200 text-slate-500 rounded font-bold" x-text="item.brand"></span></template>
+                            <template x-if="item.category"><span class="text-[9px] px-1.5 py-0.5 bg-indigo-50 text-indigo-600 rounded font-bold border border-indigo-100" x-text="item.category"></span></template>
+                            <template x-if="item.location"><span class="text-[9px] px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded font-bold flex items-center gap-0.5 border border-slate-200"><i data-lucide="map-pin" class="w-2.5 h-2.5"></i> <span x-text="item.location"></span></span></template>
+                            <template x-if="item.isOrdered"><span class="text-[9px] px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded font-bold flex items-center gap-0.5 border border-blue-200"><i data-lucide="truck" class="w-2.5 h-2.5"></i> In ordine</span></template>
+                            <template x-if="item.quantity<=item.threshold"><span class="text-[9px] px-1.5 py-0.5 bg-red-50 text-red-600 rounded font-bold flex items-center gap-0.5 border border-red-200"><i data-lucide="alert-triangle" class="w-2.5 h-2.5"></i> Scorta bassa</span></template>
                         </div>
-                        <div class="h-1.5 bg-slate-100 rounded-full overflow-hidden mb-2"><div class="h-full rounded-full transition-all duration-500" :class="item.quantity<=item.threshold ? 'bg-gradient-to-r from-red-400 to-red-500' : 'bg-gradient-to-r from-emerald-400 to-emerald-600'" :style="'width:'+Math.min(100,Math.round(item.quantity/Math.max(item.threshold*3,item.quantity,1)*100))+'%'"></div></div>
+                        <div class="h-1.5 bg-slate-100 rounded-full overflow-hidden mb-2"><div class="h-full rounded-full transition-all duration-500" :class="item.quantity<=item.threshold ? 'bg-red-500' : 'bg-emerald-500'" :style="'width:'+Math.min(100,Math.round(item.quantity/Math.max(item.threshold*3,item.quantity,1)*100))+'%'"></div></div>
                         <div class="flex gap-2">
-                            <button @click="openStockModal(item,'add')" class="flex-1 py-1.5 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-xl text-[10px] font-bold hover:bg-emerald-100 active:scale-[.95] transition-all">+ CARICO</button>
-                            <button @click="openStockModal(item,'remove')" class="flex-1 py-1.5 bg-red-50 border border-red-200 text-red-600 rounded-xl text-[10px] font-bold hover:bg-red-100 active:scale-[.95] transition-all">− SCARICO</button>
-                            <template x-if="item.isOrdered"><button @click="confirmArrival(item)" class="flex-1 py-1.5 bg-blue-600 text-white rounded-xl text-[10px] font-bold hover:bg-blue-500 active:scale-[.95] transition-all shadow-sm shadow-blue-500/30">✅ ARRIVO</button></template>
+                            <button @click="openStockModal(item,'add')" class="flex-1 py-1.5 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-lg text-[10px] font-bold hover:bg-emerald-100 active:scale-[.95] transition-all"><i data-lucide="plus" class="w-3 h-3 inline mr-0.5"></i>CARICO</button>
+                            <button @click="openStockModal(item,'remove')" class="flex-1 py-1.5 bg-red-50 border border-red-200 text-red-600 rounded-lg text-[10px] font-bold hover:bg-red-100 active:scale-[.95] transition-all"><i data-lucide="minus" class="w-3 h-3 inline mr-0.5"></i>SCARICO</button>
+                            <template x-if="item.isOrdered"><button @click="confirmArrival(item)" class="flex-1 py-1.5 bg-blue-600 text-white rounded-lg text-[10px] font-bold hover:bg-blue-500 active:scale-[.95] transition-all shadow-sm"><i data-lucide="check" class="w-3 h-3 inline mr-0.5"></i>ARRIVO</button></template>
                         </div>
                     </div>
                 </div>
@@ -185,25 +221,30 @@
 </section>
 <!-- STRUMENTI / BOOKINGS -->
 <section x-show="activeView==='strumenti'" class="fade-in space-y-4">
-    <div><h2 class="text-base font-bold text-slate-800">🔬 Strumenti & Prenotazioni</h2><p class="text-[10px] text-slate-400 mt-0.5" x-text="resources.length+' strumenti'"></p></div>
-    <input type="text" x-model="resourceSearch" placeholder="🔍 Cerca strumento..." class="w-full px-4 py-2.5 text-sm border-2 border-slate-200 rounded-xl outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/20 bg-white transition-all" />
+    <div class="flex items-center justify-between border-b border-slate-200 pb-2">
+        <h2 class="text-lg font-black text-slate-800 flex items-center gap-2"><i data-lucide="microscope" class="w-5 h-5 text-indigo-600"></i> Strumenti Lab</h2>
+    </div>
+    <div class="relative">
+        <i data-lucide="search" class="absolute left-3 top-2.5 w-4 h-4 text-slate-400"></i>
+        <input type="text" x-model="resourceSearch" placeholder="Cerca strumento..." class="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-xl outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 bg-white transition-all text-sm" />
+    </div>
     <div class="space-y-3">
-        <template x-if="!resources.length"><div class="space-y-3"><template x-for="i in 2"><div class="bg-white rounded-[1.5rem] border border-slate-100 p-4"><div class="flex gap-3"><div class="w-14 h-14 rounded-xl shimmer"></div><div class="flex-1 space-y-2"><div class="h-4 w-3/4 shimmer rounded"></div><div class="h-3 w-1/2 shimmer rounded"></div><div class="h-8 w-full shimmer rounded-xl mt-2"></div></div></div></div></template></div></template>
+        <template x-if="!resources.length"><div class="space-y-3"><template x-for="i in 2"><div class="bg-white rounded-xl border border-slate-100 p-4"><div class="flex gap-3"><div class="w-14 h-14 rounded-lg shimmer"></div><div class="flex-1 space-y-2"><div class="h-4 w-3/4 shimmer rounded"></div><div class="h-3 w-1/2 shimmer rounded"></div><div class="h-8 w-full shimmer rounded-lg mt-2"></div></div></div></div></template></div></template>
         <template x-for="res in filteredResources" :key="res.id">
-            <div class="bg-white rounded-[1.5rem] border border-slate-100 shadow-sm p-4 card-hover">
+            <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-4 card-hover">
                 <div class="flex items-start gap-3">
-                    <template x-if="res.imageUrl||res.image"><img :src="res.imageUrl||res.image" :alt="res.name" class="w-14 h-14 rounded-xl object-cover flex-shrink-0 border border-slate-100" /></template>
-                    <template x-if="!(res.imageUrl||res.image)"><div class="w-14 h-14 rounded-xl bg-indigo-50 flex items-center justify-center flex-shrink-0 text-2xl ring-1 ring-indigo-100">🔬</div></template>
+                    <template x-if="res.imageUrl||res.image"><img :src="res.imageUrl||res.image" :alt="res.name" class="w-14 h-14 rounded-lg object-cover flex-shrink-0 border border-slate-100" /></template>
+                    <template x-if="!(res.imageUrl||res.image)"><div class="w-14 h-14 rounded-lg bg-indigo-50 flex items-center justify-center flex-shrink-0 text-indigo-400 border border-indigo-100"><i data-lucide="microscope" class="w-7 h-7"></i></div></template>
                     <div class="flex-1 min-w-0">
                         <h3 class="font-black text-sm text-slate-800 leading-tight" x-text="res.name"></h3>
                         <p class="text-[10px] text-slate-400 font-mono mt-0.5" x-text="res.id"></p>
                         <div class="flex gap-1.5 flex-wrap mt-1.5 mb-2">
-                            <template x-if="res.brand||res.manufacturer"><span class="text-[9px] px-1.5 py-0.5 bg-slate-100 text-slate-500 rounded-full" x-text="res.brand||res.manufacturer"></span></template>
-                            <template x-if="res.location"><span class="text-[9px] px-1.5 py-0.5 bg-amber-50 text-amber-600 rounded-full" x-text="'📍'+res.location"></span></template>
-                            <template x-if="res.category"><span class="text-[9px] px-1.5 py-0.5 bg-indigo-50 text-indigo-500 rounded-full" x-text="res.category"></span></template>
-                            <template x-if="res.contact"><span class="text-[9px] px-1.5 py-0.5 bg-emerald-50 text-emerald-600 rounded-full" x-text="'👤'+res.contact"></span></template>
+                            <template x-if="res.brand||res.manufacturer"><span class="text-[9px] px-1.5 py-0.5 border border-slate-200 text-slate-500 rounded font-bold" x-text="res.brand||res.manufacturer"></span></template>
+                            <template x-if="res.location"><span class="text-[9px] px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded font-bold flex items-center gap-0.5 border border-slate-200"><i data-lucide="map-pin" class="w-2.5 h-2.5"></i> <span x-text="res.location"></span></span></template>
+                            <template x-if="res.category"><span class="text-[9px] px-1.5 py-0.5 bg-indigo-50 text-indigo-600 rounded font-bold border border-indigo-100" x-text="res.category"></span></template>
+                            <template x-if="res.contact"><span class="text-[9px] px-1.5 py-0.5 bg-emerald-50 text-emerald-700 rounded font-bold flex items-center gap-0.5 border border-emerald-100"><i data-lucide="user" class="w-2.5 h-2.5"></i> <span x-text="res.contact"></span></span></template>
                         </div>
-                        <button @click="openBookingModal(res)" class="w-full py-2.5 bg-indigo-600 text-white rounded-xl text-xs font-bold hover:bg-indigo-500 active:scale-[.95] transition-all shadow-md shadow-indigo-500/20 hover:shadow-lg hover:shadow-indigo-500/30">📅 PRENOTA</button>
+                        <button @click="openBookingModal(res)" class="w-full py-2 bg-indigo-600 text-white rounded-lg text-xs font-bold hover:bg-indigo-500 active:scale-[.95] transition-all shadow-sm"><i data-lucide="calendar-plus" class="w-3.5 h-3.5 inline mr-1"></i>PRENOTA</button>
                     </div>
                 </div>
             </div>
@@ -213,34 +254,39 @@
 
 <!-- ADMIN -->
 <section x-show="activeView==='admin'" x-cloak class="fade-in space-y-4">
-    <div class="flex items-center justify-between"><h2 class="text-base font-bold text-slate-800">🛠️ Admin</h2><span class="text-[10px] font-bold px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full" x-text="isAdmin?'👑 Admin':'👁️ Supervisore'"></span></div>
-        <button @click="adminTab='dashboard';$nextTick(()=>initCharts())" :class="adminTab==='dashboard'?'bg-white shadow-md font-black text-slate-800':'text-slate-500'" class="flex-shrink-0 px-3 py-2 rounded-xl text-xs font-bold transition-all">📊 Dashboard</button>
-        <button @click="adminTab='bookings'" :class="adminTab==='bookings'?'bg-white shadow-md font-black text-slate-800':'text-slate-500'" class="flex-shrink-0 px-3 py-2 rounded-xl text-xs font-bold transition-all">📅 Prenotazioni</button>
-        <button @click="adminTab='inventory'" :class="adminTab==='inventory'?'bg-white shadow-md font-black text-slate-800':'text-slate-500'" class="flex-shrink-0 px-3 py-2 rounded-xl text-xs font-bold transition-all">📦 Magazzino</button>
-        <button @click="adminTab='instruments'" :class="adminTab==='instruments'?'bg-white shadow-md font-black text-slate-800':'text-slate-500'" class="flex-shrink-0 px-3 py-2 rounded-xl text-xs font-bold transition-all">🔬 Strumenti</button>
-        <button @click="adminTab='labels';$nextTick(()=>generateSelectedLabels())" :class="adminTab==='labels'?'bg-white shadow-md font-black text-slate-800':'text-slate-500'" class="flex-shrink-0 px-3 py-2 rounded-xl text-xs font-bold transition-all">🏷️ Etichette</button>
-        <button @click="adminTab='settings'" x-show="isAdmin" :class="adminTab==='settings'?'bg-white shadow-md font-black text-slate-800':'text-slate-500'" class="flex-shrink-0 px-3 py-2 rounded-xl text-xs font-bold transition-all">⚙️ Impostazioni</button>
-        <button @click="adminTab='logs';loadLogs()" :class="adminTab==='logs'?'bg-white shadow-md font-black text-slate-800':'text-slate-500'" class="flex-shrink-0 px-3 py-2 rounded-xl text-xs font-bold transition-all">📋 Log</button>
+    <div class="flex items-center justify-between mb-4"><h2 class="text-xl font-black text-slate-800 tracking-tight flex items-center gap-2"><i data-lucide="settings-2" class="w-6 h-6 text-slate-700"></i> Centro di Controllo</h2><span class="text-[10px] font-bold px-2.5 py-1 bg-amber-50 text-amber-700 rounded border border-amber-200" x-text="isAdmin?'Amministratore':'Staff / Supervisore'"></span></div>
+    
+    <!-- Modern Admin Tabs -->
+    <div class="flex p-1 bg-slate-100 rounded-xl gap-1 overflow-x-auto scrollbar-hide border border-slate-200">
+        <button @click="adminTab='dashboard';$nextTick(()=>initCharts())" :class="adminTab==='dashboard'?'bg-white shadow-sm font-black text-slate-800':'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'" class="flex-shrink-0 px-3 py-2 rounded-lg text-[11px] font-bold transition-all duration-200 flex items-center gap-1.5"><i data-lucide="bar-chart-3" class="w-3.5 h-3.5"></i> Overview</button>
+        <button @click="adminTab='bookings'" :class="adminTab==='bookings'?'bg-white shadow-sm font-black text-slate-800':'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'" class="flex-shrink-0 px-3 py-2 rounded-lg text-[11px] font-bold transition-all duration-200 flex items-center gap-1.5"><i data-lucide="calendar" class="w-3.5 h-3.5"></i> Prenotazioni</button>
+        <button @click="adminTab='inventory'" :class="adminTab==='inventory'?'bg-white shadow-sm font-black text-slate-800':'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'" class="flex-shrink-0 px-3 py-2 rounded-lg text-[11px] font-bold transition-all duration-200 flex items-center gap-1.5"><i data-lucide="package" class="w-3.5 h-3.5"></i> Magazzino</button>
+        <button @click="adminTab='instruments'" :class="adminTab==='instruments'?'bg-white shadow-sm font-black text-slate-800':'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'" class="flex-shrink-0 px-3 py-2 rounded-lg text-[11px] font-bold transition-all duration-200 flex items-center gap-1.5"><i data-lucide="microscope" class="w-3.5 h-3.5"></i> Strumenti</button>
+        <button @click="adminTab='labels';$nextTick(()=>generateSelectedLabels())" :class="adminTab==='labels'?'bg-white shadow-sm font-black text-slate-800':'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'" class="flex-shrink-0 px-3 py-2 rounded-lg text-[11px] font-bold transition-all duration-200 flex items-center gap-1.5"><i data-lucide="tags" class="w-3.5 h-3.5"></i> Etichette</button>
+        <button @click="adminTab='settings'" x-show="isAdmin" :class="adminTab==='settings'?'bg-white shadow-sm font-black text-slate-800':'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'" class="flex-shrink-0 px-3 py-2 rounded-lg text-[11px] font-bold transition-all duration-200 flex items-center gap-1.5"><i data-lucide="sliders-horizontal" class="w-3.5 h-3.5"></i> Impostazioni</button>
+        <button @click="adminTab='logs';loadLogs()" :class="adminTab==='logs'?'bg-white shadow-sm font-black text-slate-800':'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'" class="flex-shrink-0 px-3 py-2 rounded-lg text-[11px] font-bold transition-all duration-200 flex items-center gap-1.5"><i data-lucide="file-terminal" class="w-3.5 h-3.5"></i> Log Sistema</button>
     </div>
 
     <!-- DASHBOARD ANALYTICS -->
     <div x-show="adminTab==='dashboard'" class="space-y-4">
         <div class="grid grid-cols-2 gap-3">
-            <div class="bg-white rounded-[1.5rem] border border-slate-100 p-4 shadow-sm">
+            <div class="bg-white rounded-xl border border-slate-100 p-4 shadow-sm text-center">
+                <i data-lucide="package" class="w-6 h-6 mx-auto text-emerald-500 mb-1"></i>
                 <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Totale Scorte</p>
                 <div class="text-3xl font-black text-slate-800" x-text="inventory.length"></div>
             </div>
-            <div class="bg-white rounded-[1.5rem] border border-slate-100 p-4 shadow-sm">
+            <div class="bg-white rounded-xl border border-slate-100 p-4 shadow-sm text-center">
+                <i data-lucide="microscope" class="w-6 h-6 mx-auto text-indigo-500 mb-1"></i>
                 <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Strumenti</p>
                 <div class="text-3xl font-black text-slate-800" x-text="resources.length"></div>
             </div>
         </div>
-        <div class="bg-white rounded-[1.5rem] border border-slate-100 p-4 shadow-sm">
-            <h3 class="text-xs font-bold text-slate-700 mb-3">Distribuzione Categorie Magazzino</h3>
+        <div class="bg-white rounded-xl border border-slate-100 p-4 shadow-sm">
+            <h3 class="text-xs font-bold text-slate-700 mb-3 flex items-center gap-1.5"><i data-lucide="pie-chart" class="w-4 h-4 text-emerald-600"></i> Distribuzione Categorie Magazzino</h3>
             <div class="relative w-full h-48"><canvas id="inventoryCategoryChart"></canvas></div>
         </div>
-        <div class="bg-white rounded-[1.5rem] border border-slate-100 p-4 shadow-sm">
-            <h3 class="text-xs font-bold text-slate-700 mb-3">Movimenti Recenti (Carichi vs Scarichi)</h3>
+        <div class="bg-white rounded-xl border border-slate-100 p-4 shadow-sm">
+            <h3 class="text-xs font-bold text-slate-700 mb-3 flex items-center gap-1.5"><i data-lucide="bar-chart-2" class="w-4 h-4 text-indigo-600"></i> Movimenti Recenti (Carichi vs Scarichi)</h3>
             <div class="relative w-full h-48"><canvas id="stockMovementsChart"></canvas></div>
         </div>
     </div>
@@ -249,12 +295,12 @@
     <div x-show="adminTab==='bookings'" class="space-y-3">
         <div class="flex items-center justify-between">
             <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Tutte le prenotazioni</p>
-            <button @click="" class="px-3 py-1.5 bg-slate-200 text-slate-700 rounded-xl text-[10px] font-bold hover:bg-slate-300 transition">📥 Esporta CSV</button>
+            <button @click="" class="px-3 py-1.5 bg-slate-200 text-slate-700 rounded-lg text-[10px] font-bold hover:bg-slate-300 transition flex items-center gap-1.5"><i data-lucide="download" class="w-3.5 h-3.5"></i> Esporta</button>
         </div>
-        <template x-if="!allBookings.length"><div class="text-center py-8 bg-white rounded-2xl border border-slate-100"><p class="text-sm text-slate-400">Nessuna prenotazione attiva.</p></div></template>
+        <template x-if="!allBookings.length"><div class="text-center py-8 bg-white rounded-xl border border-slate-100"><p class="text-sm text-slate-400">Nessuna prenotazione attiva.</p></div></template>
         <div class="space-y-3">
             <template x-for="b in allBookings.sort((x,y)=>new Date(y.createdAt?.seconds*1000)-new Date(x.createdAt?.seconds*1000))" :key="b.id">
-                <div class="bg-white rounded-2xl border-2 p-4 shadow-sm relative overflow-hidden card-hover transition-colors" 
+                <div class="bg-white rounded-xl border-2 p-4 shadow-sm relative overflow-hidden card-hover transition-colors" 
                      :class="{
                          'border-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.15)]': getBookingStatus(b)==='active',
                          'border-amber-400': getBookingStatus(b)==='upcoming',
@@ -262,18 +308,21 @@
                          'border-slate-100 opacity-60 grayscale': getBookingStatus(b)==='past'
                      }">
                     
-                    <div class="absolute top-0 right-0 px-3 py-1 rounded-bl-xl text-[9px] font-black tracking-wider"
+                    <div class="absolute top-0 right-0 px-3 py-1 rounded-bl-lg text-[9px] font-black tracking-wider flex items-center gap-1"
                          :class="{
                              'bg-emerald-500 text-white animate-pulse': getBookingStatus(b)==='active',
                              'bg-amber-400 text-amber-900': getBookingStatus(b)==='upcoming',
                              'bg-slate-200 text-slate-500': getBookingStatus(b)==='future',
                              'bg-slate-100 text-slate-400': getBookingStatus(b)==='past'
-                         }" x-text="{active:'🔴 IN USO', upcoming:'🟡 IMMINENTE', future:'⚪ FUTURA', past:'⚫ CONCLUSA'}[getBookingStatus(b)]"></div>
+                         }">
+                        <i :data-lucide="{active:'play-circle', upcoming:'clock', future:'calendar', past:'check-circle'}[getBookingStatus(b)]" class="w-3 h-3"></i>
+                        <span x-text="{active:'IN USO', upcoming:'IMMINENTE', future:'FUTURA', past:'CONCLUSA'}[getBookingStatus(b)]"></span>
+                    </div>
                     
                     <h3 class="font-black text-sm text-slate-800 pr-20" x-text="b.resourceName"></h3>
                     <p class="text-[10px] text-slate-500 mb-2">PNR: <span class="font-mono font-bold" x-text="b.pnr"></span> · Da: <span class="font-bold text-slate-700" x-text="b.userName"></span></p>
                     
-                    <div class="flex items-center gap-2 bg-slate-50 rounded-xl p-2 text-[10px] border border-slate-100">
+                    <div class="flex items-center gap-2 bg-slate-50 rounded-lg p-2 text-[10px] border border-slate-100">
                         <div class="flex-1 text-center border-r border-slate-200"><div class="text-slate-400 font-bold mb-0.5">INIZIO</div><div class="font-black text-slate-700" x-text="new Date(b.startDate).toLocaleString('it-IT',{dateStyle:'short',timeStyle:'short'})"></div></div>
                         <div class="flex-1 text-center"><div class="text-slate-400 font-bold mb-0.5">FINE</div><div class="font-black text-slate-700" x-text="new Date(b.endDate).toLocaleString('it-IT',{dateStyle:'short',timeStyle:'short'})"></div></div>
                     </div>
@@ -283,53 +332,59 @@
     </div>
     <!-- INV MGMT -->
     <div x-show="adminTab==='inventory'" class="space-y-4">
-        <div class="bg-white rounded-[1.5rem] border border-slate-100 shadow-sm p-5">
-            <div class="flex items-center justify-between mb-4"><h3 class="text-sm font-black text-slate-800" x-text="editingItem?'✏️ '+editingItem.name:'➕ Nuovo Articolo'"></h3><button x-show="editingItem" @click="clearItemForm()" class="text-[10px] text-indigo-600 font-bold">+ NUOVO</button></div>
+        <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-4">
+            <div class="flex items-center justify-between mb-4"><h3 class="text-sm font-black text-slate-800 flex items-center gap-1.5"><i data-lucide="package-plus" class="w-4 h-4 text-emerald-600"></i> <span x-text="editingItem?'Modifica: '+editingItem.name:'Nuovo Articolo'"></span></h3><button x-show="editingItem" @click="clearItemForm()" class="text-[10px] text-indigo-600 font-bold flex items-center gap-1"><i data-lucide="plus-circle" class="w-3 h-3"></i> NUOVO</button></div>
             <form @submit.prevent="saveInventoryItem()" class="space-y-3">
                 <div class="grid grid-cols-2 gap-3">
-                    <div><label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Nome *</label><input type="text" x-model="itemForm.name" required class="w-full px-3 py-2 border-2 border-slate-200 focus:border-emerald-500 rounded-xl text-sm outline-none transition-all" /></div>
-                    <div><label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase">ID *</label><input type="text" x-model="itemForm.id" :disabled="!!editingItem" required class="w-full px-3 py-2 border-2 border-slate-200 focus:border-emerald-500 rounded-xl text-sm outline-none disabled:bg-slate-50 disabled:text-slate-400 transition-all" /></div>
+                    <div><label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Nome *</label><input type="text" x-model="itemForm.name" required class="w-full px-3 py-2 border border-slate-200 focus:border-emerald-500 rounded-lg text-sm outline-none transition-all" /></div>
+                    <div><label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase">ID *</label><input type="text" x-model="itemForm.id" :disabled="!!editingItem" required class="w-full px-3 py-2 border border-slate-200 focus:border-emerald-500 rounded-lg text-sm outline-none disabled:bg-slate-50 disabled:text-slate-400 transition-all font-mono" /></div>
                 </div>
                 <div class="grid grid-cols-2 gap-3">
-                    <div><label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Brand</label><input type="text" x-model="itemForm.brand" class="w-full px-3 py-2 border-2 border-slate-200 focus:border-emerald-500 rounded-xl text-sm outline-none transition-all" /></div>
-                    <div><label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Categoria</label><input type="text" x-model="itemForm.category" class="w-full px-3 py-2 border-2 border-slate-200 focus:border-emerald-500 rounded-xl text-sm outline-none transition-all" /></div>
+                    <div><label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Brand</label><input type="text" x-model="itemForm.brand" class="w-full px-3 py-2 border border-slate-200 focus:border-emerald-500 rounded-lg text-sm outline-none transition-all" /></div>
+                    <div><label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Categoria</label><input type="text" x-model="itemForm.category" class="w-full px-3 py-2 border border-slate-200 focus:border-emerald-500 rounded-lg text-sm outline-none transition-all" /></div>
                 </div>
                 <div class="grid grid-cols-3 gap-3">
-                    <div><label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Qtà *</label><input type="number" step="1" x-model.number="itemForm.quantity" required class="w-full px-3 py-2 border-2 border-slate-200 focus:border-emerald-500 rounded-xl text-sm outline-none transition-all" /></div>
-                    <div><label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Unità *</label><input type="text" x-model="itemForm.unit" required class="w-full px-3 py-2 border-2 border-slate-200 focus:border-emerald-500 rounded-xl text-sm outline-none transition-all" /></div>
-                    <div><label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Soglia</label><input type="number" step="1" x-model.number="itemForm.threshold" class="w-full px-3 py-2 border-2 border-slate-200 focus:border-emerald-500 rounded-xl text-sm outline-none transition-all" /></div>
+                    <div><label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Qtà *</label><input type="number" step="1" x-model.number="itemForm.quantity" required class="w-full px-3 py-2 border border-slate-200 focus:border-emerald-500 rounded-lg text-sm outline-none transition-all" /></div>
+                    <div><label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Unità *</label><input type="text" x-model="itemForm.unit" required class="w-full px-3 py-2 border border-slate-200 focus:border-emerald-500 rounded-lg text-sm outline-none transition-all" /></div>
+                    <div><label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Soglia</label><input type="number" step="1" x-model.number="itemForm.threshold" class="w-full px-3 py-2 border border-slate-200 focus:border-emerald-500 rounded-lg text-sm outline-none transition-all" /></div>
                 </div>
-                <div><label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Posizione</label><input type="text" x-model="itemForm.location" class="w-full px-3 py-2 border-2 border-slate-200 focus:border-emerald-500 rounded-xl text-sm outline-none transition-all" /></div>
-                <div><label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Email notifica scorte</label><input type="email" x-model="itemForm.restockEmail" placeholder="email@lab.it" class="w-full px-3 py-2 border-2 border-slate-200 focus:border-emerald-500 rounded-xl text-sm outline-none transition-all" /></div>
-                <div><label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase">URL Immagine</label><input type="url" x-model="itemForm.image" class="w-full px-3 py-2 border-2 border-slate-200 focus:border-emerald-500 rounded-xl text-sm outline-none transition-all" /></div>
-                <button type="submit" :disabled="saving" class="w-full py-3 bg-slate-900 text-white rounded-xl font-black text-sm hover:bg-slate-700 active:scale-[.97] transition-all shadow-lg disabled:opacity-60" x-text="saving?'Salvataggio...':(editingItem?'AGGIORNA':'SALVA ARTICOLO')"></button>
+                <div class="grid grid-cols-2 gap-3">
+                    <div><label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Posizione</label><input type="text" x-model="itemForm.location" class="w-full px-3 py-2 border border-slate-200 focus:border-emerald-500 rounded-lg text-sm outline-none transition-all" /></div>
+                    <div><label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Email Scorte</label><input type="email" x-model="itemForm.restockEmail" class="w-full px-3 py-2 border border-slate-200 focus:border-emerald-500 rounded-lg text-sm outline-none transition-all" /></div>
+                </div>
+                <div><label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase">URL Immagine</label><input type="url" x-model="itemForm.image" class="w-full px-3 py-2 border border-slate-200 focus:border-emerald-500 rounded-lg text-sm outline-none transition-all" /></div>
+                <div class="flex gap-2 mt-4 pt-2">
+                    <button type="submit" :disabled="saving" class="flex-1 py-2 bg-slate-900 text-white rounded-lg font-bold text-xs shadow-md transition hover:bg-slate-800 disabled:opacity-60" x-text="saving?'Salvataggio...':(editingItem ? 'SALVA MODIFICHE' : 'AGGIUNGI ARTICOLO')"></button>
+                    <button type="button" x-show="editingItem" @click="deleteItem(editingItem.id, 'inventory')" class="w-10 flex items-center justify-center bg-red-50 text-red-600 border border-red-200 rounded-lg hover:bg-red-100 transition"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                </div>
             </form>
         </div>
+        <p class="text-[10px] text-center text-slate-400">Clicca su &quot;Gestisci&quot; da un articolo nel Magazzino per modificarlo.</p>
         <div class="space-y-2">
             <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Database (<span x-text="inventory.length"></span>)</p>
-            <template x-for="item in inventory" :key="item.id"><div class="bg-white rounded-xl border border-slate-100 p-3 flex items-center gap-3 card-hover"><div class="flex-1 min-w-0"><div class="font-bold text-sm text-slate-800 truncate" x-text="item.name"></div><div class="text-[10px] text-slate-400 font-mono" x-text="item.id+' · '+item.quantity+' '+item.unit"></div></div><div class="flex gap-1 flex-shrink-0"><button @click="editItem(item)" class="px-2.5 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg text-[10px] font-bold hover:bg-indigo-100 transition">✏️</button><button @click="deleteItem(item)" x-show="isAdmin" class="px-2.5 py-1.5 bg-red-50 text-red-500 rounded-lg text-[10px] font-bold hover:bg-red-100 transition">🗑️</button></div></div></template>
+            <template x-for="item in inventory" :key="item.id"><div class="bg-white rounded-xl border border-slate-100 p-3 flex items-center gap-3 card-hover"><div class="flex-1 min-w-0"><div class="font-bold text-sm text-slate-800 truncate" x-text="item.name"></div><div class="text-[10px] text-slate-400 font-mono" x-text="item.id+' · '+item.quantity+' '+item.unit"></div></div><div class="flex gap-1 flex-shrink-0"><button @click="editItem(item)" class="px-2.5 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg text-[10px] font-bold hover:bg-indigo-100 transition"><i data-lucide="pencil" class="w-3 h-3"></i></button><button @click="deleteItem(item)" x-show="isAdmin" class="px-2.5 py-1.5 bg-red-50 text-red-500 rounded-lg text-[10px] font-bold hover:bg-red-100 transition"><i data-lucide="trash-2" class="w-3 h-3"></i></button></div></div></template>
         </div>
     </div>
     <!-- INSTR MGMT -->
     <div x-show="adminTab==='instruments'" class="space-y-4">
-        <div class="bg-white rounded-[1.5rem] border border-slate-100 shadow-sm p-5">
-            <div class="flex items-center justify-between mb-4"><h3 class="text-sm font-black text-slate-800" x-text="editingInstrument?'✏️ '+editingInstrument.name:'➕ Nuovo Strumento'"></h3><button x-show="editingInstrument" @click="clearInstrumentForm()" class="text-[10px] text-indigo-600 font-bold">+ NUOVO</button></div>
+        <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-4">
+            <div class="flex items-center justify-between mb-4"><h3 class="text-sm font-black text-slate-800 flex items-center gap-1.5"><i data-lucide="microscope" class="w-4 h-4 text-indigo-600"></i> <span x-text="editingInstrument?'Modifica: '+editingInstrument.name:'Nuovo Strumento'"></span></h3><button x-show="editingInstrument" @click="clearInstrumentForm()" class="text-[10px] text-indigo-600 font-bold flex items-center gap-1"><i data-lucide="plus-circle" class="w-3 h-3"></i> NUOVO</button></div>
             <form @submit.prevent="saveInstrument()" class="space-y-3">
                 <div class="grid grid-cols-2 gap-3">
-                    <div><label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Nome *</label><input type="text" x-model="instrumentForm.name" required class="w-full px-3 py-2 border-2 border-slate-200 focus:border-indigo-500 rounded-xl text-sm outline-none transition-all" /></div>
-                    <div><label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase">ID *</label><input type="text" x-model="instrumentForm.id" :disabled="!!editingInstrument" required class="w-full px-3 py-2 border-2 border-slate-200 focus:border-indigo-500 rounded-xl text-sm outline-none disabled:bg-slate-50 transition-all" /></div>
+                    <div><label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Nome *</label><input type="text" x-model="instrumentForm.name" required class="w-full px-3 py-2 border border-slate-200 focus:border-indigo-500 rounded-lg text-sm outline-none transition-all" /></div>
+                    <div><label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase">ID *</label><input type="text" x-model="instrumentForm.id" :disabled="!!editingInstrument" required class="w-full px-3 py-2 border border-slate-200 focus:border-indigo-500 rounded-lg text-sm outline-none disabled:bg-slate-50 transition-all font-mono" /></div>
                 </div>
                 <div class="grid grid-cols-2 gap-3">
-                    <div><label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Marca</label><input type="text" x-model="instrumentForm.brand" class="w-full px-3 py-2 border-2 border-slate-200 focus:border-indigo-500 rounded-xl text-sm outline-none transition-all" /></div>
-                    <div><label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Posizione</label><input type="text" x-model="instrumentForm.location" class="w-full px-3 py-2 border-2 border-slate-200 focus:border-indigo-500 rounded-xl text-sm outline-none transition-all" /></div>
+                    <div><label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Marca</label><input type="text" x-model="instrumentForm.brand" class="w-full px-3 py-2 border border-slate-200 focus:border-indigo-500 rounded-lg text-sm outline-none transition-all" /></div>
+                    <div><label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Posizione</label><input type="text" x-model="instrumentForm.location" class="w-full px-3 py-2 border border-slate-200 focus:border-indigo-500 rounded-lg text-sm outline-none transition-all" /></div>
                 </div>
-                <div><label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Categoria</label><input type="text" x-model="instrumentForm.category" class="w-full px-3 py-2 border-2 border-slate-200 focus:border-indigo-500 rounded-xl text-sm outline-none transition-all" /></div>
-                <div><label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase">URL Foto</label><input type="url" x-model="instrumentForm.imageUrl" class="w-full px-3 py-2 border-2 border-slate-200 focus:border-indigo-500 rounded-xl text-sm outline-none transition-all" /></div>
-                <button type="submit" :disabled="saving" class="w-full py-3 bg-indigo-600 text-white rounded-xl font-black text-sm hover:bg-indigo-500 active:scale-[.97] transition-all shadow-lg disabled:opacity-60" x-text="saving?'Salvataggio...':(editingInstrument?'AGGIORNA':'SALVA STRUMENTO')"></button>
+                <div><label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Categoria</label><input type="text" x-model="instrumentForm.category" class="w-full px-3 py-2 border border-slate-200 focus:border-indigo-500 rounded-lg text-sm outline-none transition-all" /></div>
+                <div><label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase">URL Foto</label><input type="url" x-model="instrumentForm.imageUrl" class="w-full px-3 py-2 border border-slate-200 focus:border-indigo-500 rounded-lg text-sm outline-none transition-all" /></div>
+                <button type="submit" :disabled="saving" class="w-full py-2 bg-indigo-600 text-white rounded-lg font-bold text-xs shadow-md transition hover:bg-indigo-500 mt-2 disabled:opacity-60" x-text="saving?'Salvataggio...':(editingInstrument?'AGGIORNA':'SALVA STRUMENTO')"></button>
             </form>
         </div>
         <div class="space-y-2"><p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Strumenti (<span x-text="resources.length"></span>)</p>
-            <template x-for="res in resources" :key="res.id"><div class="bg-white rounded-xl border border-slate-100 p-3 flex items-center gap-3 card-hover"><div class="flex-1 min-w-0"><div class="font-bold text-sm text-slate-800 truncate" x-text="res.name"></div><div class="text-[10px] text-slate-400 font-mono" x-text="res.id+(res.location?' · '+res.location:'')"></div></div><button @click="editInstrument(res)" class="px-2.5 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg text-[10px] font-bold hover:bg-indigo-100 transition flex-shrink-0">✏️</button></div></template>
+            <template x-for="res in resources" :key="res.id"><div class="bg-white rounded-xl border border-slate-100 p-3 flex items-center gap-3 card-hover"><div class="flex-1 min-w-0"><div class="font-bold text-sm text-slate-800 truncate" x-text="res.name"></div><div class="text-[10px] text-slate-400 font-mono" x-text="res.id+(res.location?' · '+res.location:'')"></div></div><button @click="editInstrument(res)" class="px-2.5 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg text-[10px] font-bold hover:bg-indigo-100 transition flex-shrink-0"><i data-lucide="pencil" class="w-3 h-3"></i></button></div></template>
         </div>
     </div>
     <!-- LOGS -->
@@ -337,59 +392,59 @@
         <div class="flex items-center justify-between">
             <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Registro</p>
             <div class="flex gap-2">
-                <button @click="exportLogs()" class="px-3 py-1.5 bg-slate-200 text-slate-700 rounded-xl text-[10px] font-bold hover:bg-slate-300 transition">📥 .txt</button>
-                <button @click="loadLogs()" class="text-[10px] text-indigo-600 font-bold hover:underline">↻ Aggiorna</button>
+                <button @click="exportLogs()" class="px-3 py-1.5 bg-slate-200 text-slate-700 rounded-lg text-[10px] font-bold hover:bg-slate-300 transition flex items-center gap-1"><i data-lucide="download" class="w-3.5 h-3.5 text-slate-500"></i> .txt</button>
+                <button @click="loadLogs()" class="px-3 py-1.5 bg-indigo-50 text-indigo-700 border border-indigo-100 rounded-lg text-[10px] font-bold hover:bg-indigo-100 transition flex items-center gap-1"><i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Aggiorna</button>
             </div>
         </div>
-        <template x-if="!logs.length"><div class="text-center py-8 bg-white rounded-2xl border border-slate-100"><p class="text-sm text-slate-400">Nessun log.</p></div></template>
-        <template x-for="l in logs" :key="l._id"><div class="bg-white rounded-xl border border-slate-100 p-3 text-xs shadow-sm card-hover"><div class="flex items-center justify-between mb-1"><span class="font-bold px-1.5 py-0.5 rounded text-[9px] uppercase" :class="{'bg-indigo-50 text-indigo-600':l.category==='BOOKING','bg-emerald-50 text-emerald-600':l.category==='INVENTORY','bg-amber-50 text-amber-600':l.category==='ADMIN','bg-red-50 text-red-600':l.category==='ERROR'||l.category==='EMAIL','bg-slate-100 text-slate-500':!l.category}" x-text="l.category||'SYSTEM'"></span><span class="text-[9px] text-slate-400" x-text="l.timestamp?new Date(l.timestamp.seconds*1000).toLocaleString('it-IT'):''"></span></div><div class="font-bold text-slate-700" x-text="l.action"></div><div class="text-slate-500 text-[10px] mt-0.5" x-text="l.details"></div><div class="text-[9px] font-mono text-slate-400 mt-1" x-text="l.userEmail"></div></div></template>
+        <template x-if="!logs.length"><div class="text-center py-8 bg-white rounded-xl border border-slate-100"><p class="text-sm text-slate-400">Nessun log.</p></div></template>
+        <template x-for="l in logs" :key="l._id"><div class="bg-white rounded-xl border border-slate-100 p-3 text-xs shadow-sm card-hover"><div class="flex items-center justify-between mb-1"><span class="font-bold px-1.5 py-0.5 rounded text-[9px] uppercase tracking-wider" :class="{'bg-indigo-50 text-indigo-600':l.category==='BOOKING','bg-emerald-50 text-emerald-600':l.category==='INVENTORY','bg-amber-50 text-amber-600':l.category==='ADMIN','bg-red-50 text-red-600':l.category==='ERROR'||l.category==='EMAIL','bg-slate-100 text-slate-500':!l.category}" x-text="l.category||'SYSTEM'"></span><span class="text-[9px] text-slate-400" x-text="l.timestamp?new Date(l.timestamp.seconds*1000).toLocaleString('it-IT'):''"></span></div><div class="font-bold text-slate-700" x-text="l.action"></div><div class="text-slate-500 text-[10px] mt-0.5" x-text="l.details"></div><div class="text-[9px] font-mono text-slate-400 mt-1" x-text="l.userEmail"></div></div></template>
     </div>
 
     <!-- LABELS (ETICHETTE) -->
     <div x-show="adminTab==='labels'" class="space-y-4">
-        <div class="bg-white rounded-[1.5rem] border border-slate-100 shadow-sm p-4">
-            <div class="flex items-center justify-between mb-3"><h3 class="text-sm font-bold text-slate-700">Generatore Etichette</h3><button @click="printLabels()" class="px-3 py-1.5 bg-emerald-600 text-white rounded-xl text-xs font-bold hover:bg-emerald-500 transition shadow-md">🖨️ Stampa</button></div>
-            <div class="flex p-1 bg-slate-50 border border-slate-200 rounded-xl gap-1 mb-4">
-                <button @click="labelsType='inventory'" :class="labelsType==='inventory'?'bg-white shadow-sm font-black text-slate-800':'text-slate-500'" class="flex-1 py-1.5 rounded-lg text-xs transition-all">📦 Magazzino</button>
-                <button @click="labelsType='resources'" :class="labelsType==='resources'?'bg-white shadow-sm font-black text-slate-800':'text-slate-500'" class="flex-1 py-1.5 rounded-lg text-xs transition-all">🔬 Strumenti</button>
+        <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-4">
+            <div class="flex items-center justify-between mb-3"><h3 class="text-sm font-bold text-slate-700 flex items-center gap-1.5"><i data-lucide="qr-code" class="w-4 h-4 text-emerald-600"></i> Generatore Etichette</h3><button @click="printLabels()" class="px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-xs font-bold hover:bg-emerald-500 transition shadow-sm flex items-center gap-1.5"><i data-lucide="printer" class="w-3.5 h-3.5"></i> Stampa</button></div>
+            <div class="flex p-1 bg-slate-100 rounded-lg gap-1 border border-slate-200 mb-4">
+                <button @click="labelsType='inventory'" :class="labelsType==='inventory'?'bg-white shadow-sm font-black text-slate-800':'text-slate-500 hover:bg-slate-200/50'" class="flex-1 py-1.5 rounded-md text-[11px] font-bold transition-all flex items-center justify-center gap-1.5"><i data-lucide="package" class="w-3.5 h-3.5"></i> Magazzino</button>
+                <button @click="labelsType='resources'" :class="labelsType==='resources'?'bg-white shadow-sm font-black text-slate-800':'text-slate-500 hover:bg-slate-200/50'" class="flex-1 py-1.5 rounded-md text-[11px] font-bold transition-all flex items-center justify-center gap-1.5"><i data-lucide="microscope" class="w-3.5 h-3.5"></i> Strumenti</button>
             </div>
             <div class="space-y-2 mb-4 max-h-48 overflow-y-auto pr-2">
                 <template x-for="item in (labelsType==='inventory'?inventory:resources)" :key="item.id">
                     <label class="flex items-center gap-3 p-2 hover:bg-slate-50 rounded-lg cursor-pointer transition-colors border border-transparent hover:border-slate-200">
-                        <input type="checkbox" :value="item.id" x-model="selectedLabels" @change="generateSelectedLabels()" class="w-4 h-4 rounded border-slate-300 text-emerald-500 focus:ring-emerald-500/20" />
+                        <input type="checkbox" :value="item.id" x-model="selectedLabels" @change="generateSelectedLabels()" class="w-4 h-4 rounded border border-slate-300 text-emerald-500 focus:ring-emerald-500/20" />
                         <span class="flex-1 text-xs font-bold text-slate-700 truncate" x-text="item.name"></span>
                         <span class="text-[9px] text-slate-400 font-mono" x-text="item.id"></span>
                     </label>
                 </template>
             </div>
-            <p class="text-[10px] text-slate-400 text-center" x-text="selectedLabels.length + ' selezionati'"></p>
+            <p class="text-[10px] text-slate-400 text-center font-bold" x-text="selectedLabels.length + ' selezionati'"></p>
         </div>
         
         <!-- Hidden print container -->
         <div id="print-labels-container" class="hidden"></div>
         
         <!-- Preview section -->
-        <div class="bg-white rounded-[1.5rem] border border-slate-100 shadow-sm p-4">
-            <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Anteprima</h3>
+        <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-4">
+            <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-1.5"><i data-lucide="eye" class="w-3.5 h-3.5"></i> Anteprima</h3>
             <div id="labels-preview" class="grid grid-cols-2 sm:grid-cols-3 gap-2"></div>
         </div>
     </div>
 
     <!-- SETTINGS -->
     <div x-show="adminTab==='settings' && isAdmin" class="space-y-4">
-        <div class="bg-white rounded-[1.5rem] border border-slate-100 shadow-sm p-5 space-y-4">
-            <h3 class="text-sm font-black text-slate-800 border-b border-slate-100 pb-2">🔑 Gestione Ruoli</h3>
+        <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-4 space-y-4">
+            <h3 class="text-sm font-black text-slate-800 border-b border-slate-100 pb-2 flex items-center gap-1.5"><i data-lucide="shield" class="w-4 h-4 text-indigo-600"></i> Gestione Ruoli</h3>
             
             <div class="space-y-2">
-                <div class="flex items-center justify-between"><label class="text-xs font-bold text-slate-700">Co-Amministratori</label><span class="text-[9px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-bold">Accesso Completo</span></div>
+                <div class="flex items-center justify-between"><label class="text-xs font-bold text-slate-700">Co-Amministratori</label><span class="text-[9px] bg-amber-50 text-amber-700 px-2 py-0.5 rounded border border-amber-200 font-bold">Accesso Completo</span></div>
                 <div class="flex gap-2">
-                    <input type="email" x-model="newCoAdminEmail" placeholder="email@unicz.it" class="flex-1 px-3 py-2 border-2 border-slate-200 rounded-xl text-xs outline-none focus:border-emerald-500" />
-                    <button @click="addRole('admins', newCoAdminEmail, 'newCoAdminEmail')" class="px-3 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-slate-700 transition">Aggiungi</button>
+                    <input type="email" x-model="newCoAdminEmail" placeholder="email@unicz.it" class="flex-1 px-3 py-2 border border-slate-200 rounded-lg text-xs outline-none focus:border-indigo-500" />
+                    <button @click="addRole('admins', newCoAdminEmail, 'newCoAdminEmail')" class="px-3 py-2 bg-slate-900 text-white rounded-lg text-xs font-bold hover:bg-slate-800 transition shadow-sm">Aggiungi</button>
                 </div>
                 <div class="space-y-1 mt-2">
-                    <template x-if="!coAdmins.length"><p class="text-[10px] text-slate-400">Nessun co-admin presente.</p></template>
+                    <template x-if="!coAdmins.length"><p class="text-[10px] text-slate-400 font-bold">Nessun co-admin presente.</p></template>
                     <template x-for="email in coAdmins" :key="email">
-                        <div class="flex items-center justify-between bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100"><span class="text-xs font-mono text-slate-600 truncate" x-text="email"></span><button @click="removeRole('admins', email)" class="text-red-500 hover:text-red-700 p-1">✕</button></div>
+                        <div class="flex items-center justify-between bg-slate-50 px-3 py-1.5 rounded border border-slate-200 shadow-sm"><span class="text-xs font-mono text-slate-600 truncate" x-text="email"></span><button @click="removeRole('admins', email)" class="text-slate-400 hover:text-red-600 transition p-1"><i data-lucide="x" class="w-3 h-3"></i></button></div>
                     </template>
                 </div>
             </div>
@@ -411,39 +466,38 @@
             </div>
         </div>
 
-        <div class="bg-red-50 rounded-[1.5rem] border border-red-200 p-5">
-            <h3 class="text-sm font-black text-red-800 mb-2">⚠️ Sistema e Manutenzione</h3>
+        <div class="bg-red-50 rounded-xl border border-red-200 p-5">
+            <h3 class="text-sm font-black text-red-800 mb-2 flex items-center gap-1.5"><i data-lucide="alert-triangle" class="w-4 h-4"></i> Sistema e Manutenzione</h3>
             <p class="text-xs text-red-600 mb-3 leading-relaxed">Attivando la manutenzione, il sito non sarà accessibile agli utenti normali, ma solo agli amministratori e ai supervisori.</p>
-            <label class="flex items-center justify-between bg-white p-3 rounded-xl border border-red-100 cursor-pointer">
+            <label class="flex items-center justify-between bg-white p-3 rounded-lg border border-red-100 cursor-pointer">
                 <span class="text-xs font-bold text-red-700">Modalità Manutenzione</span>
                 <div class="relative w-11 h-6 rounded-full transition-colors" :class="maintenanceMode?'bg-red-500':'bg-slate-300'">
                     <div class="absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform" :class="maintenanceMode?'translate-x-5':''"></div>
                 </div>
-                <!-- Binding to trigger changes not fully implemented in DB here, visual only for UI parity demo -->
             </label>
         </div>
     </div>
 </section>
 <!-- PROFILE -->
 <section x-show="activeView==='profile'" class="fade-in space-y-4">
-    <h2 class="text-base font-bold text-slate-800">👤 Il Mio Profilo</h2>
-    <div class="bg-white rounded-[1.5rem] border border-slate-100 shadow-sm p-5 card-hover">
+    <h2 class="text-base font-bold text-slate-800 flex items-center gap-2"><i data-lucide="user" class="w-5 h-5 text-emerald-600"></i> Il Mio Profilo</h2>
+    <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-4 card-hover">
         <div class="flex items-center gap-4">
-            <template x-if="user?.photoURL"><img :src="user.photoURL" class="w-16 h-16 rounded-2xl border-2 border-emerald-200 shadow-md" /></template>
-            <template x-if="!user?.photoURL"><div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center text-white text-2xl font-black shadow-md" x-text="(user?.displayName||user?.email||'?')[0].toUpperCase()"></div></template>
+            <template x-if="user?.photoURL"><img :src="user.photoURL" class="w-16 h-16 rounded-xl border border-emerald-100 shadow-sm" /></template>
+            <template x-if="!user?.photoURL"><div class="w-16 h-16 rounded-xl bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center text-white text-2xl font-black shadow-sm" x-text="(user?.displayName||user?.email||'?')[0].toUpperCase()"></div></template>
             <div class="flex-1 min-w-0">
                 <div class="font-black text-lg text-slate-800 truncate" x-text="user?.displayName||user?.email?.split('@')[0]"></div>
                 <div class="text-[10px] text-slate-400 truncate" x-text="user?.email"></div>
-                <span class="mt-2 inline-block text-[10px] font-bold px-2.5 py-1 rounded-full" :class="{'bg-amber-100 text-amber-700':isAdmin,'bg-emerald-100 text-emerald-700':isSupervisor&&!isAdmin,'bg-slate-100 text-slate-600':!isAdmin&&!isSupervisor}" x-text="isAdmin?'👑 Amministratore':(isSupervisor?'👁️ Supervisore':'👤 Utente')"></span>
+                <span class="mt-2 inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded border" :class="{'bg-amber-50 text-amber-700 border-amber-200':isAdmin,'bg-emerald-50 text-emerald-700 border-emerald-200':isSupervisor&&!isAdmin,'bg-slate-50 text-slate-600 border-slate-200':!isAdmin&&!isSupervisor}"><i :data-lucide="(isAdmin?'shield':(isSupervisor?'eye':'user'))" class="w-3 h-3"></i><span x-text="isAdmin?'Amministratore':(isSupervisor?'Supervisore':'Utente')"></span></span>
             </div>
         </div>
     </div>
-    <div class="bg-white rounded-[1.5rem] border border-slate-100 shadow-sm p-5">
-        <h3 class="text-xs font-bold text-slate-700 mb-3 flex items-center gap-2">📊 Ultimi movimenti</h3>
+    <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-4">
+        <h3 class="text-xs font-bold text-slate-700 mb-3 flex items-center gap-1.5"><i data-lucide="activity" class="w-4 h-4 text-indigo-500"></i> Ultimi movimenti</h3>
         <template x-if="!recentMovements.length"><p class="text-[10px] text-slate-400 text-center py-4">Nessun movimento.</p></template>
         <template x-for="m in recentMovements.slice(0,10)" :key="m._id">
             <div class="flex items-center gap-3 py-2 border-b border-slate-50 last:border-0">
-                <div class="w-7 h-7 rounded-lg flex items-center justify-center" :class="m.action==='add'?'bg-emerald-50':'bg-red-50'"><span class="text-sm font-black" :class="m.action==='add'?'text-emerald-600':'text-red-500'" x-text="m.action==='add'?'+':'−'"></span></div>
+                <div class="w-7 h-7 rounded-lg flex items-center justify-center" :class="m.action==='add'?'bg-emerald-50 text-emerald-600':'bg-red-50 text-red-500'"><i :data-lucide="m.action==='add'?'plus':'minus'" class="w-4 h-4"></i></div>
                 <div class="flex-1 min-w-0"><div class="text-xs font-bold text-slate-700 truncate" x-text="m.itemName"></div><div class="text-[9px] text-slate-400" x-text="m.timestamp?new Date(m.timestamp.seconds*1000).toLocaleString('it-IT'):''"></div></div>
                 <span class="text-xs font-black text-slate-600" x-text="m.amount+' '+(m.unit||'')"></span>
             </div>
@@ -453,13 +507,13 @@
 </section>
 </main>
 
-<!-- BOTTOM NAV -->
-<nav class="sm:hidden fixed bottom-0 inset-x-0 bg-white/95 backdrop-blur-xl border-t border-slate-100 shadow-[0_-4px_24px_rgba(0,0,0,.08)] z-50">
-    <div class="flex items-stretch">
+<!-- BOTTOM NAV (STABLE STYLE) -->
+<nav class="sm:hidden fixed bottom-0 left-0 w-full bg-white border-t border-slate-200 z-50 pb-safe">
+    <div class="flex justify-around items-center h-16">
         <template x-for="tab in visibleTabs" :key="tab.id">
-            <button @click="switchView(tab.id)" :class="activeView===tab.id?'text-emerald-600 active-tab':'text-slate-400'" class="flex-1 flex flex-col items-center justify-center py-3 gap-0.5 transition-colors active:bg-slate-50">
-                <span class="text-lg leading-none" x-text="tab.icon"></span>
-                <span class="text-[9px] font-bold leading-none" x-text="tab.label"></span>
+            <button @click="switchView(tab.id)" :class="activeView===tab.id?'text-emerald-600':'text-slate-400'" class="flex flex-col items-center justify-center w-full h-full transition-colors active:bg-slate-50">
+                <i :data-lucide="tab.icon" class="w-6 h-6 mb-1"></i>
+                <span class="text-[10px] font-bold" x-text="tab.label"></span>
             </button>
         </template>
     </div>
@@ -467,67 +521,67 @@
 </div>
 
 <!-- STOCK MODAL -->
-<div x-show="stockModal.open" x-cloak class="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] flex items-end sm:items-center justify-center" @click.self="stockModal.open=false" x-transition>
-    <div class="glass w-full sm:max-w-sm rounded-t-[2rem] sm:rounded-[2rem] p-6 shadow-2xl fade-in border-t border-white/50">
-        <div class="sm:hidden mx-auto mb-4 w-10 h-1 bg-slate-300 rounded-full"></div>
+<div x-show="stockModal.open" x-cloak class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4" @click.self="stockModal.open=false" x-transition>
+    <div class="bg-white w-full sm:max-w-sm rounded-t-2xl sm:rounded-2xl p-6 shadow-2xl fade-in border border-slate-200">
+        <div class="sm:hidden mx-auto mb-4 w-10 h-1.5 bg-slate-200 rounded-full"></div>
         <div class="flex items-center gap-3 mb-5">
-            <div class="w-12 h-12 rounded-2xl flex items-center justify-center text-xl" :class="stockModal.action==='add'?'bg-emerald-100 ring-2 ring-emerald-200':'bg-red-100 ring-2 ring-red-200'"><span x-text="stockModal.action==='add'?'📦':'📤'"></span></div>
-            <div><h3 class="text-lg font-black text-slate-800" x-text="stockModal.action==='add'?'Carico':'Scarico'"></h3><p class="text-[10px] text-slate-400" x-text="stockModal.item?.name"></p></div>
+            <div class="w-10 h-10 rounded-lg flex items-center justify-center border" :class="stockModal.action==='add'?'bg-emerald-50 text-emerald-600 border-emerald-100':'bg-red-50 text-red-600 border-red-100'"><i :data-lucide="stockModal.action==='add'?'package-plus':'package-minus'" class="w-5 h-5"></i></div>
+            <div><h3 class="text-lg font-black text-slate-800" x-text="stockModal.action==='add'?'Carico':'Scarico'"></h3><p class="text-[10px] text-slate-500" x-text="stockModal.item?.name"></p></div>
         </div>
         <div class="space-y-4">
-            <div class="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-xs"><span class="text-slate-500">Disponibili</span><span class="font-black text-lg" :class="stockModal.item?.quantity<=stockModal.item?.threshold?'text-red-500':'text-emerald-600'" x-text="(stockModal.item?.quantity||0)+' '+(stockModal.item?.unit||'')"></span></div>
+            <div class="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 text-xs"><span class="text-slate-500 font-bold">Disponibili</span><span class="font-black text-lg" :class="stockModal.item?.quantity<=stockModal.item?.threshold?'text-red-500':'text-emerald-600'" x-text="(stockModal.item?.quantity||0)+' '+(stockModal.item?.unit||'')"></span></div>
             <div>
                 <label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Quantità (<span x-text="stockModal.item?.unit"></span>)</label>
-                <input type="number" step="1" min="1" x-model.number="stockModal.qty" class="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 rounded-xl text-2xl font-black font-mono text-center outline-none transition-all" placeholder="1" id="stock-modal-qty" />
+                <input type="number" step="1" min="1" x-model.number="stockModal.qty" class="w-full px-4 py-3 bg-white border border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 rounded-lg text-2xl font-black font-mono text-center outline-none transition-all" placeholder="1" id="stock-modal-qty" />
             </div>
-            <div><label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Identificativo Operatore</label><input type="text" x-model="stockModal.operator" class="w-full px-4 py-2.5 bg-slate-50 border-2 border-slate-200 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 rounded-xl text-sm outline-none transition-all" placeholder="Nome o codice..." /></div>
-            <button @click="confirmStockMovement()" :disabled="!stockModal.qty||!stockModal.operator||confirming" :class="stockModal.action==='add'?'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-500/30':'bg-red-600 hover:bg-red-500 shadow-red-500/30'" class="w-full py-3.5 text-white rounded-xl font-black shadow-lg active:scale-[.97] transition-all disabled:opacity-50"><span x-text="confirming?'Salvataggio...':'CONFERMA'"></span></button>
+            <div><label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Identificativo Operatore</label><input type="text" x-model="stockModal.operator" class="w-full px-4 py-2.5 bg-white border border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 rounded-lg text-sm outline-none transition-all" placeholder="Nome o ID univoco..." /></div>
+            <button @click="confirmStockMovement()" :disabled="!stockModal.qty||!stockModal.operator||confirming" :class="stockModal.action==='add'?'bg-emerald-600 hover:bg-emerald-500':'bg-red-600 hover:bg-red-500'" class="w-full py-3 text-white rounded-lg font-black shadow-sm active:scale-[.97] transition-all disabled:opacity-50"><span x-text="confirming?'Salvataggio...':'CONFERMA'"></span></button>
             <button @click="stockModal.open=false" class="w-full py-2 text-slate-400 text-xs font-bold hover:text-slate-600 transition">ANNULLA</button>
         </div>
     </div>
 </div>
 
 <!-- BOOKING MODAL -->
-<div x-show="bookingModal.open" x-cloak class="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] flex items-end sm:items-center justify-center" @click.self="bookingModal.open=false;bookingModal.pnr=''">
-    <div class="glass w-full sm:max-w-md rounded-t-[2rem] sm:rounded-[2rem] p-6 shadow-2xl fade-in max-h-[92vh] overflow-y-auto border-t border-white/50">
-        <div class="sm:hidden mx-auto mb-4 w-10 h-1 bg-slate-300 rounded-full"></div>
+<div x-show="bookingModal.open" x-cloak class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4" @click.self="bookingModal.open=false;bookingModal.pnr=''">
+    <div class="bg-white w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl p-6 shadow-2xl fade-in max-h-[92vh] overflow-y-auto border border-slate-200">
+        <div class="sm:hidden mx-auto mb-4 w-10 h-1.5 bg-slate-200 rounded-full"></div>
         <div class="flex items-center gap-3 mb-5">
-            <div class="w-12 h-12 rounded-2xl bg-indigo-100 flex items-center justify-center text-xl ring-2 ring-indigo-200">🔬</div>
-            <div><h3 class="text-lg font-black text-slate-800" x-text="bookingModal.resource?.name"></h3><p class="text-[10px] text-slate-400 font-mono" x-text="bookingModal.resource?.id"></p></div>
+            <div class="w-10 h-10 rounded-lg bg-indigo-50 border border-indigo-100 text-indigo-600 flex items-center justify-center text-xl"><i data-lucide="microscope" class="w-5 h-5"></i></div>
+            <div><h3 class="text-lg font-black text-slate-800" x-text="bookingModal.resource?.name"></h3><p class="text-[10px] text-slate-500 font-mono" x-text="bookingModal.resource?.id"></p></div>
         </div>
         <!-- Existing bookings for this resource -->
         <div x-show="!bookingModal.pnr" class="mb-5">
             <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Prenotazioni esistenti</p>
-            <template x-if="bookingModal.loadingBookings"><div class="h-8 shimmer rounded-xl"></div></template>
-            <template x-if="!bookingModal.loadingBookings && !bookingModal.bookings.length"><div class="flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2"><span class="text-emerald-600 font-bold text-xs">✅ LIBERO</span><span class="text-[10px] text-emerald-500">Nessuna prenotazione attiva</span></div></template>
+            <template x-if="bookingModal.loadingBookings"><div class="h-8 shimmer rounded-lg"></div></template>
+            <template x-if="!bookingModal.loadingBookings && !bookingModal.bookings.length"><div class="flex items-center gap-2 bg-emerald-50 border border-emerald-100 rounded-lg px-3 py-2"><i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-600"></i><span class="text-emerald-700 font-bold text-xs flex-1">Nessuna prenotazione attiva</span></div></template>
             <template x-if="!bookingModal.loadingBookings && bookingModal.bookings.length">
-                <div class="space-y-1.5 max-h-32 overflow-y-auto scrollbar-hide">
+                <div class="space-y-1.5 max-h-32 overflow-y-auto scrollbar-hide pr-1">
                     <template x-for="b in bookingModal.bookings" :key="b.id">
                         <div class="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5" :class="new Date()>=new Date(b.startDate)&&new Date()<=new Date(b.endDate)?'border-l-4 border-l-emerald-500':''">
                             <div class="flex-1 min-w-0"><span class="text-[10px] font-bold text-slate-700" x-text="b.userName"></span><span class="text-[9px] text-slate-400 ml-1" x-text="new Date(b.startDate).toLocaleDateString('it-IT',{day:'2-digit',month:'short'})+' '+new Date(b.startDate).toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'})+' - '+new Date(b.endDate).toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'})"></span></div>
-                            <template x-if="new Date()>=new Date(b.startDate)&&new Date()<=new Date(b.endDate)"><span class="text-[8px] bg-emerald-500 text-white px-1.5 py-0.5 rounded-full font-bold animate-pulse">IN USO</span></template>
+                            <template x-if="new Date()>=new Date(b.startDate)&&new Date()<=new Date(b.endDate)"><span class="text-[8px] bg-emerald-500 text-white px-1.5 py-0.5 rounded font-bold animate-pulse">IN USO</span></template>
                         </div>
                     </template>
                 </div>
             </template>
         </div>
         <!-- PNR success -->
-        <div x-show="bookingModal.pnr" class="bg-gradient-to-br from-emerald-50 to-emerald-100 border border-emerald-200 rounded-2xl p-6 text-center mb-4">
-            <div class="text-4xl mb-2">🎉</div>
-            <p class="text-xs text-emerald-700 font-medium mb-2">Prenotazione confermata!</p>
-            <p class="text-4xl font-black text-emerald-600 tracking-[.3em] font-mono" x-text="bookingModal.pnr"></p>
-            <p class="text-[10px] text-slate-500 mt-3">Conserva questo PNR per gestire la prenotazione</p>
+        <div x-show="bookingModal.pnr" class="bg-emerald-50 border border-emerald-200 rounded-xl p-6 text-center mb-4 fade-in">
+            <i data-lucide="check-circle" class="w-12 h-12 text-emerald-500 mx-auto mb-2"></i>
+            <p class="text-xs text-emerald-700 font-bold mb-2">Prenotazione confermata!</p>
+            <p class="text-3xl font-black text-emerald-600 tracking-[.3em] font-mono bg-white inline-block px-4 py-2 rounded-lg border border-emerald-100 shadow-sm" x-text="bookingModal.pnr"></p>
+            <p class="text-[10px] text-slate-500 mt-3 font-bold">Conserva questo PNR per gestire o annullare la prenotazione</p>
         </div>
         <!-- Form -->
         <div x-show="!bookingModal.pnr" class="space-y-4">
-            <div><label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Email *</label><input type="email" x-model="bookingModal.email" class="w-full px-4 py-2.5 bg-slate-50 border-2 border-slate-200 focus:border-indigo-500 rounded-xl text-sm outline-none transition-all" /></div>
-            <div><label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Nome *</label><input type="text" x-model="bookingModal.userName" class="w-full px-4 py-2.5 bg-slate-50 border-2 border-slate-200 focus:border-indigo-500 rounded-xl text-sm outline-none transition-all" /></div>
+            <div><label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Email *</label><input type="email" x-model="bookingModal.email" class="w-full px-4 py-2 bg-white border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 rounded-lg text-sm outline-none transition-all" /></div>
+            <div><label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Nome *</label><input type="text" x-model="bookingModal.userName" class="w-full px-4 py-2 bg-white border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 rounded-lg text-sm outline-none transition-all" /></div>
             <div class="grid grid-cols-2 gap-3">
-                <div><label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Inizio *</label><input type="datetime-local" x-model="bookingModal.startDate" class="w-full px-3 py-2.5 bg-slate-50 border-2 border-slate-200 focus:border-indigo-500 rounded-xl text-xs outline-none transition-all" /></div>
-                <div><label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Fine *</label><input type="datetime-local" x-model="bookingModal.endDate" class="w-full px-3 py-2.5 bg-slate-50 border-2 border-slate-200 focus:border-indigo-500 rounded-xl text-xs outline-none transition-all" /></div>
+                <div><label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Inizio *</label><input type="datetime-local" x-model="bookingModal.startDate" class="w-full px-3 py-2 bg-white border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 rounded-lg text-xs outline-none transition-all" /></div>
+                <div><label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Fine *</label><input type="datetime-local" x-model="bookingModal.endDate" class="w-full px-3 py-2 bg-white border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 rounded-lg text-xs outline-none transition-all" /></div>
             </div>
-            <div><label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Note</label><input type="text" x-model="bookingModal.notes" placeholder="Motivo utilizzo…" class="w-full px-4 py-2.5 bg-slate-50 border-2 border-slate-200 focus:border-indigo-500 rounded-xl text-sm outline-none transition-all" /></div>
-            <button @click="confirmBooking()" :disabled="!bookingModal.email||!bookingModal.userName||!bookingModal.startDate||!bookingModal.endDate||confirming" class="w-full py-3.5 bg-indigo-600 text-white rounded-xl font-black shadow-lg shadow-indigo-500/30 hover:bg-indigo-500 active:scale-[.97] transition-all disabled:opacity-50"><span x-text="confirming?'Verifica e salvataggio...':'📅 CONFERMA PRENOTAZIONE'"></span></button>
+            <div><label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Note</label><input type="text" x-model="bookingModal.notes" placeholder="Motivo utilizzo..." class="w-full px-4 py-2 bg-white border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 rounded-lg text-sm outline-none transition-all" /></div>
+            <button @click="confirmBooking()" :disabled="!bookingModal.email||!bookingModal.userName||!bookingModal.startDate||!bookingModal.endDate||confirming" class="w-full py-3 bg-indigo-600 text-white rounded-lg font-black shadow-sm hover:bg-indigo-500 active:scale-[.97] transition-all disabled:opacity-50"><span x-text="confirming?'Registrazione...':'CONFERMA PRENOTAZIONE'"></span></button>
         </div>
         <button @click="bookingModal.open=false;bookingModal.pnr=''" class="w-full py-2 mt-3 text-slate-400 text-xs font-bold hover:text-slate-600 transition" x-text="bookingModal.pnr?'CHIUDI':'ANNULLA'"></button>
     </div>
