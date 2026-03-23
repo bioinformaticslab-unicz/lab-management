@@ -645,8 +645,13 @@
                         <input type="url" id="inp-inst-image"
                             class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs"
                             placeholder="URL Foto Strumento (Opzionale)">
-                        <div class="flex items-center gap-2"><input type="checkbox" id="inp-inst-bookable" checked>
-                            <label class="text-xs">Prenotabile</label>
+                        <div class="flex items-center gap-4">
+                            <div class="flex items-center gap-2"><input type="checkbox" id="inp-inst-bookable" checked>
+                                <label class="text-xs">Prenotabile</label>
+                            </div>
+                            <div class="flex items-center gap-2"><input type="checkbox" id="inp-inst-restricted">
+                                <label class="text-xs text-rose-600 font-bold">Accesso Ristretto</label>
+                            </div>
                         </div>
                         <button type="submit"
                             class="w-full py-2 bg-indigo-600 text-white rounded-lg font-bold text-xs">SALVA</button>
@@ -2145,7 +2150,13 @@
                 const results = [];
 
                 // Build instruments list for Fuse
-                const instruments = window.allInstrumentsCache?.length > 0 ? window.allInstrumentsCache : (window.resourcesCache || []);
+                let instruments = window.allInstrumentsCache?.length > 0 ? window.allInstrumentsCache : (window.resourcesCache || []);
+                
+                // Filter out restricted instruments for standard users
+                if (!isAdmin && userRole !== 'supervisor') {
+                    instruments = instruments.filter(inst => !inst.isRestricted);
+                }
+
                 if (instruments.length > 0) {
                     const fuseInst = new Fuse(instruments, { keys: ['description', 'id', 'contact'], threshold: 0.4, includeScore: true });
                     fuseInst.search(searchTerm).forEach(r => {
@@ -2354,6 +2365,13 @@
                 const docSnap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'resources', text.replace(/\//g, '_')));
                 if (docSnap.exists()) {
                     const data = docSnap.data();
+                    
+                    if (data.isRestricted && !isAdmin && userRole !== 'supervisor') {
+                        alert("Strumento con accesso ristretto. Solo gli Amministratori o i Supervisori possono visualizzarlo.");
+                        window.switchView('view-home');
+                        return;
+                    }
+
                     window.currentInstrumentData = data;
                     document.getElementById('item-title').innerText = data.description || text;
                     document.getElementById('item-subtitle').innerHTML = renderIdLink(data.id || text, true);
@@ -2431,9 +2449,10 @@
             const contact = document.getElementById('inp-inst-contact').value.trim();
             const url = document.getElementById('inp-inst-image').value.trim();
             const bookable = document.getElementById('inp-inst-bookable').checked;
+            const restricted = document.getElementById('inp-inst-restricted').checked;
             try {
                 await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'resources', id.replace(/\//g, '_')), {
-                    id, description: desc, contact, imageUrl: url, isBookable: bookable, updatedAt: serverTimestamp()
+                    id, description: desc, contact, imageUrl: url, isBookable: bookable, isRestricted: restricted, updatedAt: serverTimestamp()
                 });
                 alert("Salvato!");
                 logAction('UPDATE', 'INSTRUMENT', `Instrument saved: ${desc} (${id})`);
@@ -2448,6 +2467,7 @@
             document.getElementById('inp-inst-desc').value = '';
             document.getElementById('inp-inst-contact').value = '';
             document.getElementById('inp-inst-image').value = '';
+            document.getElementById('inp-inst-restricted').checked = false;
             document.getElementById('inp-inst-id').readOnly = false;
             if (window.lucide) lucide.createIcons();
         };
@@ -2467,6 +2487,7 @@
             document.getElementById('inp-inst-contact').value = inst.contact || '';
             document.getElementById('inp-inst-image').value = inst.imageUrl || '';
             document.getElementById('inp-inst-bookable').checked = inst.isBookable !== false;
+            document.getElementById('inp-inst-restricted').checked = inst.isRestricted === true;
             document.getElementById('inp-inst-id').readOnly = true;
             document.querySelector('#admin-content-instruments').scrollIntoView({ behavior: 'smooth' });
         };
