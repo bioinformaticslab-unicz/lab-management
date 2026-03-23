@@ -343,7 +343,7 @@
                         class="hidden mt-3 text-xs font-bold text-red-400 bg-red-900/30 p-2 rounded border border-red-800/50 flex justify-between items-center">
                         <span class="flex items-center gap-2"><i data-lucide="alert-triangle" class="w-4 h-4"></i>
                             SCORTA BASSA</span>
-                        <button onclick="openOrderModal()"
+                        <button onclick="openOrderModal(currentItem)"
                             class="bg-red-600 text-white px-2 py-1 rounded text-[10px] hover:bg-red-500">SEGNA
                             ORDINATO</button>
                     </div>
@@ -371,6 +371,11 @@
                     <span class="text-xs font-black uppercase">Rifornisci (Carico)</span>
                 </button>
             </div>
+            
+            <button id="btn-manual-order" onclick="openOrderModal(currentItem)" class="hidden w-full py-3 bg-amber-100 text-amber-700 rounded-2xl flex flex-col items-center justify-center gap-1 shadow-sm active:scale-95 transition hover:bg-amber-200 mt-3 border border-amber-200">
+                <i data-lucide="shopping-cart" class="w-6 h-6"></i>
+                <span class="text-xs font-black uppercase">Ordina Materiale</span>
+            </button>
 
             <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
                 <h3 class="text-xs font-bold text-slate-500 uppercase mb-3 flex items-center gap-2">
@@ -483,6 +488,8 @@
                     class="admin-tab-btn py-2 px-2.5 rounded-md transition whitespace-nowrap">Etichette</button>
                 <button onclick="switchAdminTab('settings')" id="tab-btn-settings"
                     class="admin-tab-btn py-2 px-2.5 rounded-md transition whitespace-nowrap">Settings</button>
+                <button onclick="switchAdminTab('access')" id="tab-btn-access"
+                    class="admin-tab-btn py-2 px-2.5 rounded-md transition whitespace-nowrap">Accessi</button>
                 <button onclick="switchAdminTab('logs')" id="tab-btn-logs"
                     class="admin-tab-btn py-2 px-2.5 rounded-md transition whitespace-nowrap">Log</button>
             </div>
@@ -751,6 +758,26 @@
                     <a href="?mode=totem" target="_blank"
                         class="block w-full py-2 bg-indigo-600 text-white rounded font-bold text-xs">APRI DASHBOARD
                         TOTEM</a>
+                </div>
+            </div>
+
+            <!-- Content: Accessi -->
+            <div id="admin-content-access" class="hidden space-y-4">
+                <div class="bg-rose-50 p-4 rounded-xl border border-rose-200 shadow-sm">
+                    <h3 class="text-sm font-bold text-rose-800 mb-2">Restrizione Accessi</h3>
+                    <p class="text-[10px] text-slate-500 mb-3">Se attiva, solo gli utenti nella lista (e gli amministratori/supervisori) potranno accedere all'app. Tutti gli altri account verranno bloccati.</p>
+                    <div class="flex items-center gap-2 mb-4">
+                        <input type="checkbox" id="inp-access-restricted">
+                        <label class="text-xs font-bold text-rose-900">Attiva Accesso Ristretto</label>
+                    </div>
+                    <button onclick="saveAccessSettings()" class="w-full py-2 bg-rose-600 text-white rounded text-xs font-bold mb-4">SALVA OPZIONI ACCESSO</button>
+
+                    <h4 class="text-xs font-bold text-rose-800 mb-2 border-t border-rose-200 pt-4">Utenti Autorizzati</h4>
+                    <div id="access-allowed-list" class="space-y-2 mb-3"></div>
+                    <div class="flex gap-2">
+                        <input type="email" id="inp-new-allowed-email" class="flex-1 text-xs p-2 border rounded" placeholder="email@studenti.unicz.it">
+                        <button onclick="addAllowedEmail()" class="px-3 py-2 bg-rose-600 text-white rounded text-xs font-bold">AGGIUNGI</button>
+                    </div>
                 </div>
             </div>
 
@@ -1266,6 +1293,22 @@
                         await signOut(auth);
                         return;
                     }
+
+                    try {
+                        const accessSnap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'access'));
+                        if (accessSnap.exists()) {
+                            const data = accessSnap.data();
+                            if (data.restrictedMode === true) {
+                                const allowedUsers = data.allowedUsers || [];
+                                if (!allowedUsers.includes(uEmail)) {
+                                    alert("Accesso Negato: questo account non è autorizzato durante la restrizione accessi in corso.");
+                                    await signOut(auth);
+                                    return;
+                                }
+                            }
+                        }
+                    } catch (e) { console.warn("Access check failed:", e); }
+
                 } else {
                     isAdmin = true;
                     adminMode = true; // Auto-enter admin mode se non-user
@@ -1508,6 +1551,16 @@
                 document.getElementById('inv-alert-ordered').classList.add('hidden');
             }
 
+            // Show Manual Order Button for Admins/Supervisors
+            const btnManualOrder = document.getElementById('btn-manual-order');
+            if (btnManualOrder) {
+                if (isAdmin || (userRole === 'supervisor' && supervisorPermissions.inventory)) {
+                    btnManualOrder.classList.remove('hidden');
+                } else {
+                    btnManualOrder.classList.add('hidden');
+                }
+            }
+
             loadStockHistory(id);
         }
 
@@ -1577,7 +1630,7 @@
                 alert("Ordine salvato in Riordino.");
                 document.getElementById('modal-order').classList.add('hidden');
                 // Refresh view if in detail view
-                if (!document.getElementById('view-details').classList.contains('hidden')) {
+                if (!document.getElementById('view-inventory').classList.contains('hidden')) {
                     const snap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'inventory', safeId));
                     showInventoryView(currentItem, snap.data());
                 }
@@ -2196,7 +2249,7 @@
                 if (tab === 'instruments' && !supervisorPermissions.instruments) return alert("Non hai accesso agli Strumenti.");
                 if (tab === 'logs' && !supervisorPermissions.logs) return alert("Non hai accesso ai Log.");
                 if (tab === 'labels' && !supervisorPermissions.instruments && !supervisorPermissions.inventory) return alert("Non hai accesso alle Etichette.");
-                if (tab === 'settings') return alert("Non hai accesso ai Settings.");
+                if (tab === 'settings' || tab === 'access') return alert("Non hai accesso a questa sezione.");
             }
             if (userRole === 'user') return alert('Accesso negato.');
 
@@ -2206,7 +2259,7 @@
             });
             document.getElementById('tab-btn-' + tab).classList.add('bg-white', 'text-indigo-700', 'shadow-sm');
 
-            ['bookings', 'instruments', 'labels', 'settings', 'inventory', 'logs'].forEach(t => {
+            ['bookings', 'instruments', 'labels', 'settings', 'access', 'inventory', 'logs'].forEach(t => {
                 const el = document.getElementById('admin-content-' + t);
                 if (el) el.classList.add('hidden');
             });
@@ -2217,6 +2270,7 @@
             if (tab === 'inventory') loadInventoryListAdmin();
             if (tab === 'logs') loadAdminLogs();
             if (tab === 'labels') loadLabelsList();
+            if (tab === 'access') loadAccessSettings();
         };
 
         window.toggleDesktopMode = () => {
@@ -3463,6 +3517,79 @@
                 await setDoc(adminRef, { emails: updated });
                 loadAdminEmails();
                 logAction('UPDATE', 'SETTINGS', `Co-Admin removed: ${emailToRemove}`);
+            } catch (e) { alert('Errore: ' + e.message); }
+        };
+
+        // --- ACCESS CONTROL MANAGEMENT ---
+        async function loadAccessSettings() {
+            try {
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'access');
+                const snap = await getDoc(docRef);
+                const data = snap.exists() ? snap.data() : { restrictedMode: false, allowedUsers: [] };
+                
+                document.getElementById('inp-access-restricted').checked = data.restrictedMode === true;
+                
+                const users = data.allowedUsers || [];
+                const container = document.getElementById('access-allowed-list');
+                if (users.length === 0) {
+                    container.innerHTML = '<p class="text-xs text-slate-400">Nessun utente nella lista. Se attivi la restrizione, tutti i normali account saranno bloccati.</p>';
+                } else {
+                    container.innerHTML = users.map(u => `
+                        <div class="flex justify-between items-center bg-white p-2 rounded border border-rose-100 mb-1">
+                            <span class="text-xs font-mono text-rose-900">${u}</span>
+                            <button onclick="removeAllowedEmail('${u}')" class="text-red-500 text-xs font-bold px-2 py-1 hover:bg-red-50 rounded">✕</button>
+                        </div>
+                    `).join('');
+                }
+            } catch (e) {
+                console.warn('Load access settings failed', e);
+            }
+        }
+
+        window.saveAccessSettings = async () => {
+            const isRestricted = document.getElementById('inp-access-restricted').checked;
+            try {
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'access');
+                await setDoc(docRef, { restrictedMode: isRestricted }, { merge: true });
+                logAction('UPDATE', 'SETTINGS', `Restricted mode set to: ${isRestricted}`);
+                alert("Opzioni di accesso salvate correttamente.");
+            } catch (e) { alert('Errore: ' + e.message); }
+        };
+
+        window.addAllowedEmail = async () => {
+            const emailInput = document.getElementById('inp-new-allowed-email');
+            const newEmail = emailInput.value.trim().toLowerCase();
+            if (!newEmail || !newEmail.includes('@')) return alert('Email non valida.');
+            try {
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'access');
+                const snap = await getDoc(docRef);
+                const data = snap.exists() ? snap.data() : { allowedUsers: [] };
+                const users = data.allowedUsers || [];
+                
+                if (users.includes(newEmail)) return alert('Email già presente.');
+                users.push(newEmail);
+                
+                await setDoc(docRef, { allowedUsers: users }, { merge: true });
+                emailInput.value = '';
+                loadAccessSettings();
+                logAction('UPDATE', 'SETTINGS', `Allowed user added: ${newEmail}`);
+                alert(`${newEmail} aggiunto alla lista consentita.`);
+            } catch (e) { alert('Errore: ' + e.message); }
+        };
+
+        window.removeAllowedEmail = async (emailToRemove) => {
+            if (!confirm(`Rimuovere ${emailToRemove} dalla lista consentita?`)) return;
+            try {
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'access');
+                const snap = await getDoc(docRef);
+                const data = snap.exists() ? snap.data() : { allowedUsers: [] };
+                const users = data.allowedUsers || [];
+                
+                const updated = users.filter(u => u !== emailToRemove);
+                await setDoc(docRef, { allowedUsers: updated }, { merge: true });
+                
+                loadAccessSettings();
+                logAction('UPDATE', 'SETTINGS', `Allowed user removed: ${emailToRemove}`);
             } catch (e) { alert('Errore: ' + e.message); }
         };
 

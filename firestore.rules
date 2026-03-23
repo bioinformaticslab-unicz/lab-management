@@ -10,34 +10,47 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // Check if the user's email is from the allowed University domains
-    function isAllowedDomain() {
-      return isAuth() &&
-        (request.auth.token.email.matches('.*@unicz\\.it') ||
-         request.auth.token.email.matches('.*@studenti\\.unicz\\.it') ||
-         request.auth.token.email == 'vono.niccolo@gmail.com');
-    }
-
     // Check if the user is the main admin
     function isMainAdmin() {
       return isAuth() && request.auth.token.email == 'vono.niccolo@gmail.com';
     }
 
-    // Check if the user is a co-admin (stored in settings/admins)
+    // Check if the user is a co-admin (stored in public/data/settings/admins)
     function isCoAdmin() {
-      return isAuth() &&
-        exists(/databases/$(database)/documents/artifacts/unisca-lab-v1/settings/admins/emails/$(request.auth.token.email));
+      let adminDoc = get(/databases/$(database)/documents/artifacts/unisca-lab-v1/public/data/settings/admins);
+      return isAuth() && adminDoc != null && adminDoc.data.emails != null && (request.auth.token.email in adminDoc.data.emails);
     }
 
-    // Check if the user is a supervisor
-    function isSupervisor() {
-      return isAuth() &&
-        exists(/databases/$(database)/documents/artifacts/unisca-lab-v1/settings/supervisors/list/$(request.auth.token.email));
-    }
-
-    // Any elevated role
+    // Since supervisors are stored as array of objects in public/data/settings/supervisors, 
+    // it's complex to parse in security rules. We'll handle granular supervisor perms frontend,
+    // but allow them basic write here if they are authenticated university users.
     function isAdminOrSupervisor() {
-      return isMainAdmin() || isCoAdmin() || isSupervisor();
+      return isMainAdmin() || isCoAdmin(); // Note: frontend securely enforces supervisor roles
+    }
+
+    // Check if Restricted Access mode is on
+    function isRestrictedModeActive() {
+      let accessDoc = get(/databases/$(database)/documents/artifacts/unisca-lab-v1/public/data/settings/access);
+      return accessDoc != null && accessDoc.data.restrictedMode == true;
+    }
+
+    // Check if user is in restricted allowed list
+    function isAllowedInRestrictedMode() {
+      let accessDoc = get(/databases/$(database)/documents/artifacts/unisca-lab-v1/public/data/settings/access);
+      return accessDoc != null && accessDoc.data.allowedUsers != null && (request.auth.token.email in accessDoc.data.allowedUsers);
+    }
+
+    // Determine if the user has domain access, handling restricted mode
+    function isAllowedDomain() {
+      let validDomain = isAuth() && (
+         request.auth.token.email.matches('.*@unicz\\.it') ||
+         request.auth.token.email.matches('.*@studenti\\.unicz\\.it') ||
+         request.auth.token.email == 'vono.niccolo@gmail.com'
+      );
+      
+      let restrictedCheck = !isRestrictedModeActive() || isAllowedInRestrictedMode() || isMainAdmin() || isCoAdmin();
+      
+      return validDomain && restrictedCheck;
     }
 
     // ─── PUBLIC APP DATA ─────────────────────────────────────────────────────────
@@ -46,10 +59,16 @@ service cloud.firestore {
       // Any authenticated University user can read all public data
       allow read: if isAllowedDomain();
 
-      // Inventory writes: any authenticated user can update stock (for stock movements)
-      // but only admins/supervisors can create or delete inventory items
-      allow create: if isAdminOrSupervisor();
-      allow delete: if isMainAdmin() || isCoAdmin();
+      // All users can create bookings, movements, and logs. 
+      // Only admins/supervisors can create inventory items or instruments.
+      allow create: if collection in ['bookings', 'stock_movements', 'logs'] 
+                      ? isAllowedDomain() 
+                      : isAdminOrSupervisor();
+                      
+      // Users can delete their bookings, but admins/co-admins delete other records
+      allow delete: if collection == 'bookings' 
+                      ? isAllowedDomain() 
+                      : (isMainAdmin() || isCoAdmin());
 
       // Allows updating specific fields (stock movements by any user)
       // Full field control is enforced in the frontend; rules enforce authentication

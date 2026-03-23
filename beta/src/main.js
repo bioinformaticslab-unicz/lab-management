@@ -42,7 +42,7 @@ document.addEventListener('alpine:init', () => {
     Alpine.data('labApp', () => ({
 
         // Auth
-        user: null, userRole: 'user', authLoading: false, authError: '',
+        user: null, userRole: 'user', authLoading: true, authError: '',
 
         // Navigation
         activeView: 'scanner',
@@ -133,6 +133,7 @@ document.addEventListener('alpine:init', () => {
                     this.inventory = []; this.resources = [];
                     this.stopCamera();
                 }
+                this.authLoading = false;
             });
 
             document.addEventListener('keydown', e => {
