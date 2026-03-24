@@ -603,12 +603,19 @@
 
 
                         <!-- Email Responsabile Riordino -->
-                        <div>
-                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Email Responsabile
-                                Riordino</label>
-                            <input type="email" id="inp-inv-restock-email"
-                                class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs"
-                                placeholder="email@esempio.com (alert scorta bassa)">
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Capacità/Formato</label>
+                                <input type="text" id="inp-inv-size"
+                                    class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs"
+                                    placeholder="Es. 500 ml, 1 kg">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Email Responsabile</label>
+                                <input type="email" id="inp-inv-restock-email"
+                                    class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs"
+                                    placeholder="email@esempio.com">
+                            </div>
                         </div>
 
                         <!-- Pack Size (Condizionale) -->
@@ -1988,11 +1995,15 @@
 
             container.innerHTML = items.map(i => {
                 const isLow = (i.quantity || 0) <= (i.threshold || 0);
+                const safeId = i.id.replace(/'/g, "\\'").replace(/"/g, "&quot;");
                 const clickAction = isAdmin
-                    ? `editInventoryItem('${i.id}', '${i.name.replace(/'/g, "\\'")}', '${i.unit}', '${i.threshold}', '${(i.location || '').replace(/'/g, "\\'")}', '${i.packSize || ''}', '${(i.brand || '').replace(/'/g, "\\'")}', '${(i.category || '').replace(/'/g, "\\'")}', '${(i.image || '').replace(/'/g, "\\'")}', '${i.quantity}', '${(i.restockEmail || '').replace(/'/g, "\\'")}')`
-                    : `handleScannedCode('${i.id}')`;
+                    ? `editInventoryItem('${safeId}')`
+                    : `handleScannedCode('${safeId}')`;
 
                 let quantityDisplay = `${i.quantity} <span class="text-[10px] text-slate-400">${i.unit}</span>`;
+                if (i.size) {
+                    quantityDisplay += ` <span class="text-[9px] text-slate-400 font-normal italic">(${i.size})</span>`;
+                }
                 if (i.unit === 'pacco') {
                     const total = (i.quantity || 0) * (i.packSize || 1);
                     quantityDisplay = `${i.quantity} pacchi <span class="block text-[9px] text-slate-400">(${total} pz tot)</span>`;
@@ -2121,6 +2132,7 @@
             
             const threshold = parseFloat(document.getElementById('inp-inv-threshold').value) || 0;
             const loc = document.getElementById('inp-inv-loc').value.trim();
+            const size = document.getElementById('inp-inv-size').value.trim();
             const image = document.getElementById('inp-inv-image').value.trim();
             const qtyInput = document.getElementById('inp-inv-qty');
 
@@ -2149,7 +2161,7 @@
 
                 const restockEmail = document.getElementById('inp-inv-restock-email').value.trim();
                 await setDoc(docRef, {
-                    id, name, brand, unit, threshold, location: loc, quantity: finalQty, packSize: packSize, category: category || '', image: image || '', restockEmail: restockEmail || ''
+                    id, name, brand, unit, threshold, location: loc, size, quantity: finalQty, packSize: packSize, category: category || '', image: image || '', restockEmail: restockEmail || ''
                 });
                 alert("Articolo salvato!");
                 logAction('UPDATE', 'INVENTORY', `Inventory item saved: ${name} (${id}). Qty: ${finalQty}`);
@@ -2174,6 +2186,7 @@
             document.getElementById('inp-inv-unit-new').classList.add('hidden');
             document.getElementById('inp-inv-threshold').value = '';
             document.getElementById('inp-inv-loc').value = '';
+            document.getElementById('inp-inv-size').value = '';
             document.getElementById('inp-inv-packsize').value = '';
             document.getElementById('inp-inv-category').value = '';
             document.getElementById('inp-inv-image').value = '';
@@ -2184,15 +2197,22 @@
             document.getElementById('inp-inv-id').readOnly = false;
         }
 
-        window.editInventoryItem = (id, name, unit, threshold, loc, packSize, brand, category, image, qty, restockEmail) => {
+        window.editInventoryItem = (id) => {
+            const item = (window.allInventoryCache || []).find(i => i.id === id);
+            if (!item) return alert("Errore: Articolo non presente in cache.");
+
+            const { name, unit, threshold, location, packSize, brand, category, image, quantity, restockEmail } = item;
+
             document.getElementById('inp-inv-id').value = id;
-            document.getElementById('inp-inv-name').value = name;
+            document.getElementById('inp-inv-name').value = name || '';
             document.getElementById('inp-inv-brand').value = brand || '';
-            document.getElementById('inp-inv-threshold').value = threshold;
-            document.getElementById('inp-inv-loc').value = loc;
+            document.getElementById('inp-inv-threshold').value = threshold || 0;
+            document.getElementById('inp-inv-loc').value = location || '';
+            document.getElementById('inp-inv-size').value = item.size || '';
             document.getElementById('inp-inv-image').value = image || '';
-            document.getElementById('inp-inv-qty').value = qty !== 'undefined' ? qty : 0;
+            document.getElementById('inp-inv-qty').value = (quantity !== undefined && quantity !== null) ? quantity : 0;
             document.getElementById('inp-inv-restock-email').value = restockEmail || '';
+            
             // Handle Unit select
             const unitSelect = document.getElementById('inp-inv-unit');
             let unitFound = false;
