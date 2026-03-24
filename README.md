@@ -10,9 +10,12 @@
 
 ### 📦 Magazzino (Inventario)
 - Gestione completa dell'inventario con nome, marca, categoria, quantità, soglia minima
+- **Filtri dinamici**: ricerca avanzata per Marchio, Categoria e Posizione
+- **Capacità/Formato**: specifica volume o peso per singolo pezzo (es. 500 ml, 1 kg)
 - **Allerta scorte basse** automatiche con notifica visiva
 - Scansione **QR Code / Barcode** per accesso rapido agli articoli
-- Import/Export **CSV** per backup e migrazione dati
+- **Supporto Excel (XLSX)**: Import/Export nativo e download Template dinamico
+- **Unità personalizzate**: creazione di nuove unità di misura direttamente dal form
 - Email automatica di riordino quando un articolo scende sotto soglia
 - **Foto prodotto** con URL immagine, visibile nella scheda e nei risultati di ricerca
 - **Operazioni batch (Carrello)**: modalità carico multiplo attivabile dall'admin, con scansione continua e riepilogo carrello
@@ -27,10 +30,11 @@
 
 ### 🛡️ Pannello Amministratore
 - Accesso basato su **email** con sistema **RBAC a 4 livelli** (Main Admin, Co-Admin, Supervisor, Utente)
-- Gestione completa strumenti: aggiungi, modifica, elimina con **foto strumento** e **evidenziazione selezione**
+- **Permessi Moduli Granulari**: abilita/disabilita l'accesso a "Magazzino" o "Strumenti" per specifici utenti standard
+- Gestione completa strumenti: aggiungi, modifica, elimina con **foto strumento**, **Restricted Mode** (visibilità solo admin) e **evidenziazione selezione**
 - **Vista calendario** per ogni strumento con badge "IN USO"
 - Creazione e modifica prenotazioni per conto degli utenti
-- Export prenotazioni in CSV
+- Export dati (Prenotazioni, Inventario, Log) in **CSV o XLSX**
 - **Generatore Etichette**: stampa QR Code e/o Barcode (CODE128) per strumenti e articoli, con selezione multipla e finestra di stampa/esportazione PDF dedicata
 - Gestione lista amministratori e supervisori via Firestore
 - **Permessi granulari** per Supervisori (Prenotazioni, Magazzino, Strumenti, Log)
@@ -61,6 +65,8 @@ L'app è un **singolo file HTML** (`index.html`) che include tutto il necessario
 | **Barcode** | JsBarcode (CODE128, generatore etichette) |
 | **Icone** | Lucide Icons |
 | **Grafici** | Chart.js |
+| **Excel** | SheetJS (xlsx) |
+| **Barcode** | JsBarcode |
 | **Hosting** | GitHub Pages |
 
 ### Struttura Firestore
