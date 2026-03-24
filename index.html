@@ -582,12 +582,15 @@
                             <!-- Select Unità -->
                             <div>
                                 <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Unità</label>
-                                <select id="inp-inv-unit" onchange="togglePackSize()"
-                                    class="w-full px-2 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs outline-none">
+                                <select id="inp-inv-unit" onchange="toggleNewUnit(); togglePackSize();"
+                                    class="w-full px-2 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs outline-none mb-2">
                                     <option value="pz">Pezzi (pz)</option>
                                     <option value="ml">Millilitri (ml)</option>
                                     <option value="pacco">Pacco/Conf.</option>
                                 </select>
+                                <input type="text" id="inp-inv-unit-new"
+                                    class="hidden w-full px-2 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs"
+                                    placeholder="Es. litri, grammi...">
                             </div>
                             <div>
                                 <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Soglia
@@ -1455,11 +1458,13 @@
         }
 
         function loadInventoryCategories() {
-            // Get unique categories from inventory items
             const categories = new Set();
+            const units = new Set();
             window.allInventoryCache.forEach(item => {
                 if (item.category) categories.add(item.category);
+                if (item.unit) units.add(item.unit);
             });
+            
             // Standard categories always present
             categories.add("Reagenti");
             categories.add("Vetreria");
@@ -1467,12 +1472,30 @@
             categories.add("Cancelleria");
 
             const select = document.getElementById('inp-inv-category');
-            select.innerHTML = '<option value="" disabled selected>Seleziona Categoria...</option>';
+            if (select) {
+                const currentCat = select.value;
+                select.innerHTML = '<option value="" disabled selected>Seleziona Categoria...</option>';
+                Array.from(categories).sort().forEach(cat => {
+                    select.innerHTML += `<option value="${cat}">${cat}</option>`;
+                });
+                select.innerHTML += `<option value="new">+ Nuova Categoria...</option>`;
+                if (currentCat && currentCat !== 'new') select.value = currentCat;
+            }
 
-            Array.from(categories).sort().forEach(cat => {
-                select.innerHTML += `<option value="${cat}">${cat}</option>`;
-            });
-            select.innerHTML += `<option value="new">+ Nuova Categoria...</option>`;
+            units.add("pz");
+            units.add("ml");
+            units.add("pacco");
+
+            const selectU = document.getElementById('inp-inv-unit');
+            if (selectU) {
+                const currentUnit = selectU.value;
+                selectU.innerHTML = '';
+                Array.from(units).sort().forEach(u => {
+                    selectU.innerHTML += `<option value="${u}">${u}</option>`;
+                });
+                selectU.innerHTML += `<option value="new">+ Nuova Unità...</option>`;
+                if (currentUnit && currentUnit !== 'new') selectU.value = currentUnit;
+            }
         }
 
         // --- SCANNER ROUTER ---
@@ -2062,6 +2085,18 @@
             }
         }
 
+        window.toggleNewUnit = () => {
+            const select = document.getElementById('inp-inv-unit');
+            const input = document.getElementById('inp-inv-unit-new');
+            if (select.value === 'new') {
+                input.classList.remove('hidden');
+                input.required = true;
+            } else {
+                input.classList.add('hidden');
+                input.required = false;
+            }
+        }
+
         window.togglePackSize = () => {
             const unit = document.getElementById('inp-inv-unit').value;
             const packDiv = document.getElementById('div-inv-packsize');
@@ -2081,7 +2116,9 @@
             const id = document.getElementById('inp-inv-id').value.trim();
             const name = document.getElementById('inp-inv-name').value.trim();
             const brand = document.getElementById('inp-inv-brand').value.trim();
-            const unit = document.getElementById('inp-inv-unit').value;
+            let unit = document.getElementById('inp-inv-unit').value;
+            if (unit === 'new') unit = document.getElementById('inp-inv-unit-new').value.trim();
+            
             const threshold = parseFloat(document.getElementById('inp-inv-threshold').value) || 0;
             const loc = document.getElementById('inp-inv-loc').value.trim();
             const image = document.getElementById('inp-inv-image').value.trim();
@@ -2134,6 +2171,7 @@
             document.getElementById('inp-inv-name').value = '';
             document.getElementById('inp-inv-brand').value = '';
             document.getElementById('inp-inv-unit').value = 'pz';
+            document.getElementById('inp-inv-unit-new').classList.add('hidden');
             document.getElementById('inp-inv-threshold').value = '';
             document.getElementById('inp-inv-loc').value = '';
             document.getElementById('inp-inv-packsize').value = '';
@@ -2150,12 +2188,23 @@
             document.getElementById('inp-inv-id').value = id;
             document.getElementById('inp-inv-name').value = name;
             document.getElementById('inp-inv-brand').value = brand || '';
-            document.getElementById('inp-inv-unit').value = unit;
-            document.getElementById('inp-inv-threshold').value = threshold;
-            document.getElementById('inp-inv-loc').value = loc;
-            document.getElementById('inp-inv-image').value = image || '';
-            document.getElementById('inp-inv-qty').value = qty !== 'undefined' ? qty : 0;
-            document.getElementById('inp-inv-restock-email').value = restockEmail || '';
+            // Handle Unit select
+            const unitSelect = document.getElementById('inp-inv-unit');
+            let unitFound = false;
+            for (let i = 0; i < unitSelect.options.length; i++) {
+                if (unitSelect.options[i].value === unit) {
+                    unitSelect.selectedIndex = i;
+                    unitFound = true;
+                    break;
+                }
+            }
+            if (!unitFound && unit) {
+                unitSelect.value = 'new';
+                document.getElementById('inp-inv-unit-new').classList.remove('hidden');
+                document.getElementById('inp-inv-unit-new').value = unit;
+            } else {
+                document.getElementById('inp-inv-unit-new').classList.add('hidden');
+            }
 
             // Handle Category select
             const catSelect = document.getElementById('inp-inv-category');
