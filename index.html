@@ -140,21 +140,26 @@
     <main id="main-container" class="p-5 max-w-md lg:max-w-3xl mx-auto relative">
 
         <!-- MENU PRINCIPALE -->
-        <div id="main-menu" class="grid grid-cols-3 gap-3 mb-6 fade-in">
+        <div id="main-menu" class="grid grid-cols-4 gap-2 mb-6 fade-in">
             <button onclick="resetApp()"
                 class="py-3 bg-white border border-slate-200 shadow-sm rounded-xl flex flex-col items-center gap-1 active:scale-95 transition hover:border-indigo-300">
                 <i data-lucide="qr-code" class="w-5 h-5 text-indigo-600"></i>
-                <span class="text-[10px] font-bold uppercase text-slate-500">Scanner</span>
+                <span class="text-[9px] font-bold uppercase text-slate-500">Scanner</span>
             </button>
             <button onclick="showMyBookingSearch()"
                 class="py-3 bg-white border border-slate-200 shadow-sm rounded-xl flex flex-col items-center gap-1 active:scale-95 transition hover:border-indigo-300">
                 <i data-lucide="ticket" class="w-5 h-5 text-indigo-600"></i>
-                <span class="text-[10px] font-bold uppercase text-slate-500">Prenotazioni</span>
+                <span class="text-[9px] font-bold uppercase text-slate-500">Prenotazioni</span>
             </button>
             <button onclick="showPublicInventoryList()"
                 class="py-3 bg-white border border-slate-200 shadow-sm rounded-xl flex flex-col items-center gap-1 active:scale-95 transition hover:border-emerald-300">
                 <i data-lucide="package" class="w-5 h-5 text-emerald-600"></i>
-                <span class="text-[10px] font-bold uppercase text-slate-500">Magazzino</span>
+                <span class="text-[9px] font-bold uppercase text-slate-500">Magazzino</span>
+            </button>
+            <button onclick="window.open('?mode=totem', '_blank')"
+                class="py-3 bg-white border border-slate-200 shadow-sm rounded-xl flex flex-col items-center gap-1 active:scale-95 transition hover:border-blue-300">
+                <i data-lucide="monitor-play" class="w-5 h-5 text-blue-600"></i>
+                <span class="text-[9px] font-bold uppercase text-slate-500">Dashboard</span>
             </button>
         </div>
 
@@ -2386,6 +2391,7 @@
                     }
 
                     window.currentInstrumentData = data;
+                    currentItemName = data.description || text;
                     document.getElementById('item-title').innerText = data.description || text;
                     document.getElementById('item-subtitle').innerHTML = renderIdLink(data.id || text, true);
 
@@ -2795,10 +2801,34 @@
         }
 
         // --- TOTEM ---
+        function getTotemDisplayName(b) {
+            let name = b.resourceName || b.resourceId;
+            if (window.allInstrumentsCache && b.resourceId) {
+                const inst = window.allInstrumentsCache.find(i => i.id === b.resourceId);
+                if (inst && inst.description && inst.description !== b.resourceId) {
+                    name = `${inst.description} (${b.resourceId})`;
+                }
+            }
+            return name;
+        }
+
+        window.totemBookingsList = [];
+
+        function renderTotemLists() {
+            if (!window.totemBookingsList) return;
+            const now = new Date();
+            const active = window.totemBookingsList.filter(b => { const s = new Date(b.startDate), e = new Date(b.endDate); return now >= s && now <= e; });
+            const upcoming = window.totemBookingsList.filter(b => new Date(b.startDate) > now).sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
+            
+            document.getElementById('totem-active-list').innerHTML = active.map(b => `<div class="bg-slate-800 p-3 mb-2 rounded border-l-4 border-emerald-500"><h3 class="font-bold text-white">${getTotemDisplayName(b)}</h3><p class="text-emerald-400">${b.userName}</p></div>`).join('') || '<p class="text-slate-500">Nessuna attività</p>';
+            document.getElementById('totem-upcoming-list').innerHTML = upcoming.map(b => `<div class="bg-slate-800 p-3 mb-2 rounded"><div class="flex justify-between"><span class="text-white font-bold">${getTotemDisplayName(b)}</span><span class="text-slate-400 text-sm">${new Date(b.startDate).toLocaleDateString('it-IT', { day: '2-digit', month: 'short' })}</span></div><div class="flex justify-between mt-1"><span class="text-indigo-400 text-sm">${b.userName}</span><span class="text-emerald-400 text-sm">${new Date(b.startDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - ${new Date(b.endDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span></div></div>`).join('') || '<p class="text-slate-500">Nessuna prenotazione</p>';
+        }
+
         function initTotemMode() {
             document.getElementById('main-header').classList.add('hidden');
             document.getElementById('main-container').classList.add('hidden');
             document.getElementById('view-totem').classList.remove('hidden');
+            loadInstruments(); // Make sure the cache is available for getTotemDisplayName
             setInterval(updateTotemClock, 1000);
             updateTotemClock();
             loadTotemData();
@@ -2806,17 +2836,15 @@
         function updateTotemClock() {
             const now = new Date();
             document.getElementById('totem-clock').innerText = now.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+            renderTotemLists();
         }
         function loadTotemData() {
             const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'bookings'));
             onSnapshot(q, (snapshot) => {
                 const bookings = [];
                 snapshot.forEach(doc => bookings.push({ id: doc.id, ...doc.data() }));
-                const now = new Date();
-                const active = bookings.filter(b => { const s = new Date(b.startDate), e = new Date(b.endDate); return now >= s && now <= e; });
-                const upcoming = bookings.filter(b => new Date(b.startDate) > now).sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
-                document.getElementById('totem-active-list').innerHTML = active.map(b => `<div class="bg-slate-800 p-3 mb-2 rounded border-l-4 border-emerald-500"><h3 class="font-bold text-white">${b.resourceName}</h3><p class="text-emerald-400">${b.userName}</p></div>`).join('') || '<p class="text-slate-500">Nessuna attività</p>';
-                document.getElementById('totem-upcoming-list').innerHTML = upcoming.map(b => `<div class="bg-slate-800 p-3 mb-2 rounded"><div class="flex justify-between"><span class="text-white font-bold">${b.resourceName}</span><span class="text-slate-400 text-sm">${new Date(b.startDate).toLocaleDateString('it-IT', { day: '2-digit', month: 'short' })}</span></div><div class="flex justify-between mt-1"><span class="text-indigo-400 text-sm">${b.userName}</span><span class="text-emerald-400 text-sm">${new Date(b.startDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - ${new Date(b.endDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span></div></div>`).join('') || '<p class="text-slate-500">Nessuna prenotazione</p>';
+                window.totemBookingsList = bookings;
+                renderTotemLists();
 
                 // Totem Stock Alerts (New v4.8)
                 updateTotemStockAlerts();
