@@ -141,22 +141,22 @@
 
         <!-- MENU PRINCIPALE -->
         <div id="main-menu" class="grid grid-cols-4 gap-2 mb-6 fade-in">
-            <button onclick="resetApp()"
+            <button id="btn-home-scanner" onclick="resetApp()"
                 class="py-3 bg-white border border-slate-200 shadow-sm rounded-xl flex flex-col items-center gap-1 active:scale-95 transition hover:border-indigo-300">
                 <i data-lucide="qr-code" class="w-5 h-5 text-indigo-600"></i>
                 <span class="text-[9px] font-bold uppercase text-slate-500">Scanner</span>
             </button>
-            <button onclick="showMyBookingSearch()"
+            <button id="btn-home-bookings" onclick="showMyBookingSearch()"
                 class="py-3 bg-white border border-slate-200 shadow-sm rounded-xl flex flex-col items-center gap-1 active:scale-95 transition hover:border-indigo-300">
                 <i data-lucide="ticket" class="w-5 h-5 text-indigo-600"></i>
                 <span class="text-[9px] font-bold uppercase text-slate-500">Prenotazioni</span>
             </button>
-            <button onclick="showPublicInventoryList()"
+            <button id="btn-home-inventory" onclick="showPublicInventoryList()"
                 class="py-3 bg-white border border-slate-200 shadow-sm rounded-xl flex flex-col items-center gap-1 active:scale-95 transition hover:border-emerald-300">
                 <i data-lucide="package" class="w-5 h-5 text-emerald-600"></i>
                 <span class="text-[9px] font-bold uppercase text-slate-500">Magazzino</span>
             </button>
-            <button onclick="window.open('?mode=totem', '_blank')"
+            <button id="btn-home-totem" onclick="window.open('?mode=totem', '_blank')"
                 class="py-3 bg-white border border-slate-200 shadow-sm rounded-xl flex flex-col items-center gap-1 active:scale-95 transition hover:border-blue-300">
                 <i data-lucide="monitor-play" class="w-5 h-5 text-blue-600"></i>
                 <span class="text-[9px] font-bold uppercase text-slate-500">Dashboard</span>
@@ -467,9 +467,21 @@
             </div>
             <div class="relative">
                 <i data-lucide="search" class="absolute left-3 top-2.5 w-4 h-4 text-slate-400"></i>
-                <input type="text" onkeyup="filterInventoryList(this.value)"
+                <input type="text" id="inp-public-inv-search" onkeyup="filterInventoryList()"
                     placeholder="Cerca materiale, marchio o cat..."
                     class="w-full pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            </div>
+            <!-- Filtri Aggiuntivi Magazzino -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
+                <select id="filter-inv-brand" onchange="filterInventoryList()" class="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs text-slate-600 focus:ring-2 focus:ring-emerald-500 outline-none">
+                    <option value="">Tutti i Marchi</option>
+                </select>
+                <select id="filter-inv-cat" onchange="filterInventoryList()" class="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs text-slate-600 focus:ring-2 focus:ring-emerald-500 outline-none">
+                    <option value="">Tutte le Categorie</option>
+                </select>
+                <select id="filter-inv-loc" onchange="filterInventoryList()" class="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs text-slate-600 focus:ring-2 focus:ring-emerald-500 outline-none">
+                    <option value="">Tutte le Posizioni</option>
+                </select>
             </div>
             <div id="public-inventory-container" class="space-y-2 pb-10">
                 <p class="text-center text-xs text-slate-400 mt-10">Caricamento...</p>
@@ -523,8 +535,8 @@
                             data-lucide="download" class="w-3 h-3"></i> EXPORT CSV</button>
                     <label
                         class="flex-1 py-2 bg-slate-800 text-white rounded-lg text-xs font-bold flex items-center justify-center gap-1 cursor-pointer hover:bg-slate-700 transition">
-                        <i data-lucide="upload" class="w-3 h-3"></i> IMPORT CSV
-                        <input type="file" id="inp-csv-import" accept=".csv" class="hidden"
+                        <i data-lucide="upload" class="w-3 h-3"></i> IMPORTA DATI
+                        <input type="file" id="inp-csv-import" accept=".csv,.txt" class="hidden"
                             onchange="importInventoryCSV(this)">
                     </label>
                 </div>
@@ -787,6 +799,21 @@
                     <div class="flex gap-2">
                         <input type="email" id="inp-new-allowed-email" class="flex-1 text-xs p-2 border rounded" placeholder="email@studenti.unicz.it">
                         <button onclick="addAllowedEmail()" class="px-3 py-2 bg-rose-600 text-white rounded text-xs font-bold">AGGIUNGI</button>
+                    </div>
+                </div>
+
+                <!-- Nuovo blocco permessi moduli -->
+                <div class="bg-amber-50 p-4 rounded-xl border border-amber-200 shadow-sm">
+                    <h3 class="text-sm font-bold text-amber-800 mb-2">Permessi Moduli (Utenti Standard)</h3>
+                    <p class="text-[10px] text-slate-500 mb-3">Gestisci quali moduli può utilizzare ciascun utente `@studenti.unicz.it` o `@unicz.it`. Di default, tutti gli utenti standard hanno accesso <b>SOLO agli Strumenti</b>.</p>
+                    <div id="access-permissions-list" class="space-y-2 mb-3"></div>
+                    <div class="space-y-2 border border-amber-200 p-3 rounded-lg bg-white">
+                        <input type="email" id="inp-new-perm-email" class="w-full text-xs p-2 border rounded border-slate-200" placeholder="email@studenti.unicz.it">
+                        <div class="flex gap-3 text-xs flex-wrap mb-2 text-slate-700 font-medium">
+                            <label class="flex items-center gap-1"><input type="checkbox" id="chk-perm-inst" checked> Strumenti</label>
+                            <label class="flex items-center gap-1"><input type="checkbox" id="chk-perm-inv"> Magazzino</label>
+                        </div>
+                        <button onclick="addUserPermission()" class="w-full py-2 bg-amber-600 text-white rounded text-xs font-bold">SALVA PERMESSI UTENTE</button>
                     </div>
                 </div>
             </div>
@@ -1317,11 +1344,31 @@
                                 }
                             }
                         }
+
+                        // Module Permissions Check
+                        const permSnap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'permissions'));
+                        let userPerms = { instruments: true, inventory: false }; // Strict Default
+                        if (permSnap.exists() && permSnap.data().users && permSnap.data().users[uEmail]) {
+                            userPerms = permSnap.data().users[uEmail];
+                        }
+                        window.currentUserPermissions = userPerms;
+                        
+                        if (!userPerms.inventory) {
+                            document.getElementById('btn-home-inventory').classList.add('hidden');
+                        }
+                        if (!userPerms.instruments) {
+                            document.getElementById('btn-home-bookings').classList.add('hidden');
+                        }
+                        if (!userPerms.instruments && !userPerms.inventory) {
+                            document.getElementById('btn-home-scanner').classList.add('hidden');
+                        }
                     } catch (e) { console.warn("Access check failed:", e); }
 
                 } else {
                     isAdmin = true;
                     adminMode = true; // Auto-enter admin mode se non-user
+                    // Admins and supervisors have full module access default
+                    window.currentUserPermissions = { instruments: true, inventory: true };
                 }
 
                 currentUser = user;
@@ -1448,6 +1495,10 @@
 
             // --- BATCH MODE ---
             if (isBatchMode) {
+                if (userRole === 'user' && window.currentUserPermissions && !window.currentUserPermissions.inventory) {
+                     alert("Accesso Negato: Non hai i permessi per il Magazzino.");
+                     return;
+                }
                 const invItem = window.allInventoryCache.find(i => i.id === code || i.id === code.replace(/\//g, '_'));
                 if (invItem) {
                     const existing = batchCart.find(i => i.id === invItem.id);
@@ -1481,6 +1532,11 @@
             const toolRef = doc(db, 'artifacts', appId, 'public', 'data', 'resources', code.replace(/\//g, '_'));
             const toolSnap = await getDoc(toolRef);
             if (toolSnap.exists()) {
+                if (userRole === 'user' && window.currentUserPermissions && !window.currentUserPermissions.instruments) {
+                    alert("Accesso Negato: Non hai i permessi per gli Strumenti. Rivolgiti a un amministratore.");
+                    window.switchView('view-home');
+                    return;
+                }
                 showDetails(code);
                 return;
             }
@@ -1489,6 +1545,11 @@
             const invRef = doc(db, 'artifacts', appId, 'public', 'data', 'inventory', code.replace(/\//g, '_'));
             const invSnap = await getDoc(invRef);
             if (invSnap.exists()) {
+                if (userRole === 'user' && window.currentUserPermissions && !window.currentUserPermissions.inventory) {
+                    alert("Accesso Negato: Non hai i permessi per il Magazzino. Rivolgiti a un amministratore.");
+                    window.switchView('view-home');
+                    return;
+                }
                 showInventoryView(code, invSnap.data());
                 return;
             }
@@ -1796,6 +1857,9 @@
 
         // --- PUBLIC INVENTORY LIST ---
         window.showPublicInventoryList = () => {
+            if (userRole === 'user' && window.currentUserPermissions && !window.currentUserPermissions.inventory) {
+                return alert("Accesso Negato: Non hai l'abilitazione per visualizzare il Magazzino.");
+            }
             window.switchView('view-inventory-list');
             // loadPublicInventory called on init
             renderInventoryList(window.allInventoryCache, document.getElementById('public-inventory-container'), false);
@@ -1819,7 +1883,7 @@
                 document.getElementById('tab-inv-reorder').classList.replace('text-white', 'text-slate-600');
                 document.getElementById('btn-add-reorder-public').classList.add('hidden');
             }
-            filterInventoryList(document.querySelector('#view-inventory-list input[type="text"]').value || '');
+            filterInventoryList();
         };
 
         window.loadPublicInventory = () => {
@@ -1828,23 +1892,61 @@
                 window.allInventoryCache = [];
                 snapshot.forEach(doc => window.allInventoryCache.push(doc.data()));
                 loadInventoryCategories(); // Update options for Admin form when cache updates
+                populateInventoryFilters(); // Fill public dropdowns
 
                 // If public view or admin view is active, rerender using filter
-                filterInventoryList(document.querySelector('#view-inventory-list input[type="text"]').value || '');
+                filterInventoryList();
             });
         }
 
-        window.filterInventoryList = (term) => {
-            term = (term || '').toLowerCase();
+        function populateInventoryFilters() {
+            const brands = new Set();
+            const cats = new Set();
+            const locs = new Set();
+            window.allInventoryCache.forEach(i => {
+                if (i.brand) brands.add(i.brand);
+                if (i.category) cats.add(i.category);
+                if (i.location) locs.add(i.location);
+            });
+            const renderOptions = (set, defaultText) => `<option value="">${defaultText}</option>` + 
+                Array.from(set).sort().map(val => `<option value="${val}">${val}</option>`).join('');
+                
+            const brandEl = document.getElementById('filter-inv-brand');
+            const catEl = document.getElementById('filter-inv-cat');
+            const locEl = document.getElementById('filter-inv-loc');
+            
+            // Save current selection to restore after refresh
+            const currBrand = brandEl?.value;
+            const currCat = catEl?.value;
+            const currLoc = locEl?.value;
+
+            if(brandEl) { brandEl.innerHTML = renderOptions(brands, "Tutti i Marchi"); brandEl.value = currBrand || ''; }
+            if(catEl) { catEl.innerHTML = renderOptions(cats, "Tutte le Categorie"); catEl.value = currCat || ''; }
+            if(locEl) { locEl.innerHTML = renderOptions(locs, "Tutte le Posizioni"); locEl.value = currLoc || ''; }
+        }
+
+        window.filterInventoryList = () => {
+            const searchInput = document.getElementById('inp-public-inv-search');
+            const term = (searchInput ? searchInput.value : '').toLowerCase();
             const isAdminView = document.getElementById('view-inventory-list').classList.contains('hidden');
             const container = document.getElementById(isAdminView ? 'inventory-list' : 'public-inventory-container');
 
-            let filtered = window.allInventoryCache.filter(i =>
-                i.name.toLowerCase().includes(term) ||
-                i.id.toLowerCase().includes(term) ||
-                (i.brand && i.brand.toLowerCase().includes(term)) ||
-                (i.category && i.category.toLowerCase().includes(term))
-            );
+            const brandFilter = !isAdminView ? (document.getElementById('filter-inv-brand')?.value || '') : '';
+            const catFilter = !isAdminView ? (document.getElementById('filter-inv-cat')?.value || '') : '';
+            const locFilter = !isAdminView ? (document.getElementById('filter-inv-loc')?.value || '') : '';
+
+            let filtered = window.allInventoryCache.filter(i => {
+                const matchTerm = i.name.toLowerCase().includes(term) ||
+                                 i.id.toLowerCase().includes(term) ||
+                                 (i.brand && i.brand.toLowerCase().includes(term)) ||
+                                 (i.category && i.category.toLowerCase().includes(term));
+                
+                const matchBrand = !brandFilter || i.brand === brandFilter;
+                const matchCat = !catFilter || i.category === catFilter;
+                const matchLoc = !locFilter || i.location === locFilter;
+                
+                return matchTerm && matchBrand && matchCat && matchLoc;
+            });
 
             if (!isAdminView && currentInventoryTab === 'reorder') {
                 filtered = filtered.filter(i => i.isOrdered);
@@ -2116,10 +2218,34 @@
             const reader = new FileReader();
             reader.onload = async (e) => {
                 const text = e.target.result;
-                const rows = text.split('\n').slice(1); // skip header
+                const rows = text.split(/\r?\n/);
+                if (rows.length < 2) {
+                    alert("Il file è vuoto o non contiene dati sufficienti.");
+                    input.value = '';
+                    return;
+                }
+                
+                const headerRow = rows[0];
+                const countChar = (str, char) => (str.split(char).length - 1);
+                
+                const delimiters = [',', ';', '\t'];
+                let bestDelimiter = ',';
+                let maxCount = 0;
+                
+                delimiters.forEach(d => {
+                    const c = countChar(headerRow, d);
+                    if (c > maxCount) {
+                        maxCount = c;
+                        bestDelimiter = d;
+                    }
+                });
+
+                const dataRows = rows.slice(1);
                 let count = 0;
-                for (let row of rows) {
-                    const cols = row.split(',');
+                for (let row of dataRows) {
+                    if (!row.trim()) continue;
+                    
+                    const cols = row.split(bestDelimiter);
                     if (cols.length < 2) continue;
                     // Format: ID, Name, Brand, Category, Unit, Qty, PackSize, Threshold, Loc, Image, RestockEmail
                     const [id, name, brand, category, unit, qty, packSize, threshold, loc, image, restockEmail] = cols;
@@ -2134,7 +2260,8 @@
                         } catch (err) { console.error("Import error row", row, err); }
                     }
                 }
-                alert(`Importati/Aggiornati ${count} articoli.`);
+                const formatDelim = bestDelimiter === '\t' ? 'TAB' : bestDelimiter;
+                alert(`Importati/Aggiornati ${count} articoli utilizzando separatore '${formatDelim}'.`);
                 input.value = ''; // reset
             };
             reader.readAsText(file);
@@ -3170,6 +3297,9 @@
             }
         };
         window.showMyBookingSearch = () => {
+            if (userRole === 'user' && window.currentUserPermissions && !window.currentUserPermissions.instruments) {
+                return alert("Accesso Negato: Non hai l'abilitazione per visualizzare le Prenotazioni.");
+            }
             document.getElementById('inp-pnr-search').value = '';
             document.getElementById('pnr-result').innerHTML = '';
             window.switchView('view-my-booking');
@@ -3573,12 +3703,6 @@
             if (!confirm(`Rimuovere ${emailToRemove} dai co-amministratori?`)) return;
             try {
                 const adminRef = doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'admins');
-                const adminSnap = await getDoc(adminRef);
-                const emails = adminSnap.exists() ? (adminSnap.data().emails || []) : [];
-                const updated = emails.filter(em => em !== emailToRemove);
-                await setDoc(adminRef, { emails: updated });
-                loadAdminEmails();
-                logAction('UPDATE', 'SETTINGS', `Co-Admin removed: ${emailToRemove}`);
             } catch (e) { alert('Errore: ' + e.message); }
         };
 
@@ -3603,6 +3727,36 @@
                         </div>
                     `).join('');
                 }
+
+                // Load Module Permissions
+                const permRef = doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'permissions');
+                const permSnap = await getDoc(permRef);
+                const permData = permSnap.exists() ? (permSnap.data().users || {}) : {};
+                const permContainer = document.getElementById('access-permissions-list');
+                const permKeys = Object.keys(permData);
+                
+                if (permKeys.length === 0) {
+                    permContainer.innerHTML = '<p class="text-[10px] p-2 bg-amber-100/50 rounded border border-amber-200 text-amber-800">Nessun permesso speciale assegnato. Tutti gli utenti usano le regole di default (Solo Strumenti).</p>';
+                } else {
+                    permContainer.innerHTML = permKeys.map(email => {
+                        const p = permData[email];
+                        const badges = [];
+                        if (p.instruments) badges.push('<span class="bg-indigo-100 text-indigo-700 px-1 py-0.5 mt-1 sm:mt-0 rounded">Strumenti</span>');
+                        if (p.inventory) badges.push('<span class="bg-emerald-100 text-emerald-700 px-1 py-0.5 mt-1 sm:mt-0 rounded">Magazzino</span>');
+                        if (badges.length === 0) badges.push('<span class="bg-slate-100 text-slate-700 px-1 py-0.5 mt-1 sm:mt-0 rounded">Nessuno</span>');
+                        return `
+                        <div class="flex justify-between items-center bg-white p-2 rounded border border-amber-200 mb-1">
+                            <div class="flex flex-col sm:flex-row sm:items-center sm:gap-2 text-[10px]">
+                                <span class="font-bold text-amber-900">${email}</span>
+                                <div class="flex gap-1">
+                                    ${badges.join('')}
+                                </div>
+                            </div>
+                            <button onclick="removeUserPermission('${email}')" class="text-red-500 text-xs font-bold px-2 py-1 hover:bg-red-50 rounded shrink-0">✕</button>
+                        </div>
+                    `}).join('');
+                }
+
             } catch (e) {
                 console.warn('Load access settings failed', e);
             }
@@ -3652,6 +3806,50 @@
                 
                 loadAccessSettings();
                 logAction('UPDATE', 'SETTINGS', `Allowed user removed: ${emailToRemove}`);
+            } catch (e) { alert('Errore: ' + e.message); }
+        };
+
+        window.addUserPermission = async () => {
+            const emailInput = document.getElementById('inp-new-perm-email');
+            const newEmail = emailInput.value.trim().toLowerCase();
+            if (!newEmail || !newEmail.includes('@')) return alert('Email non valida.');
+            
+            const inst = document.getElementById('chk-perm-inst').checked;
+            const inv = document.getElementById('chk-perm-inv').checked;
+
+            try {
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'permissions');
+                const snap = await getDoc(docRef);
+                const data = snap.exists() ? snap.data() : { users: {} };
+                const users = data.users || {};
+                
+                users[newEmail] = { instruments: inst, inventory: inv };
+                
+                await setDoc(docRef, { users }, { merge: true });
+                emailInput.value = '';
+                document.getElementById('chk-perm-inst').checked = true;
+                document.getElementById('chk-perm-inv').checked = false;
+                
+                loadAccessSettings();
+                logAction('UPDATE', 'SETTINGS', `User module permissions updated for: ${newEmail}`);
+                alert(`Permessi aggiornati per ${newEmail}.`);
+            } catch (e) { alert('Errore: ' + e.message); }
+        };
+
+        window.removeUserPermission = async (emailToRemove) => {
+            if (!confirm(`Rimuovere le eccezioni per ${emailToRemove} (tornerà al default)?`)) return;
+            try {
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'permissions');
+                const snap = await getDoc(docRef);
+                const data = snap.exists() ? snap.data() : { users: {} };
+                let users = data.users || {};
+                
+                if (users[emailToRemove]) {
+                    delete users[emailToRemove];
+                    await setDoc(docRef, { users }); // update the full object
+                    loadAccessSettings();
+                    logAction('UPDATE', 'SETTINGS', `User module permissions removed for: ${emailToRemove}`);
+                }
             } catch (e) { alert('Errore: ' + e.message); }
         };
 
