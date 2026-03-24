@@ -2188,6 +2188,11 @@
             document.getElementById('inp-inv-id').value = id;
             document.getElementById('inp-inv-name').value = name;
             document.getElementById('inp-inv-brand').value = brand || '';
+            document.getElementById('inp-inv-threshold').value = threshold;
+            document.getElementById('inp-inv-loc').value = loc;
+            document.getElementById('inp-inv-image').value = image || '';
+            document.getElementById('inp-inv-qty').value = qty !== 'undefined' ? qty : 0;
+            document.getElementById('inp-inv-restock-email').value = restockEmail || '';
             // Handle Unit select
             const unitSelect = document.getElementById('inp-inv-unit');
             let unitFound = false;
