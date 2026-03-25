@@ -26,8 +26,10 @@ Questa guida spiega come compilare correttamente il file Excel per l'importazion
 
 1. **Non Modificare le Intestazioni**: La prima riga del file Excel (ID, Nome, ecc.) deve rimanere esattamente così come scaricata dal template.
 2. **Nomi e ID**: L'ID e il Nome sono i campi fondamentali. Se carichi un file con un ID già esistente nel sistema, i dati di quell'articolo verranno **aggiornati** con i nuovi valori.
-3. **Numeri**: Nelle colonne **Quantità**, **Pezzi_Pacco** e **Soglia** inserisci solo numeri (senza scritte come "pezzi" o "litri").
+3. **Numeri**: Nelle colonne **Quantità** e **Soglia** inserisci solo numeri (senza scritte come "pezzi" o "litri").
 4. **Separatore Decimale**: Se necessario, usa il punto (`.`) per i numeri decimali (es. `1.5`).
+5. **Colonne da non compilare**: Non compilare la colonna Pezzi_Pacco se l'unità (Unità) di misura non è "pacco".
+6. Se necessario inserire l'immagine di un prodotto, cercalo su Google e con il tasto destro cliccare su "Copia indirizzo immagine" e incollalo nella colonna **Immagine**.
 
 ---
 
