@@ -1033,7 +1033,7 @@
     <!-- MODALE TOTEM -->
     <div id="view-totem" class="hidden fixed inset-0 bg-slate-900 text-white z-[200] p-6 flex flex-col">
         <!-- Header -->
-        <div class="flex justify-between items-center border-b border-slate-700 pb-4 mb-6">
+        <div class="flex justify-between items-center border-b border-slate-700 pb-4 mb-2">
             <h1 class="text-3xl font-black tracking-tight">UNISCAN LIVE</h1>
             <div class="flex items-center gap-4">
                 <!-- Stock Alert Toggle Button -->
@@ -1045,6 +1045,18 @@
                 </button>
                 <div id="totem-clock" class="text-3xl font-mono">00:00</div>
             </div>
+        </div>
+
+        <!-- Live Inventory Stats Bar -->
+        <div id="totem-inv-stats" class="flex items-center gap-6 text-xs text-slate-400 pb-3 mb-4 border-b border-slate-800">
+            <span class="flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 rounded-full bg-slate-500 inline-block"></span>
+                Inventario: <span id="totem-inv-total" class="text-white font-bold ml-1">--</span> articoli
+            </span>
+            <span id="totem-inv-alert-stat" class="hidden flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse inline-block"></span>
+                <span id="totem-inv-alert-count" class="text-amber-400 font-bold">0</span> sotto soglia
+            </span>
         </div>
 
         <!-- Main Booking Panel -->
@@ -1074,6 +1086,61 @@
             title="Esci da Totem">
             <i data-lucide="log-out" class="w-6 h-6"></i>
         </button>
+
+        <!-- Totem Quick Restock Modal -->
+        <div id="totem-restock-modal" class="hidden absolute inset-0 bg-slate-900/95 backdrop-blur-sm z-[300] flex items-center justify-center p-6">
+            <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6 w-full max-w-sm shadow-2xl">
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <p class="text-slate-400 text-xs uppercase tracking-widest">Rifornimento Rapido</p>
+                        <h3 id="totem-restock-name" class="text-white font-bold text-lg mt-1">---</h3>
+                        <p id="totem-restock-brand" class="text-slate-400 text-sm"></p>
+                    </div>
+                    <button onclick="closeTotemRestockModal()" class="text-slate-500 hover:text-white transition">
+                        <i data-lucide="x" class="w-5 h-5"></i>
+                    </button>
+                </div>
+
+                <!-- Current Stock -->
+                <div class="bg-slate-900 rounded-xl p-4 mb-4 text-center">
+                    <p class="text-slate-400 text-xs mb-1">Quantità Attuale</p>
+                    <p class="text-4xl font-black" id="totem-restock-current-qty">0</p>
+                    <p class="text-slate-400 text-sm" id="totem-restock-unit">pz</p>
+                </div>
+
+                <!-- Action Tabs -->
+                <div class="grid grid-cols-2 gap-2 mb-4">
+                    <button onclick="setTotemRestockAction('add')" id="btn-totem-add"
+                        class="py-2 rounded-lg text-sm font-bold bg-emerald-600/30 border border-emerald-500 text-emerald-400 hover:bg-emerald-600/50 transition">
+                        ↑ Rifornimento
+                    </button>
+                    <button onclick="setTotemRestockAction('remove')" id="btn-totem-remove"
+                        class="py-2 rounded-lg text-sm font-bold bg-slate-700 border border-slate-600 text-slate-400 hover:bg-slate-600 transition">
+                        ↓ Prelievo
+                    </button>
+                </div>
+
+                <!-- Qty Input -->
+                <div class="mb-4">
+                    <label class="text-slate-400 text-xs uppercase tracking-widest mb-1 block">Quantità</label>
+                    <input type="number" id="totem-restock-qty" min="0.01" step="0.01"
+                        class="w-full bg-slate-900 border border-slate-600 text-white text-xl font-bold rounded-lg px-4 py-3 text-center focus:outline-none focus:border-indigo-500"
+                        placeholder="0">
+                </div>
+
+                <!-- Confirm & Full Details -->
+                <div class="flex gap-2">
+                    <button onclick="confirmTotemRestock()" 
+                        class="flex-1 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold transition">
+                        Conferma
+                    </button>
+                    <button onclick="goToFullItemDetail()" title="Apri pagina completa"
+                        class="py-3 px-4 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-xl transition">
+                        <i data-lucide="external-link" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 
 
@@ -3141,13 +3208,29 @@
         function updateTotemStockAlerts() {
             const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'inventory'));
             onSnapshot(q, (snapshot) => {
+                const all = [];
                 const alerts = [];
-                snapshot.forEach(doc => {
-                    const i = doc.data();
+                snapshot.forEach(docSnap => {
+                    const i = docSnap.data();
+                    all.push(i);
                     if ((i.quantity || 0) <= (i.threshold || 0) && i.threshold > 0) {
                         alerts.push(i);
                     }
                 });
+
+                // Update live stats bar (feature 2)
+                const totalEl = document.getElementById('totem-inv-total');
+                const alertStatEl = document.getElementById('totem-inv-alert-stat');
+                const alertCountEl = document.getElementById('totem-inv-alert-count');
+                if (totalEl) totalEl.textContent = all.length;
+                if (alertStatEl && alertCountEl) {
+                    if (alerts.length > 0) {
+                        alertStatEl.classList.remove('hidden');
+                        alertCountEl.textContent = alerts.length;
+                    } else {
+                        alertStatEl.classList.add('hidden');
+                    }
+                }
 
                 const btn = document.getElementById('totem-stock-btn');
                 const badge = document.getElementById('totem-stock-badge');
@@ -3159,17 +3242,22 @@
                     return;
                 }
 
-                // Show the button with alert count
                 btn.classList.remove('hidden');
                 badge.textContent = alerts.length;
 
-                // Populate the stock panel grid
+                // Render clickable stock cards (features 1 & 4)
                 grid.innerHTML = alerts.map(i => {
-                    const sizeStr = i.size ? ` <span class="text-[10px] text-slate-400">(${i.size})</span>` : '';
-                    return `<div class="bg-slate-800 border border-amber-500/40 rounded-lg p-3">
+                    const sizeStr = i.size ? ` <span class="text-[10px] text-slate-500">(${i.size})</span>` : '';
+                    const isLow = (i.quantity || 0) <= 0;
+                    return `<div onclick="openTotemRestockModal('${i.id}')"
+                        class="bg-slate-800 border border-amber-500/40 rounded-lg p-3 cursor-pointer hover:bg-slate-700 hover:border-amber-400 transition group">
                         <p class="font-bold text-white text-sm truncate">${i.name}${sizeStr}</p>
                         <p class="text-slate-400 text-xs truncate">${i.brand || ''}</p>
-                        <p class="text-amber-400 text-xs mt-2 font-mono">Rimasti: <span class="text-red-400 font-bold">${i.quantity || 0}</span> ${i.unit || ''} / soglia: ${i.threshold}</p>
+                        <p class="text-amber-400 text-xs mt-2 font-mono">
+                            Rimasti: <span class="${isLow ? 'text-red-500' : 'text-red-400'} font-bold">${i.quantity || 0}</span> ${i.unit || ''}
+                            <span class="text-slate-600"> / soglia: ${i.threshold}</span>
+                        </p>
+                        <p class="text-indigo-400 text-[10px] mt-1 opacity-0 group-hover:opacity-100 transition">Clicca per rifornire →</p>
                     </div>`;
                 }).join('');
             });
@@ -3186,6 +3274,113 @@
                 main.classList.add('hidden');
                 stockPanel.classList.remove('hidden');
             }
+        };
+
+        // --- TOTEM QUICK RESTOCK MODAL ---
+        let totemRestockItemId = null;
+        let totemRestockAction = 'add';
+
+        window.openTotemRestockModal = (itemId) => {
+            const item = (window.allInventoryCache || []).find(i => i.id === itemId);
+            if (!item) return;
+
+            totemRestockItemId = itemId;
+            totemRestockAction = 'add';
+
+            document.getElementById('totem-restock-name').textContent = item.name;
+            document.getElementById('totem-restock-brand').textContent = item.brand || '';
+            document.getElementById('totem-restock-current-qty').textContent = item.quantity || 0;
+            document.getElementById('totem-restock-unit').textContent = item.unit === 'pacco' ? 'pacchi' : (item.unit || 'pz');
+            document.getElementById('totem-restock-qty').value = '';
+
+            // Default to "add" highlighted
+            setTotemRestockAction('add');
+
+            document.getElementById('totem-restock-modal').classList.remove('hidden');
+            setTimeout(() => document.getElementById('totem-restock-qty').focus(), 100);
+        };
+
+        window.closeTotemRestockModal = () => {
+            document.getElementById('totem-restock-modal').classList.add('hidden');
+            totemRestockItemId = null;
+        };
+
+        window.setTotemRestockAction = (action) => {
+            totemRestockAction = action;
+            const addBtn = document.getElementById('btn-totem-add');
+            const removeBtn = document.getElementById('btn-totem-remove');
+            if (action === 'add') {
+                addBtn.className = 'py-2 rounded-lg text-sm font-bold bg-emerald-600/50 border border-emerald-400 text-emerald-300 transition';
+                removeBtn.className = 'py-2 rounded-lg text-sm font-bold bg-slate-700 border border-slate-600 text-slate-400 hover:bg-slate-600 transition';
+            } else {
+                removeBtn.className = 'py-2 rounded-lg text-sm font-bold bg-red-600/50 border border-red-400 text-red-300 transition';
+                addBtn.className = 'py-2 rounded-lg text-sm font-bold bg-slate-700 border border-slate-600 text-slate-400 hover:bg-slate-600 transition';
+            }
+        };
+
+        window.confirmTotemRestock = async () => {
+            if (!totemRestockItemId || !currentUser) return;
+            const qty = parseFloat(document.getElementById('totem-restock-qty').value);
+            if (!qty || qty <= 0) return alert('Inserisci una quantità valida.');
+
+            const safeId = totemRestockItemId.replace(/\//g, '_');
+            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'inventory', safeId);
+
+            try {
+                let updatedData;
+                await runTransaction(db, async (transaction) => {
+                    const sfDoc = await transaction.get(docRef);
+                    if (!sfDoc.exists()) throw 'Articolo non trovato!';
+                    const currentQty = parseFloat(sfDoc.data().quantity || 0);
+                    let newQty = totemRestockAction === 'add' ? currentQty + qty : currentQty - qty;
+                    if (newQty < 0) throw 'Quantità insufficiente!';
+                    transaction.update(docRef, { quantity: newQty });
+
+                    const movRef = doc(collection(db, 'artifacts', appId, 'public', 'data', 'stock_movements'));
+                    transaction.set(movRef, {
+                        itemId: totemRestockItemId,
+                        itemName: sfDoc.data().name,
+                        action: totemRestockAction,
+                        amount: qty,
+                        unit: sfDoc.data().unit,
+                        user: currentUser.uid,
+                        operatorName: currentUser.displayName || currentUser.email || 'Totem',
+                        timestamp: serverTimestamp()
+                    });
+                    updatedData = { ...sfDoc.data(), quantity: totemRestockAction === 'add' ? sfDoc.data().quantity + qty : sfDoc.data().quantity - qty };
+                });
+
+                // Update allInventoryCache so UI reflects immediately
+                const idx = (window.allInventoryCache || []).findIndex(i => i.id === totemRestockItemId);
+                if (idx !== -1) {
+                    const snap = await getDoc(docRef);
+                    if (snap.exists()) window.allInventoryCache[idx] = snap.data();
+                }
+
+                closeTotemRestockModal();
+                logAction('UPDATE', 'INVENTORY', `Totem restock: ${totemRestockAction === 'add' ? '+' : '-'}${qty} for item ${totemRestockItemId}`);
+
+                // Show success toast
+                const toast = document.createElement('div');
+                toast.className = 'fixed top-6 left-1/2 -translate-x-1/2 bg-emerald-600 text-white px-6 py-3 rounded-xl shadow-2xl z-[400] text-sm font-bold';
+                toast.textContent = `✓ ${totemRestockAction === 'add' ? 'Rifornimento' : 'Prelievo'} confermato!`;
+                document.body.appendChild(toast);
+                setTimeout(() => toast.remove(), 2500);
+
+            } catch (err) { alert('Errore: ' + err); }
+        };
+
+        window.goToFullItemDetail = async () => {
+            if (!totemRestockItemId) return;
+            const itemId = totemRestockItemId;
+            closeTotemRestockModal();
+            exitTotemMode();
+            // Short delay to let the totem close, then navigate
+            setTimeout(async () => {
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'inventory', itemId.replace(/\//g, '_'));
+                const snap = await getDoc(docRef);
+                if (snap.exists()) showInventoryView(itemId, snap.data());
+            }, 300);
         };
 
         // --- ADMIN LOGIN & EXPORT ---
