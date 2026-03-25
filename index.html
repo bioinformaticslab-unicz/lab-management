@@ -1048,11 +1048,13 @@
                 <div id="totem-upcoming-list" class="space-y-4"></div>
             </div>
         </div>
-        <!-- Totem Footer Stock Alert (Nuovo) -->
-        <div id="totem-stock-alerts" class="mt-4 pt-4 border-t border-slate-700 h-16 overflow-hidden relative">
-            <div
-                class="absolute flex gap-8 animate-marquee whitespace-nowrap text-red-400 text-sm font-bold uppercase tracking-widest">
-                <!-- Stock alerts injected here -->
+        <!-- Totem Footer: Scorte Basse -->
+        <div id="totem-stock-alerts" class="mt-4 pt-4 border-t border-slate-700">
+            <h2 class="text-amber-400 font-bold mb-3 flex items-center gap-2">
+                <span class="animate-pulse">⚠️</span> SCORTE BASSE
+            </h2>
+            <div id="totem-stock-grid" class="grid grid-cols-3 gap-3 text-sm">
+                <!-- items injected here -->
             </div>
         </div>
         <button onclick="exitTotemMode()"
@@ -2603,11 +2605,35 @@
             if (target) target.classList.remove('hidden');
         };
         window.startScanner = async () => {
-            document.getElementById('camera-overlay').classList.add('hidden');
-            html5QrCode = new Html5Qrcode("reader");
-            await html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 250 } }, onScanSuccess);
+            try {
+                // Stop any existing session first to prevent "camera in use" errors
+                if (html5QrCode && html5QrCode.isScanning) {
+                    await html5QrCode.stop();
+                    html5QrCode = null;
+                }
+                document.getElementById('camera-overlay').classList.add('hidden');
+                html5QrCode = new Html5Qrcode("reader");
+                await html5QrCode.start(
+                    { facingMode: "environment" },
+                    { fps: 10, qrbox: { width: 250, height: 250 } },
+                    onScanSuccess
+                );
+            } catch (err) {
+                console.error('Scanner error:', err);
+                html5QrCode = null;
+                document.getElementById('camera-overlay').classList.remove('hidden');
+                if (err && (err.name === 'NotAllowedError' || String(err).includes('Permission'))) {
+                    alert('Accesso alla fotocamera negato. Controlla i permessi del browser.');
+                } else {
+                    alert('Impossibile avviare la fotocamera. Riprova o usa il campo manuale.');
+                }
+            }
         };
-        window.stopScanner = async () => { if (html5QrCode) await html5QrCode.stop(); resetApp(); };
+        window.stopScanner = async () => {
+            try { if (html5QrCode && html5QrCode.isScanning) await html5QrCode.stop(); } catch(e) { console.warn('Stop scanner error:', e); }
+            html5QrCode = null;
+            resetApp();
+        };
 
         function isIpAddress(str) {
             return /^(\\d{1,3}\\.){3}\\d{1,3}(:\\d+)?$/.test(str);
@@ -3106,10 +3132,29 @@
                 const alerts = [];
                 snapshot.forEach(doc => {
                     const i = doc.data();
-                    if ((i.quantity || 0) <= (i.threshold || 0)) alerts.push(`${i.name} (Sotto scorta)`);
+                    if ((i.quantity || 0) <= (i.threshold || 0) && i.threshold > 0) {
+                        alerts.push(i);
+                    }
                 });
-                const ticker = document.querySelector('#totem-stock-alerts .animate-marquee');
-                if (ticker) ticker.innerText = alerts.length ? "ATTENZIONE: " + alerts.join(" • ") : "";
+
+                const grid = document.getElementById('totem-stock-grid');
+                const section = document.getElementById('totem-stock-alerts');
+                if (!grid) return;
+
+                if (alerts.length === 0) {
+                    section.classList.add('hidden');
+                    return;
+                }
+                section.classList.remove('hidden');
+                grid.innerHTML = alerts.map(i => {
+                    const deficit = (i.threshold || 0) - (i.quantity || 0);
+                    const sizeStr = i.size ? ` <span class="text-[10px] text-slate-400">(${i.size})</span>` : '';
+                    return `<div class="bg-slate-800 border border-amber-500/40 rounded-lg p-2">
+                        <p class="font-bold text-white text-xs truncate">${i.name}${sizeStr}</p>
+                        <p class="text-slate-400 text-[10px] truncate">${i.brand || ''}</p>
+                        <p class="text-amber-400 text-xs mt-1 font-mono">Rimasti: <span class="text-red-400 font-bold">${i.quantity || 0}</span> ${i.unit || ''}</p>
+                    </div>`;
+                }).join('');
             });
         }
 
