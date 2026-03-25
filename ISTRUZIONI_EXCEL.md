@@ -13,6 +13,7 @@ Questa guida spiega come compilare correttamente il file Excel per l'importazion
 | **Categoria**| ✅  | La categoria merceologica (es. Reagenti, Vetreria, DPI). | `Reagenti` |
 | **Unita** | ✅  | L'unità di misura base. Usa `pz`, `ml`, `mg` o `pacco`. | `pz` |
 | **Capacità_Formato** | ✅ | Il volume o peso del singolo pezzo/flacone. | `500 ml` o `1 kg` |
+| **Data_Scadenza** | ❌ | Data di scadenza del prodotto nel formato `AAAA-MM-GG`. | `2026-12-31` |
 | **Quantita** | ✅  | Il numero totale di pezzi (o flaconi) attualmente in stock. | `12` |
 | **Pezzi_Pacco** | ✅  | Se l'unità è "pacco", quanti pezzi contiene ogni confezione. | `50` |
 | **Soglia** | ❌ | La quantità minima sotto la quale ricevere un alert. | `2` |
@@ -29,7 +30,8 @@ Questa guida spiega come compilare correttamente il file Excel per l'importazion
 3. **Numeri**: Nelle colonne **Quantità** e **Soglia** inserisci solo numeri (senza scritte come "pezzi" o "litri").
 4. **Separatore Decimale**: Se necessario, usa il punto (`.`) per i numeri decimali (es. `1.5`).
 5. **Colonne da non compilare**: Non compilare la colonna Pezzi_Pacco se l'unità (Unità) di misura non è "pacco".
-6. Se necessario inserire l'immagine di un prodotto, cercalo su Google e con il tasto destro cliccare su "Copia indirizzo immagine" e incollalo nella colonna **Immagine**.
+6. **Data Scadenza**: Inserire la data nel formato **AAAA-MM-GG** (es. `2026-12-31`). Se il prodotto è scaduto, apparirà in **rosso** nella lista del magazzino.
+7. Se necessario inserire l'immagine di un prodotto, cercalo su Google e con il tasto destro cliccare su "Copia indirizzo immagine" e incollalo nella colonna **Immagine**.
 
 ---
 

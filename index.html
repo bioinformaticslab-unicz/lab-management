@@ -603,7 +603,7 @@
                         </div>
 
 
-                        <!-- Email Responsabile Riordino -->
+                        <!-- Email + Scadenza + Size -->
                         <div class="grid grid-cols-2 gap-2">
                             <div>
                                 <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Capacità/Formato</label>
@@ -612,11 +612,16 @@
                                     placeholder="Es. 500 ml, 1 kg">
                             </div>
                             <div>
-                                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Email Responsabile</label>
-                                <input type="email" id="inp-inv-restock-email"
-                                    class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs"
-                                    placeholder="email@esempio.com">
+                                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Data Scadenza</label>
+                                <input type="date" id="inp-inv-expiry"
+                                    class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs">
                             </div>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Email Responsabile</label>
+                            <input type="email" id="inp-inv-restock-email"
+                                class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs"
+                                placeholder="email@esempio.com">
                         </div>
 
                         <!-- Pack Size (Condizionale) -->
@@ -2111,6 +2116,7 @@
                             </div>
                             <div class="text-[10px] text-slate-500 font-medium">${i.brand || ''}</div>
                             <div class="text-[10px] text-slate-400 font-mono">${i.id} | ${i.location || '-'}</div>
+                             ${i.expiryDate ? `<div class="text-[10px] font-bold ${i.expiryDate < new Date().toISOString().slice(0,10) ? 'text-red-500' : 'text-slate-400'}">${i.expiryDate < new Date().toISOString().slice(0,10) ? '⚠ SCADUTO' : '📅'} Scad.: ${i.expiryDate}</div>` : ''}
                         </div>
                         <div class="text-right flex items-center gap-2">
                             <div>
@@ -2215,6 +2221,7 @@
             const threshold = parseFloat(document.getElementById('inp-inv-threshold').value) || 0;
             const loc = document.getElementById('inp-inv-loc').value.trim();
             const size = document.getElementById('inp-inv-size').value.trim();
+            const expiryDate = document.getElementById('inp-inv-expiry').value || '';
             const image = document.getElementById('inp-inv-image').value.trim();
             const qtyInput = document.getElementById('inp-inv-qty');
 
@@ -2243,7 +2250,7 @@
 
                 const restockEmail = document.getElementById('inp-inv-restock-email').value.trim();
                 await setDoc(docRef, {
-                    id, name, brand, unit, threshold, location: loc, size, quantity: finalQty, packSize: packSize, category: category || '', image: image || '', restockEmail: restockEmail || ''
+                    id, name, brand, unit, threshold, location: loc, size, expiryDate, quantity: finalQty, packSize: packSize, category: category || '', image: image || '', restockEmail: restockEmail || ''
                 });
                 alert("Articolo salvato!");
                 logAction('UPDATE', 'INVENTORY', `Inventory item saved: ${name} (${id}). Qty: ${finalQty}`);
@@ -2269,6 +2276,7 @@
             document.getElementById('inp-inv-threshold').value = '';
             document.getElementById('inp-inv-loc').value = '';
             document.getElementById('inp-inv-size').value = '';
+            document.getElementById('inp-inv-expiry').value = '';
             document.getElementById('inp-inv-packsize').value = '';
             document.getElementById('inp-inv-category').value = '';
             document.getElementById('inp-inv-image').value = '';
@@ -2291,6 +2299,7 @@
             document.getElementById('inp-inv-threshold').value = threshold || 0;
             document.getElementById('inp-inv-loc').value = location || '';
             document.getElementById('inp-inv-size').value = item.size || '';
+            document.getElementById('inp-inv-expiry').value = item.expiryDate || '';
             document.getElementById('inp-inv-image').value = image || '';
             document.getElementById('inp-inv-qty').value = (quantity !== undefined && quantity !== null) ? quantity : 0;
             document.getElementById('inp-inv-restock-email').value = restockEmail || '';
@@ -2360,9 +2369,11 @@
         };
 
         window.downloadInventoryTemplate = () => {
-            const headers = [["ID", "Nome", "Marchio", "Categoria", "Unita", "Capacità_Formato", "Quantita", "Pezzi_Pacco", "Soglia", "Posizione", "Immagine", "Email_Riordino"]];
+            const today = new Date().toISOString().slice(0, 10);
+            const headers = [["ID", "Nome", "Marchio", "Categoria", "Unita", "Capacità_Formato", "Data_Scadenza", "Quantita", "Pezzi_Pacco", "Soglia", "Posizione", "Immagine", "Email_Riordino"]];
+            const example = [["ES-001", "Etanolo 96%", "Sigma-Aldrich", "Reagenti", "pz", "500 ml", today, 10, 1, 2, "Armadio A", "", ""]];
             const wb = XLSX.utils.book_new();
-            const ws = XLSX.utils.aoa_to_sheet(headers);
+            const ws = XLSX.utils.aoa_to_sheet([...headers, ...example]);
             XLSX.utils.book_append_sheet(wb, ws, "Template");
             XLSX.writeFile(wb, "inventory_template.xlsx");
         };
@@ -2398,6 +2409,7 @@
                                 category: (row["Categoria"] || "").toString().trim(),
                                 unit: (row["Unita"] || "pz").toString().trim(),
                                 size: (row["Capacità_Formato"] || "").toString().trim(),
+                                expiryDate: (row["Data_Scadenza"] || "").toString().trim(),
                                 quantity: parseFloat(row["Quantita"]) || 0,
                                 packSize: parseFloat(row["Pezzi_Pacco"]) || 1,
                                 threshold: parseFloat(row["Soglia"]) || 0,
@@ -2441,8 +2453,8 @@
                         const cols = line.split(bestDelimiter).map(p => p.trim().replace(/^"|"$/g, '').replace(/""/g, '"'));
                         if (cols.length < 2) continue;
 
-                        // New order: ID, Name, Brand, Category, Unit, Size, Qty, PackSize, Threshold, Loc, Image, RestockEmail
-                        const [id, name, brand, category, unit, size, qty, packSize, threshold, loc, image, restockEmail] = cols;
+                        // New order: ID, Name, Brand, Category, Unit, Size, ExpiryDate, Qty, PackSize, Threshold, Loc, Image, RestockEmail
+                        const [id, name, brand, category, unit, size, expiryDate, qty, packSize, threshold, loc, image, restockEmail] = cols;
                         if (id && name) {
                             try {
                                 await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'inventory', id.replace(/\//g, '_')), {
@@ -2451,6 +2463,7 @@
                                     category: category || '', 
                                     unit: unit || 'pz',
                                     size: size || '',
+                                    expiryDate: expiryDate || '',
                                     quantity: parseFloat(qty) || 0, 
                                     packSize: parseFloat(packSize) || 1,
                                     threshold: parseFloat(threshold) || 0, 
@@ -4459,6 +4472,7 @@
                 "Categoria": i.category || '',
                 "Unita": i.unit,
                 "Capacità_Formato": i.size || '',
+                "Data_Scadenza": i.expiryDate || '',
                 "Quantita": i.quantity || 0,
                 "Pezzi_Pacco": i.packSize || 1,
                 "Soglia": i.threshold || 0,
