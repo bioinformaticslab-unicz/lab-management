@@ -10,13 +10,13 @@ Questa guida spiega come compilare correttamente il file Excel per l'importazion
 | **ID** | ✅ | Il codice a barre o un identificativo unico. | `800123456789` o `REAG-001` |
 | **Nome** | ✅ | Il nome completo dell'articolo. | `Etanolo 96%` |
 | **Marchio** | ❌ | La marca o il produttore dell'articolo. | `Sigma-Aldrich` |
-| **Categoria**| ❌ | La categoria merceologica (es. Reagenti, Vetreria, DPI). | `Reagenti` |
-| **Unita** | ❌ | L'unità di misura base. Usa `pz`, `ml`, `mg` o `pacco`. | `pz` |
-| **Capacità_Formato** | ❌ | Il volume o peso del singolo pezzo/flacone. | `500 ml` o `1 kg` |
-| **Quantita** | ❌ | Il numero totale di pezzi (o flaconi) attualmente in stock. | `12` |
-| **Pezzi_Pacco** | ❌ | Se l'unità è "pacco", quanti pezzi contiene ogni confezione. | `50` |
+| **Categoria**| ✅  | La categoria merceologica (es. Reagenti, Vetreria, DPI). | `Reagenti` |
+| **Unita** | ✅  | L'unità di misura base. Usa `pz`, `ml`, `mg` o `pacco`. | `pz` |
+| **Capacità_Formato** | ✅ | Il volume o peso del singolo pezzo/flacone. | `500 ml` o `1 kg` |
+| **Quantita** | ✅  | Il numero totale di pezzi (o flaconi) attualmente in stock. | `12` |
+| **Pezzi_Pacco** | ✅  | Se l'unità è "pacco", quanti pezzi contiene ogni confezione. | `50` |
 | **Soglia** | ❌ | La quantità minima sotto la quale ricevere un alert. | `2` |
-| **Posizione** | ❌ | Dove è conservato l'articolo nel laboratorio. | `Armadio Infiammabili A` |
+| **Posizione** | ✅ | Dove è conservato l'articolo nel laboratorio. | `Armadio Infiammabili A` |
 | **Immagine** | ❌ | Un link (URL) diretto a una foto del prodotto online. | `https://esempio.it/foto.jpg` |
 | **Email_Riordino** | ❌ | L'email a cui inviare l'alert di scorta bassa. | `lab-manager@unicz.it` |
 
