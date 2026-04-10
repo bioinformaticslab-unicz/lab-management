@@ -514,12 +514,19 @@
                 <button onclick="resetApp()" class="text-[10px] font-bold text-slate-400 hover:text-slate-600 flex items-center gap-1 transition"><i data-lucide="arrow-left" class="w-3 h-3"></i> Indietro</button>
             </div>
 
-            <!-- Date Range Filters -->
-            <div class="flex gap-2 flex-wrap">
-                <button onclick="changeAnalyticsRange('7d')" id="stat-range-7d" class="stat-range-btn px-3 py-1.5 rounded-lg text-[10px] font-bold border transition">7 Giorni</button>
-                <button onclick="changeAnalyticsRange('30d')" id="stat-range-30d" class="stat-range-btn px-3 py-1.5 rounded-lg text-[10px] font-bold border transition bg-violet-600 text-white border-violet-600">30 Giorni</button>
-                <button onclick="changeAnalyticsRange('3m')" id="stat-range-3m" class="stat-range-btn px-3 py-1.5 rounded-lg text-[10px] font-bold border transition">3 Mesi</button>
-                <button onclick="changeAnalyticsRange('all')" id="stat-range-all" class="stat-range-btn px-3 py-1.5 rounded-lg text-[10px] font-bold border transition">Tutto</button>
+            <!-- Date & User Filters -->
+            <div class="flex gap-2 flex-wrap items-center">
+                <div class="flex gap-1">
+                    <button onclick="changeAnalyticsRange('7d')" id="stat-range-7d" class="stat-range-btn px-3 py-1.5 rounded-lg text-[10px] font-bold border transition bg-white text-slate-600 border-slate-200 hover:bg-slate-50">7 Giorni</button>
+                    <button onclick="changeAnalyticsRange('30d')" id="stat-range-30d" class="stat-range-btn px-3 py-1.5 rounded-lg text-[10px] font-bold border transition bg-violet-600 text-white border-violet-600">30 Giorni</button>
+                    <button onclick="changeAnalyticsRange('3m')" id="stat-range-3m" class="stat-range-btn px-3 py-1.5 rounded-lg text-[10px] font-bold border transition bg-white text-slate-600 border-slate-200 hover:bg-slate-50">3 Mesi</button>
+                    <button onclick="changeAnalyticsRange('all')" id="stat-range-all" class="stat-range-btn px-3 py-1.5 rounded-lg text-[10px] font-bold border transition bg-white text-slate-600 border-slate-200 hover:bg-slate-50">Tutto</button>
+                </div>
+                <div class="flex-1 min-w-[200px]">
+                    <select id="stat-filter-user" onchange="loadAnalyticsData()" class="w-full p-1.5 bg-white border border-slate-200 rounded-lg text-[10px] font-bold text-slate-600 focus:ring-2 focus:ring-violet-500 outline-none">
+                        <option value="">Tutti gli Utenti</option>
+                    </select>
+                </div>
             </div>
 
             <!-- KPI Cards -->
@@ -4885,13 +4892,26 @@
                 const movSnap = await getDocs(query(collection(db, 'artifacts', appId, 'public', 'data', 'stock_movements'), orderBy('timestamp', 'desc')));
                 let movements = [];
                 movSnap.forEach(d => movements.push({...d.data(), _id: d.id}));
-                if (cutoff) movements = movements.filter(m => m.timestamp?.seconds && new Date(m.timestamp.seconds * 1000) >= cutoff);
-
-                // Get bookings
+                
+                // Get all bookings for filtering and stats
                 const bookSnap = await getDocs(query(collection(db, 'artifacts', appId, 'public', 'data', 'bookings')));
                 let bookings = [];
                 bookSnap.forEach(d => bookings.push({id: d.id, ...d.data()}));
-                if (cutoff) bookings = bookings.filter(b => new Date(b.startDate) >= cutoff);
+
+                // Populate User Filter if empty
+                populateAnalyticsUserFilter(movements, bookings);
+
+                const filterUser = document.getElementById('stat-filter-user').value;
+
+                // Apply Filters
+                if (cutoff) {
+                    movements = movements.filter(m => m.timestamp?.seconds && new Date(m.timestamp.seconds * 1000) >= cutoff);
+                    bookings = bookings.filter(b => new Date(b.startDate) >= cutoff);
+                }
+                if (filterUser) {
+                    movements = movements.filter(m => (m.userEmail || m.userId) === filterUser);
+                    bookings = bookings.filter(b => (b.userEmail || b.userId) === filterUser);
+                }
 
                 // Get inventory for health & KPIs
                 const invArr = window.allInventoryCache || [];
@@ -5055,6 +5075,23 @@
                 }
                 if (batch.length > 0) console.log(`Archived ${batch.length} expired bookings.`);
             } catch(e) { console.warn('Archive bookings failed:', e); }
+        };
+
+        window.populateAnalyticsUserFilter = (movements, bookings) => {
+            const sel = document.getElementById('stat-filter-user');
+            if (!sel || sel.options.length > 1) return; // Already populated
+
+            const emails = new Set();
+            movements.forEach(m => { if (m.userEmail || m.userId) emails.add(m.userEmail || m.userId); });
+            bookings.forEach(b => { if (b.userEmail || b.userId) emails.add(b.userEmail || b.userId); });
+
+            const sorted = Array.from(emails).sort();
+            sorted.forEach(e => {
+                const opt = document.createElement('option');
+                opt.value = e;
+                opt.textContent = e;
+                sel.appendChild(opt);
+            });
         };
     </script>
 </body>
