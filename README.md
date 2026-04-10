@@ -183,6 +183,16 @@ npx serve .
 
 ---
 
+## 🚀 Prossime Funzionalità (Roadmap)
+
+- 📊 **Infografiche Avanzate**: Visualizzazione dinamica del consumo dei prodotti e dei tassi di utilizzo degli strumenti tramite grafici interattivi (Chart.js) per analizzare le tendenze nel tempo.
+- 🔔 **Sistema di Allerta Dashboard**: Notifiche in tempo reale e avvisi visivi sulla Dashboard Totem per segnalare modifiche critiche, note urgenti o guasti agli strumenti.
+- 📅 **Gestione Scadenze (Expiry Dates)**: Tracciamento automatico delle date di scadenza per reagenti e materiali deperibili con avvisi di pre-scadenza.
+- 🛠️ **Manutenzione Programmata**: Modulo per la gestione dei cicli di manutenzione e calibrazione degli strumenti con registro storico degli interventi.
+- 📑 **Audit Log Avanzato**: Registro dettagliato delle attività per operatore per una tracciabilità completa di ogni prelievo o modifica all'inventario.
+
+---
+
 ## 📄 Licenza
 
 Progetto del Laboratorio di Bioinformatica — Università Magna Graecia di Catanzaro.
