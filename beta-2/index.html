@@ -4909,8 +4909,8 @@
                     bookings = bookings.filter(b => new Date(b.startDate) >= cutoff);
                 }
                 if (filterUser) {
-                    movements = movements.filter(m => (m.userEmail || m.userId) === filterUser);
-                    bookings = bookings.filter(b => (b.userEmail || b.userId) === filterUser);
+                    movements = movements.filter(m => (m.operatorName || m.user) === filterUser);
+                    bookings = bookings.filter(b => (b.email || b.userName || b.bookedBy) === filterUser);
                 }
 
                 // Get inventory for health & KPIs
@@ -5080,11 +5080,17 @@
             const sel = document.getElementById('stat-filter-user');
             if (!sel || sel.options.length > 1) return; // Already populated
 
-            const emails = new Set();
-            movements.forEach(m => { if (m.userEmail || m.userId) emails.add(m.userEmail || m.userId); });
-            bookings.forEach(b => { if (b.userEmail || b.userId) emails.add(b.userEmail || b.userId); });
+            const users = new Set();
+            movements.forEach(m => { 
+                const u = m.operatorName || m.user;
+                if (u) users.add(u); 
+            });
+            bookings.forEach(b => { 
+                const u = b.email || b.userName || b.bookedBy;
+                if (u) users.add(u); 
+            });
 
-            const sorted = Array.from(emails).sort();
+            const sorted = Array.from(users).sort();
             sorted.forEach(e => {
                 const opt = document.createElement('option');
                 opt.value = e;
