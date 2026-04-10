@@ -548,8 +548,8 @@
                 </div>
                 <div class="bg-white rounded-xl border border-slate-100 p-4 shadow-sm text-center">
                     <i data-lucide="calendar" class="w-6 h-6 mx-auto text-indigo-500 mb-1"></i>
-                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Prenotaz. Mese</p>
-                    <div id="kpi-bookings-month" class="text-2xl font-black text-indigo-600">0</div>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Prenotazioni<br>(Periodo)</p>
+                    <div id="kpi-bookings-month" class="text-2xl font-black text-indigo-600 mt-1">0</div>
                 </div>
                 <div class="bg-white rounded-xl border border-slate-100 p-4 shadow-sm text-center col-span-2 md:col-span-2">
                     <i data-lucide="trophy" class="w-6 h-6 mx-auto text-violet-500 mb-1"></i>
@@ -4931,15 +4931,14 @@
         window.updateAnalyticsKPIs = (inventory, bookings, movements) => {
             const now = new Date();
             const lowStock = inventory.filter(i => i.quantity <= (i.threshold || 0)).length;
-            const activeNow = (window.adminBookingsCache || []).filter(b => {
+            const activeNow = bookings.filter(b => {
                 const s = new Date(b.startDate), e = new Date(b.endDate);
                 return now >= s && now <= e;
             }).length;
-            const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-            const bookingsMonth = (window.adminBookingsCache || []).filter(b => new Date(b.startDate) >= monthStart).length;
+            const bookingsPeriod = bookings.length;
 
             const instrCounts = {};
-            (window.adminBookingsCache || []).filter(b => new Date(b.startDate) >= monthStart).forEach(b => {
+            bookings.forEach(b => {
                 const n = b.resourceName || b.resourceId || '?';
                 instrCounts[n] = (instrCounts[n] || 0) + 1;
             });
@@ -4949,9 +4948,9 @@
             if (el('kpi-total-items')) el('kpi-total-items').textContent = inventory.length;
             if (el('kpi-low-stock')) el('kpi-low-stock').textContent = lowStock;
             if (el('kpi-active-bookings')) el('kpi-active-bookings').textContent = activeNow;
-            if (el('kpi-bookings-month')) el('kpi-bookings-month').textContent = bookingsMonth;
+            if (el('kpi-bookings-month')) el('kpi-bookings-month').textContent = bookingsPeriod;
             if (el('kpi-top-instrument')) el('kpi-top-instrument').textContent = topInstr ? topInstr[0] : '\u2014';
-            if (el('kpi-top-instrument-count')) el('kpi-top-instrument-count').textContent = topInstr ? `${topInstr[1]} prenotazioni questo mese` : '';
+            if (el('kpi-top-instrument-count')) el('kpi-top-instrument-count').textContent = topInstr ? `${topInstr[1]} prenotazioni nel periodo` : '';
         };
 
         window.buildAnalyticsCharts = (movements, bookings, inventory) => {
