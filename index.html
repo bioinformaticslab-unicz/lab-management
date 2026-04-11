@@ -5525,23 +5525,50 @@ DATI DELLA SETTIMANA:
 
 DETTAGLIO MOVIMENTI MAGAZZINO:
 `;
-                // Aggregate movements by itemName
+                // Aggregate movements by itemName and user
                 const agg = {};
+                const userAgg = {};
                 movList.forEach(m => {
                     const name = m.itemName || 'Sconosciuto';
+                    const user = normalizeUserName(m.operatorName || m.user) || 'Anonimo';
+                    
                     if (!agg[name]) agg[name] = { add:0, sub:0 };
-                    if (m.type === 'add') agg[name].add += Number(m.quantity || 0);
-                    if (m.type === 'remove' || m.type === 'sub') agg[name].sub += Number(m.quantity || 0);
+                    if (!userAgg[user]) userAgg[user] = { add:0, sub:0, items: new Set() };
+
+                    if (m.type === 'add') {
+                        agg[name].add += Number(m.quantity || 0);
+                        userAgg[user].add += Number(m.quantity || 0);
+                        userAgg[user].items.add(name);
+                    }
+                    if (m.type === 'remove' || m.type === 'sub') {
+                        agg[name].sub += Number(m.quantity || 0);
+                        userAgg[user].sub += Number(m.quantity || 0);
+                        userAgg[user].items.add(name);
+                    }
                 });
 
                 let hasMv = false;
+                promptText += `\nRIEPILOGO ARTICOLI:\n`;
                 for (const [name, qty] of Object.entries(agg)) {
                     hasMv = true;
                     promptText += `- ${name}: +${qty.add} aggiunti, -${qty.sub} prelevati\n`;
                 }
+                
+                promptText += `\nATTIVITÀ PER UTILIZZATORE:\n`;
+                for (const [u, acts] of Object.entries(userAgg)) {
+                    if (acts.sub > 0 || acts.add > 0) {
+                        const itemsArr = Array.from(acts.items).join(', ');
+                        promptText += `- ${u}: prelevate ${acts.sub} unità, aggiunte ${acts.add} unità. (Articoli movimentati: ${itemsArr})\n`;
+                    }
+                }
+
                 if (!hasMv) promptText += "Nessun movimento significativo registrato.\n";
 
-                promptText += `\nGenera il report in Markdown, inizia con un titolo (es. # Report Attività Lab [Data]) ed evidenzia le tendenze o gli usi maggiori. Non divagare.`;
+                promptText += `\nGenera il report in Markdown e formattalo bene (sii analitico).
+Obbligatorio:
+1. Inizia con un titolo (es. # Report Activity Lab).
+2. Fai una classifica verbale: menziona esplicitamente gli operatori/utilizzatori che hanno fatto più prelievi indicando cosa hanno prelevato maggiormente.
+3. Evidenzia quali reagenti o articoli sono stati maggiormente intaccati.`;
 
                 // 2. Chiamata Gemini
                 const endPoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
