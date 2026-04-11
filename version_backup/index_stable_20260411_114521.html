@@ -163,14 +163,6 @@
                 <span class="text-[9px] font-bold uppercase text-slate-500">Dashboard</span>
             </button>
         </div>
-        <!-- STATISTICHE MENU BUTTON (admin/supervisor only) -->
-        <div id="btn-home-statistiche" class="hidden mb-4 fade-in">
-            <button onclick="showStatistiche()"
-                class="w-full py-3 bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-lg rounded-xl flex items-center justify-center gap-2 active:scale-[.97] transition hover:from-violet-500 hover:to-indigo-500">
-                <i data-lucide="bar-chart-3" class="w-5 h-5"></i>
-                <span class="text-xs font-black uppercase tracking-wider">Statistiche &amp; Analisi</span>
-            </button>
-        </div>
 
         <!-- VISTA 1: SCANNER (Router Intelligente) -->
         <div id="view-scanner" class="fade-in space-y-6">
@@ -505,110 +497,6 @@
             </div>
         </div>
 
-        <!-- VISTA: STATISTICHE (Admin/Supervisor Only) -->
-        <div id="view-statistiche" class="hidden fade-in space-y-4">
-            <div class="flex items-center justify-between border-b border-slate-200 pb-2">
-                <h2 class="text-lg font-black text-slate-800 flex items-center gap-2">
-                    <i data-lucide="bar-chart-3" class="w-5 h-5 text-violet-600"></i> Statistiche & Analisi
-                </h2>
-                <button onclick="resetApp()" class="text-[10px] font-bold text-slate-400 hover:text-slate-600 flex items-center gap-1 transition"><i data-lucide="arrow-left" class="w-3 h-3"></i> Indietro</button>
-            </div>
-
-            <!-- Date, PI & User Filters -->
-            <div class="space-y-2">
-                <div class="flex gap-1 flex-wrap">
-                    <button onclick="changeAnalyticsRange('7d')" id="stat-range-7d" class="stat-range-btn px-3 py-1.5 rounded-lg text-[10px] font-bold border transition bg-white text-slate-600 border-slate-200 hover:bg-slate-50">7 Giorni</button>
-                    <button onclick="changeAnalyticsRange('30d')" id="stat-range-30d" class="stat-range-btn px-3 py-1.5 rounded-lg text-[10px] font-bold border transition bg-violet-600 text-white border-violet-600">30 Giorni</button>
-                    <button onclick="changeAnalyticsRange('3m')" id="stat-range-3m" class="stat-range-btn px-3 py-1.5 rounded-lg text-[10px] font-bold border transition bg-white text-slate-600 border-slate-200 hover:bg-slate-50">3 Mesi</button>
-                    <button onclick="changeAnalyticsRange('all')" id="stat-range-all" class="stat-range-btn px-3 py-1.5 rounded-lg text-[10px] font-bold border transition bg-white text-slate-600 border-slate-200 hover:bg-slate-50">Tutto</button>
-                </div>
-                <div class="flex gap-2 flex-wrap">
-                    <div class="flex-1 min-w-[140px]">
-                        <label class="block text-[9px] font-bold text-slate-400 uppercase mb-0.5 tracking-widest">PI / Responsabile</label>
-                        <select id="stat-filter-pi" onchange="onPiFilterChange(); loadAnalyticsData()" class="w-full p-1.5 bg-white border border-slate-200 rounded-lg text-[10px] font-bold text-slate-600 focus:ring-2 focus:ring-violet-500 outline-none">
-                            <option value="">Tutti i PI</option>
-                        </select>
-                    </div>
-                    <div class="flex-1 min-w-[140px]">
-                        <label class="block text-[9px] font-bold text-slate-400 uppercase mb-0.5 tracking-widest">Utilizzatore</label>
-                        <select id="stat-filter-user" onchange="loadAnalyticsData()" class="w-full p-1.5 bg-white border border-slate-200 rounded-lg text-[10px] font-bold text-slate-600 focus:ring-2 focus:ring-violet-500 outline-none">
-                            <option value="">Tutti gli Utilizzatori</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
-
-            <!-- KPI Cards -->
-            <div class="grid grid-cols-2 md:grid-cols-3 gap-3" id="analytics-kpi-cards">
-                <div class="bg-white rounded-xl border border-slate-100 p-4 shadow-sm text-center">
-                    <i data-lucide="package" class="w-6 h-6 mx-auto text-emerald-500 mb-1"></i>
-                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Articoli</p>
-                    <div id="kpi-total-items" class="text-2xl font-black text-slate-800">0</div>
-                </div>
-                <div class="bg-white rounded-xl border border-slate-100 p-4 shadow-sm text-center">
-                    <i data-lucide="alert-triangle" class="w-6 h-6 mx-auto text-amber-500 mb-1"></i>
-                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Scorta Bassa</p>
-                    <div id="kpi-low-stock" class="text-2xl font-black text-red-500">0</div>
-                </div>
-                <div class="bg-white rounded-xl border border-slate-100 p-4 shadow-sm text-center">
-                    <i data-lucide="play-circle" class="w-6 h-6 mx-auto text-emerald-500 mb-1"></i>
-                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">In Uso Ora</p>
-                    <div id="kpi-active-bookings" class="text-2xl font-black text-emerald-600">0</div>
-                </div>
-                <div class="bg-white rounded-xl border border-slate-100 p-4 shadow-sm text-center">
-                    <i data-lucide="calendar" class="w-6 h-6 mx-auto text-indigo-500 mb-1"></i>
-                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Prenotazioni<br>(Periodo)</p>
-                    <div id="kpi-bookings-month" class="text-2xl font-black text-indigo-600 mt-1">0</div>
-                </div>
-                <div class="bg-white rounded-xl border border-slate-100 p-4 shadow-sm text-center col-span-2 md:col-span-2">
-                    <i data-lucide="trophy" class="w-6 h-6 mx-auto text-violet-500 mb-1"></i>
-                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Strumento Top</p>
-                    <div id="kpi-top-instrument" class="text-sm font-black text-violet-700 truncate">&mdash;</div>
-                    <div id="kpi-top-instrument-count" class="text-[10px] text-slate-400 font-bold"></div>
-                </div>
-            </div>
-
-            <!-- Loading Indicator -->
-            <div id="analytics-loading" class="hidden text-center py-8">
-                <div class="w-8 h-8 border-4 border-violet-500/30 border-t-violet-500 rounded-full animate-spin mx-auto mb-2"></div>
-                <p class="text-xs text-slate-400 font-bold">Caricamento analisi...</p>
-            </div>
-
-            <!-- Charts Grid -->
-            <div id="analytics-charts-container" class="space-y-4">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="bg-white rounded-xl border border-slate-100 p-4 shadow-sm">
-                        <h3 class="text-xs font-bold text-slate-700 mb-3 flex items-center gap-1.5"><i data-lucide="trending-down" class="w-4 h-4 text-red-500"></i> Prelievi Materiali nel Tempo</h3>
-                        <div class="relative w-full h-48"><canvas id="chart-consumption"></canvas></div>
-                    </div>
-                    <div class="bg-white rounded-xl border border-slate-100 p-4 shadow-sm">
-                        <h3 class="text-xs font-bold text-slate-700 mb-3 flex items-center gap-1.5"><i data-lucide="flame" class="w-4 h-4 text-orange-500"></i> Articoli Più Prelevati</h3>
-                        <div class="relative w-full h-48"><canvas id="chart-top-consumed"></canvas></div>
-                    </div>
-                </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="bg-white rounded-xl border border-slate-100 p-4 shadow-sm">
-                        <h3 class="text-xs font-bold text-slate-700 mb-3 flex items-center gap-1.5"><i data-lucide="microscope" class="w-4 h-4 text-indigo-500"></i> Utilizzo Strumenti</h3>
-                        <div class="relative w-full h-48"><canvas id="chart-instrument-usage"></canvas></div>
-                    </div>
-                    <div class="bg-white rounded-xl border border-slate-100 p-4 shadow-sm">
-                        <h3 class="text-xs font-bold text-slate-700 mb-3 flex items-center gap-1.5"><i data-lucide="calendar-days" class="w-4 h-4 text-violet-500"></i> Prenotazioni per Giorno</h3>
-                        <div class="relative w-full h-48"><canvas id="chart-booking-heatmap"></canvas></div>
-                    </div>
-                </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="bg-white rounded-xl border border-slate-100 p-4 shadow-sm">
-                        <h3 class="text-xs font-bold text-slate-700 mb-3 flex items-center gap-1.5"><i data-lucide="heart-pulse" class="w-4 h-4 text-emerald-500"></i> Salute Inventario</h3>
-                        <div class="relative w-full h-48"><canvas id="chart-inventory-health"></canvas></div>
-                    </div>
-                    <div class="bg-white rounded-xl border border-slate-100 p-4 shadow-sm">
-                        <h3 class="text-xs font-bold text-slate-700 mb-3 flex items-center gap-1.5"><i data-lucide="pie-chart" class="w-4 h-4 text-blue-500"></i> Quantità per Categoria</h3>
-                        <div class="relative w-full h-48"><canvas id="chart-category-breakdown"></canvas></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
         <!-- VISTA 4: ADMIN -->
         <div id="view-admin" class="hidden fade-in space-y-4">
             <h2 class="text-lg font-black text-slate-800 flex items-center gap-2 border-b pb-2">
@@ -641,17 +529,6 @@
                     <button onclick="exportBookingsCSV()"
                         class="flex-1 py-2 bg-emerald-600 text-white rounded-lg text-xs font-bold shadow flex items-center justify-center gap-2"><i
                             data-lucide="download" class="w-4 h-4"></i> SCARICA CSV</button>
-                </div>
-                <!-- Active / Archive Toggle -->
-                <div class="flex gap-2">
-                    <button onclick="switchBookingsView('active')" id="btn-bookings-active"
-                        class="flex-1 py-2 bg-indigo-600 text-white rounded-lg text-xs font-bold transition shadow-sm flex items-center justify-center gap-1.5">
-                        <i data-lucide="calendar-check" class="w-3.5 h-3.5"></i> Attive
-                    </button>
-                    <button onclick="switchBookingsView('archived')" id="btn-bookings-archived"
-                        class="flex-1 py-2 bg-white text-slate-600 hover:bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold transition shadow-sm flex items-center justify-center gap-1.5">
-                        <i data-lucide="archive" class="w-3.5 h-3.5"></i> Archivio
-                    </button>
                 </div>
                 <div id="admin-list" class="space-y-3"></div>
             </div>
@@ -887,14 +764,7 @@
                     <input type="email" id="inp-maint-email" class="w-full mb-2 text-xs p-2 border rounded"
                         placeholder="Email">
                     <button onclick="saveGlobalSettings()"
-                        class="w-full py-2 bg-amber-600 text-white rounded text-xs font-bold mb-3">AGGIORNA APP</button>
-                    
-                    <div class="pt-3 border-t border-amber-200">
-                        <h3 class="text-xs font-bold text-slate-700 mb-1 flex items-center gap-1.5"><i data-lucide="cloud" class="w-3 h-3 text-sky-600"></i> Auto-Backup Google Drive</h3>
-                        <p class="text-[10px] text-slate-500 mb-2">Script gratuito per esportare magazzino/prenotazioni in Excel ogni settimana.</p>
-                        <button onclick="document.getElementById('modal-backup-setup').classList.remove('hidden')"
-                            class="w-full py-1.5 bg-sky-600 text-white rounded text-xs font-bold flex items-center justify-center gap-1 hover:bg-sky-700"><i data-lucide="info" class="w-3 h-3"></i> ISTRUZIONI SETUP</button>
-                    </div>
+                        class="w-full py-2 bg-amber-600 text-white rounded text-xs font-bold">AGGIORNA</button>
                 </div>
 
                 <!-- Admin Management -->
@@ -935,18 +805,6 @@
                         <button onclick="addSupervisor()"
                             class="w-full py-2 bg-emerald-600 text-white rounded text-xs font-bold">AGGIUNGI
                             SUPERVISORE</button>
-                    </div>
-                </div>
-
-                <!-- Gestione PI & Utilizzatori -->
-                <div class="bg-violet-50 p-4 rounded-xl border border-violet-200 shadow-sm">
-                    <h3 class="text-sm font-bold text-violet-800 mb-1 flex items-center gap-2"><i data-lucide="users" class="w-4 h-4"></i> Gestione PI & Utilizzatori</h3>
-                    <p class="text-[10px] text-slate-500 mb-3">Configura i PI (responsabili) e assegna i rispettivi utilizzatori. Questa mappa viene usata nei filtri delle Statistiche.</p>
-                    <div id="pi-mapping-ui" class="space-y-3 mb-3"></div>
-                    <div class="border border-violet-200 rounded-lg p-3 bg-white space-y-2">
-                        <p class="text-[10px] font-bold text-violet-700 uppercase tracking-widest">Aggiungi PI</p>
-                        <input type="text" id="inp-new-pi-name" class="w-full text-xs p-2 border border-slate-200 rounded" placeholder="Nome e Cognome PI (es. Maria Teresa De Angelis)">
-                        <button onclick="addNewPI()" class="w-full py-1.5 bg-violet-600 text-white rounded text-xs font-bold hover:bg-violet-700 transition">+ AGGIUNGI PI</button>
                     </div>
                 </div>
 
@@ -1009,30 +867,6 @@
                             class="text-xs text-indigo-600 font-bold hover:underline">AGGIORNA</button>
                     </div>
                 </div>
-                <!-- Log Filters -->
-                <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2">
-                    <div class="flex items-center justify-between">
-                        <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-1"><i data-lucide="filter" class="w-3 h-3"></i> Filtri</p>
-                        <button onclick="clearLogFilters()" class="text-[10px] text-red-500 font-bold hover:underline">RESET</button>
-                    </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
-                        <select id="log-filter-category" onchange="applyLogFilters()"
-                            class="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs text-slate-600 outline-none focus:ring-2 focus:ring-indigo-500">
-                            <option value="">Tutte le Categorie</option>
-                        </select>
-                        <select id="log-filter-user" onchange="applyLogFilters()"
-                            class="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs text-slate-600 outline-none focus:ring-2 focus:ring-indigo-500">
-                            <option value="">Tutti gli Utenti (email)</option>
-                        </select>
-                    </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
-                        <input type="text" id="log-filter-operator" oninput="applyLogFilters()" placeholder="Filtra per operatore (nei dettagli)..."
-                            class="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs text-slate-600 outline-none focus:ring-2 focus:ring-indigo-500">
-                        <input type="text" id="log-filter-search" oninput="applyLogFilters()" placeholder="Ricerca libera..."
-                            class="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs text-slate-600 outline-none focus:ring-2 focus:ring-indigo-500">
-                    </div>
-                    <p id="log-filter-count" class="text-[9px] text-slate-400 font-bold text-right"></p>
-                </div>
                 <div id="admin-logs-list" class="space-y-2 text-xs font-mono max-h-[60vh] overflow-y-auto pr-1"></div>
             </div>
         </div>
@@ -1076,10 +910,9 @@
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-slate-500 mb-1">Identificativo Operatore</label>
-                    <select id="inp-stock-user-id" required
-                        class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm">
-                        <option value="" disabled selected>Seleziona operatore...</option>
-                    </select>
+                    <input type="text" id="inp-stock-user-id" required
+                        class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm"
+                        placeholder="Nome, PI o Codice...">
                 </div>
                 <!-- Checkbox rimozione stato ordine (visibile solo se articolo ordinato e azione add) -->
                 <div id="div-remove-order"
@@ -1398,98 +1231,6 @@
         </div>
     </div>
 
-    <!-- MODALE BACKUP GOOGLE DRIVE SETUP -->
-    <div id="modal-backup-setup" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
-        <div class="bg-white w-full max-w-2xl rounded-3xl p-6 shadow-2xl flex flex-col max-h-[90vh]">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-lg font-bold flex items-center gap-2"><i data-lucide="cloud" class="w-5 h-5 text-sky-600"></i> Setup Esportazione: Google Drive</h3>
-                <button onclick="document.getElementById('modal-backup-setup').classList.add('hidden')" class="p-2"><i data-lucide="x" class="w-4 h-4 text-slate-500"></i></button>
-            </div>
-            
-            <div class="overflow-y-auto pr-2 space-y-4 text-sm text-slate-700 pb-4">
-                <p>Usa <b>Google Apps Script</b> per automatizzare l'esportazione di Giacenze e Prenotazioni sul Drive del laboratorio. È del tutto automatico e invisibile agli utenti finali.</p>
-                <div class="bg-sky-50 rounded-lg p-3 text-xs border border-sky-100">
-                    <p class="font-bold text-sky-800 mb-1">Passo 1: Nuova Cartella e Progetto Script</p>
-                    <ol class="list-decimal pl-4 space-y-1">
-                        <li>Apri <a href="https://drive.google.com" target="_blank" class="underline font-bold text-indigo-600">Google Drive</a> con <i>bioinformaticslabunicz@gmail.com</i>.</li>
-                        <li>Crea una nuova cartella per i backup ed entraci. Copia dalla barra dell'URL il suo <b>ID</b> (es: <code class="bg-white px-1 py-0.5 rounded text-red-500">1A2B3C...</code> dopo "folders/").</li>
-                        <li>Vai su <a href="https://script.google.com" target="_blank" class="underline font-bold text-indigo-600">Google Apps Script</a> e crea un "Nuovo Progetto".</li>
-                    </ol>
-                </div>
-
-                <div class="bg-slate-50 rounded-lg p-3 text-xs border border-slate-200">
-                    <p class="font-bold text-slate-800 mb-1">Passo 2: Incolla lo script</p>
-                    <p class="mb-2">Sostituisci la chiave Firebase e la password nel codice seguente, copialo, incollalo nell'editor su <i>script.google.com</i> e clicca il tasto Salva (💾).</p>
-                    <div class="relative group">
-                        <textarea readonly class="w-full h-48 bg-slate-900 border border-slate-700 text-green-400 p-3 rounded font-mono text-[10px] outline-none resize-y" onclick="this.select()">// --- CONFIGURAZIONE DA MODIFICARE ---
-var FIREBASE_API_KEY = 'COMPILA_CON_LA_TUA_API_KEY';
-var LABSCAN_EMAIL = 'bioinformaticslabunicz@gmail.com'; 
-var LABSCAN_PASSWORD = 'INSERISCI_LA_PASSWORD_DI_ACCESSO';
-var GOOGLE_DRIVE_FOLDER_ID = 'INSERISCI_ID_CARTELLA_DRIVE';
-// ------------------------------------
-
-var PROJECT_ID = 'unisca-lab';
-var APP_ID = 'lab-management';
-
-function esportaLabscanSettimanale() {
-  var authUrl = 'https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=' + FIREBASE_API_KEY;
-  var authPayload = { email: LABSCAN_EMAIL, password: LABSCAN_PASSWORD, returnSecureToken: true };
-  
-  var authRes = UrlFetchApp.fetch(authUrl, { method: 'post', contentType: 'application/json', payload: JSON.stringify(authPayload) });
-  var idToken = JSON.parse(authRes.getContentText()).idToken;
-  
-  function fetchCollection(collectionName) {
-    var url = 'https://firestore.googleapis.com/v1/projects/' + PROJECT_ID + '/databases/(default)/documents/artifacts/' + APP_ID + '/public/data/' + collectionName + '?pageSize=1000';
-    var res = UrlFetchApp.fetch(url, { headers: { 'Authorization': 'Bearer ' + idToken } });
-    return JSON.parse(res.getContentText()).documents || [];
-  }
-
-  var inventory = fetchCollection('inventory');
-  var bookings = fetchCollection('bookings');
-  var dateStr = Utilities.formatDate(new Date(), "GMT+2", "yyyy-MM-dd");
-  var spreadsheet = SpreadsheetApp.create('LABSCAN Report - ' + dateStr);
-  
-  var sheetInv = spreadsheet.getActiveSheet();
-  sheetInv.setName("Stato Magazzino");
-  sheetInv.appendRow(["Nome Articolo", "ID/Codice", "Categoria", "Quantità Attuale", "Unità", "Scadenza", "Posizione"]);
-  
-  inventory.forEach(function(doc) {
-    var fields = doc.fields || {};
-    var getStr = function(f) { return fields[f] ? (fields[f].stringValue || "") : ""; };
-    var getNum = function(f) { return fields[f] ? parseInt(fields[f].integerValue || 0) : 0; };
-    sheetInv.appendRow([ getStr('name'), getStr('id'), getStr('category'), getNum('quantity'), getStr('unit'), getStr('expiryDate'), getStr('position') ]);
-  });
-
-  var sheetBook = spreadsheet.insertSheet("Prenotazioni");
-  sheetBook.appendRow(["Strumento", "Inizio", "Fine", "Utente", "Email", "PNR", "Stato"]);
-  
-  bookings.forEach(function(doc) {
-    var fields = doc.fields || {};
-    var getStr = function(f) { return fields[f] ? (fields[f].stringValue || "") : ""; };
-    sheetBook.appendRow([ getStr('resourceName'), getStr('startDate'), getStr('endDate'), getStr('userName'), getStr('email'), getStr('pnr'), getStr('status') ]);
-  });
-  
-  var file = DriveApp.getFileById(spreadsheet.getId());
-  file.moveTo(DriveApp.getFolderById(GOOGLE_DRIVE_FOLDER_ID));
-  Logger.log("Completato");
-}</textarea>
-                    </div>
-                </div>
-
-                <div class="bg-amber-50 rounded-lg p-3 text-xs border border-amber-100">
-                    <p class="font-bold text-amber-800 mb-1">Passo 3: Metti il "Pilota Automatico" (Cron Trigger)</p>
-                    <ol class="list-decimal pl-4 space-y-1">
-                        <li>Fai una prima esecuzione premendo "Esegui" in alto su Apps Script, concedendo i permessi richiesti al tuo account Google.</li>
-                        <li>Clicca nel menù a sinistra del progetto sull'icona della Sveglia (<i>Attivatori</i>).</li>
-                        <li>Aggiungi un nuovo attivatore e imposta: <i>Funzione</i>: <code class="bg-white rounded px-1 text-slate-800">esportaLabscanSettimanale</code>, <i>Sorgente</i>: <b>Basato sul tempo</b>. Segui col <i>Timer settimanale</i> impostando il giorno e l'ora. E salva!</li>
-                    </ol>
-                </div>
-            </div>
-            <button onclick="document.getElementById('modal-backup-setup').classList.add('hidden')" class="mt-4 w-full py-3 bg-slate-800 text-white rounded-xl font-bold text-sm shadow-lg hover:bg-slate-700 transition">CHIUDI LE ISTRUZIONI</button>
-        </div>
-    </div>
-
-
     <!-- LOGIN OVERLAY -->
     <div id="view-login" class="hidden fixed inset-0 bg-slate-900 z-[300] flex items-center justify-center p-6">
         <div class="bg-white w-full max-w-sm rounded-3xl p-8 shadow-2xl">
@@ -1763,18 +1504,6 @@ function esportaLabscanSettimanale() {
                 loadPublicInventory();
                 loadResourcesCache();
                 checkUrlParams();
-
-                // Show Statistiche button for admins/supervisors
-                const statBtn = document.getElementById('btn-home-statistiche');
-                if (statBtn) {
-                    statBtn.classList.toggle('hidden', userRole === 'user');
-                }
-
-                // Start periodic booking archival
-                archiveExpiredBookings();
-                if (!window._archiveInterval) {
-                    window._archiveInterval = setInterval(archiveExpiredBookings, 5 * 60 * 1000);
-                }
                 logAction('LOGIN', 'AUTH', `User logged in: ${user.email} Role: ${userRole}`);
             } else {
                 document.getElementById('view-login').classList.remove('hidden');
@@ -2059,7 +1788,7 @@ function esportaLabscanSettimanale() {
                 document.getElementById('stock-modal-title').innerText = title;
                 document.getElementById('stock-modal-unit').innerText = unit || 'pz';
                 document.getElementById('inp-stock-qty').value = '';
-                populateOperatorDropdown(); // Populate with PI + students
+                document.getElementById('inp-stock-user-id').value = ''; // Reset user ID
 
                 // Gestione Checkbox rimuovi ordine
                 if (action === 'add' && window.currentInventoryData && window.currentInventoryData.isOrdered) {
@@ -2956,7 +2685,6 @@ function esportaLabscanSettimanale() {
             if (tab === 'logs') loadAdminLogs();
             if (tab === 'labels') loadLabelsList();
             if (tab === 'access') loadAccessSettings();
-            if (tab === 'settings') { loadPiMapping().then(() => renderPiMappingUI()); }
         };
 
         window.toggleDesktopMode = () => {
@@ -3003,7 +2731,7 @@ function esportaLabscanSettimanale() {
             applyDesktopMode();
         };
         window.switchView = (id) => {
-            ['view-scanner', 'view-details', 'view-admin', 'view-my-booking', 'view-inventory', 'view-inventory-list', 'view-batch-summary', 'view-statistiche'].forEach(v => {
+            ['view-scanner', 'view-details', 'view-admin', 'view-my-booking', 'view-inventory', 'view-inventory-list', 'view-batch-summary'].forEach(v => {
                 const el = document.getElementById(v);
                 if (el) el.classList.add('hidden');
             });
@@ -3099,99 +2827,19 @@ function esportaLabscanSettimanale() {
         }
 
         // --- ADMIN BOOKINGS & INSTRUMENTS ---
-        window.currentBookingsView = 'active';
-
-        window.switchBookingsView = (mode) => {
-            window.currentBookingsView = mode;
-            const btnActive = document.getElementById('btn-bookings-active');
-            const btnArchived = document.getElementById('btn-bookings-archived');
-            if (mode === 'active') {
-                btnActive.className = 'flex-1 py-2 bg-indigo-600 text-white rounded-lg text-xs font-bold transition shadow-sm flex items-center justify-center gap-1.5';
-                btnArchived.className = 'flex-1 py-2 bg-white text-slate-600 hover:bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold transition shadow-sm flex items-center justify-center gap-1.5';
-            } else {
-                btnArchived.className = 'flex-1 py-2 bg-indigo-600 text-white rounded-lg text-xs font-bold transition shadow-sm flex items-center justify-center gap-1.5';
-                btnActive.className = 'flex-1 py-2 bg-white text-slate-600 hover:bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold transition shadow-sm flex items-center justify-center gap-1.5';
-            }
-            renderAdminBookings();
-            if (window.lucide) lucide.createIcons();
-        };
-
-        window.renderAdminBookings = () => {
-            const bookings = window.adminBookingsCache || [];
-            const now = new Date();
-            const mode = window.currentBookingsView || 'active';
-
-            let filtered;
-            if (mode === 'active') {
-                filtered = bookings.filter(b => b.status !== 'archived');
-                filtered.sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
-            } else {
-                filtered = bookings.filter(b => b.status === 'archived');
-                filtered.sort((a, b) => new Date(b.endDate) - new Date(a.endDate));
-            }
-
-            if (filtered.length === 0) {
-                document.getElementById('admin-list').innerHTML = `<div class="text-center py-8 bg-white rounded-xl border border-slate-100"><p class="text-sm text-slate-400">${mode === 'active' ? 'Nessuna prenotazione attiva.' : 'Nessuna prenotazione archiviata.'}</p></div>`;
-                return;
-            }
-
-            document.getElementById('admin-list').innerHTML = filtered.map(b => {
-                const start = new Date(b.startDate);
-                const end = new Date(b.endDate);
-                const isActive = now >= start && now <= end;
-                const isPast = now > end;
-                const isUpcoming = !isActive && !isPast && (start - now) <= 24 * 3600000;
-
-                let statusBadge = '';
-                let borderClass = 'border-slate-100';
-                if (b.status === 'archived') {
-                    statusBadge = '<span class="text-[9px] font-bold px-2 py-0.5 bg-slate-100 text-slate-400 rounded uppercase">Conclusa</span>';
-                    borderClass = 'border-slate-100 opacity-60';
-                } else if (isActive) {
-                    statusBadge = '<span class="text-[9px] font-bold px-2 py-0.5 bg-emerald-500 text-white rounded uppercase animate-pulse">In Uso</span>';
-                    borderClass = 'border-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.15)]';
-                } else if (isUpcoming) {
-                    statusBadge = '<span class="text-[9px] font-bold px-2 py-0.5 bg-amber-400 text-amber-900 rounded uppercase">Imminente</span>';
-                    borderClass = 'border-amber-300';
-                } else {
-                    statusBadge = '<span class="text-[9px] font-bold px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded uppercase">Futura</span>';
-                    borderClass = 'border-indigo-100';
-                }
-
-                return `<div class="bg-white p-3 rounded-xl border-2 ${borderClass} text-xs shadow-sm">
-                    <div class="flex justify-between items-start mb-1">
-                        <div class="flex-1 min-w-0">
-                            <div class="font-black text-sm text-slate-800">${b.resourceName || b.resourceId}</div>
-                            <div class="text-[10px] text-slate-500">PNR: <span class="font-mono font-bold">${b.pnr || '—'}</span> · ${b.userName}</div>
-                        </div>
-                        <div class="flex items-center gap-2 flex-shrink-0">
-                            ${statusBadge}
-                            ${b.status !== 'archived' ? `<button onclick="editBookingFromAdmin('${b.id}')" class="p-1 bg-amber-100 rounded hover:bg-amber-200 transition"><i data-lucide="pencil" class="w-3 h-3"></i></button>` : ''}
-                            <button onclick="deleteBooking('${b.id}')" class="p-1 bg-red-100 rounded hover:bg-red-200 transition"><i data-lucide="trash-2" class="w-3 h-3"></i></button>
-                        </div>
-                    </div>
-                    <div class="flex gap-2 mt-1.5">
-                        <div class="flex-1 bg-slate-50 rounded-lg p-1.5 text-center border border-slate-100">
-                            <div class="text-[9px] text-slate-400 font-bold">INIZIO</div>
-                            <div class="font-bold text-slate-700">${start.toLocaleString('it-IT', {dateStyle:'short', timeStyle:'short'})}</div>
-                        </div>
-                        <div class="flex-1 bg-slate-50 rounded-lg p-1.5 text-center border border-slate-100">
-                            <div class="text-[9px] text-slate-400 font-bold">FINE</div>
-                            <div class="font-bold text-slate-700">${end.toLocaleString('it-IT', {dateStyle:'short', timeStyle:'short'})}</div>
-                        </div>
-                    </div>
-                </div>`;
-            }).join('');
-            if (window.lucide) lucide.createIcons();
-        };
-
         window.loadAdminBookings = () => {
             const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'bookings'));
             onSnapshot(q, (snapshot) => {
                 const bookings = [];
                 snapshot.forEach(doc => bookings.push({ id: doc.id, ...doc.data() }));
                 window.adminBookingsCache = bookings;
-                renderAdminBookings();
+                document.getElementById('admin-list').innerHTML = bookings.map(b =>
+                    `<div class="bg-white p-2 border-b text-xs flex justify-between items-center">
+                        <div><span>${b.resourceName || b.resourceId} - ${b.userName}</span><span class="text-slate-400 block text-[10px]">${new Date(b.startDate).toLocaleDateString()}</span></div>
+                        <div class="flex gap-2"><button onclick="editBookingFromAdmin('${b.id}')" class="p-1 bg-amber-100 rounded"><i data-lucide="pencil" class="w-3 h-3"></i></button><button onclick="deleteBooking('${b.id}')" class="p-1 bg-red-100 rounded"><i data-lucide="trash-2" class="w-3 h-3"></i></button></div>
+                    </div>`
+                ).join('');
+                lucide.createIcons();
             });
         }
         window.loadInstruments = () => {
@@ -4769,106 +4417,42 @@ function esportaLabscanSettimanale() {
             const listEl = document.getElementById('admin-logs-list');
             listEl.innerHTML = '<p class="text-center text-xs text-slate-400">Caricamento log...</p>';
 
-            const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'logs'), orderBy('timestamp', 'desc'));
+            // Limit to last 50 logs for performance
+            const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'logs'), orderBy('timestamp', 'desc')); // Limited by UI scroll mostly, but could add limit(50)
 
+            // Standard snapshot listener for realtime updates
             onSnapshot(q, (snapshot) => {
                 const logs = [];
                 snapshot.forEach(doc => logs.push({ id: doc.id, ...doc.data() }));
                 window.allLogsCache = logs;
 
-                // Populate filter dropdowns
-                populateLogFilters(logs);
+                if (logs.length === 0) {
+                    listEl.innerHTML = '<p class="text-center text-xs text-slate-400">Nessun log presente.</p>';
+                    return;
+                }
 
-                // Render with current filters
-                applyLogFilters();
-            });
-        };
+                listEl.innerHTML = logs.slice(0, 100).map(l => {
+                    let color = 'bg-slate-100 text-slate-600';
+                    if (l.category === 'BOOKING') color = 'bg-indigo-50 text-indigo-600';
+                    if (l.category === 'INVENTORY') color = 'bg-emerald-50 text-emerald-600';
+                    if (l.category === 'ADMIN') color = 'bg-amber-50 text-amber-600';
+                    if (l.category === 'SYSTEM') color = 'bg-purple-50 text-purple-600';
+                    if (l.category === 'AUTH') color = 'bg-blue-50 text-blue-600';
 
-        window.populateLogFilters = (logs) => {
-            const catSelect = document.getElementById('log-filter-category');
-            const userSelect = document.getElementById('log-filter-user');
-            if (!catSelect || !userSelect) return;
+                    const dateStr = l.timestamp ? new Date(l.timestamp.seconds * 1000).toLocaleString('it-IT') : '---';
 
-            // Preserve current values
-            const prevCat = catSelect.value;
-            const prevUser = userSelect.value;
-
-            // Categories
-            const cats = [...new Set(logs.map(l => l.category || 'SYSTEM'))].sort();
-            catSelect.innerHTML = '<option value="">Tutte le Categorie</option>' + cats.map(c => `<option value="${c}">${c}</option>`).join('');
-            catSelect.value = prevCat;
-
-            // User emails
-            const emails = [...new Set(logs.map(l => l.userEmail || l.userId).filter(Boolean))].sort();
-            userSelect.innerHTML = '<option value="">Tutti gli Utenti (email)</option>' + emails.map(e => `<option value="${e}">${e}</option>`).join('');
-            userSelect.value = prevUser;
-        };
-
-        window.applyLogFilters = () => {
-            const logs = window.allLogsCache || [];
-            const listEl = document.getElementById('admin-logs-list');
-            if (!listEl) return;
-
-            const filterCat = (document.getElementById('log-filter-category')?.value || '').trim();
-            const filterUser = (document.getElementById('log-filter-user')?.value || '').trim();
-            const filterOp = (document.getElementById('log-filter-operator')?.value || '').trim().toLowerCase();
-            const filterSearch = (document.getElementById('log-filter-search')?.value || '').trim().toLowerCase();
-
-            let filtered = logs;
-            if (filterCat) filtered = filtered.filter(l => (l.category || 'SYSTEM') === filterCat);
-            if (filterUser) filtered = filtered.filter(l => (l.userEmail || l.userId || '') === filterUser);
-            if (filterOp) filtered = filtered.filter(l => (l.details || '').toLowerCase().includes(filterOp));
-            if (filterSearch) {
-                filtered = filtered.filter(l => {
-                    const hay = `${l.action || ''} ${l.details || ''} ${l.userEmail || ''} ${l.category || ''}`.toLowerCase();
-                    return hay.includes(filterSearch);
-                });
-            }
-
-            // Show count
-            const countEl = document.getElementById('log-filter-count');
-            if (countEl) countEl.textContent = `${filtered.length} di ${logs.length} log`;
-
-            if (filtered.length === 0) {
-                listEl.innerHTML = '<p class="text-center text-xs text-slate-400">Nessun log trovato con i filtri selezionati.</p>';
-                return;
-            }
-
-            listEl.innerHTML = filtered.slice(0, 200).map(l => {
-                let color = 'bg-slate-100 text-slate-600';
-                if (l.category === 'BOOKING') color = 'bg-indigo-50 text-indigo-600';
-                if (l.category === 'INVENTORY') color = 'bg-emerald-50 text-emerald-600';
-                if (l.category === 'ADMIN') color = 'bg-amber-50 text-amber-600';
-                if (l.category === 'SYSTEM') color = 'bg-purple-50 text-purple-600';
-                if (l.category === 'AUTH') color = 'bg-blue-50 text-blue-600';
-                if (l.category === 'EMAIL') color = 'bg-rose-50 text-rose-600';
-                if (l.category === 'ERROR') color = 'bg-red-50 text-red-600';
-
-                const dateStr = l.timestamp ? new Date(l.timestamp.seconds * 1000).toLocaleString('it-IT') : '---';
-
-                return `
+                    return `
                      <div class="p-2 border-l-4 border-slate-300 bg-white shadow-sm mb-1 text-[10px] md:text-xs">
                          <div class="flex justify-between items-center mb-1">
-                             <span class="font-bold px-1.5 py-0.5 rounded ${color} text-[9px] uppercase tracking-wider">${l.category || 'SYSTEM'}</span>
+                             <span class="font-bold px-1.5 py-0.5 rounded ${color} text-[9px] uppercase tracking-wider">${l.category}</span>
                              <span class="text-slate-400 text-[9px]">${dateStr}</span>
                          </div>
                          <div class="font-bold text-slate-700 mb-0.5">${l.action}</div>
                          <div class="text-slate-500 break-words">${l.details}</div>
                          <div class="text-[9px] text-slate-400 mt-1 italic text-right">User: ${l.userEmail || l.userId || 'System'}</div>
                      </div>`;
-            }).join('');
-        };
-
-        window.clearLogFilters = () => {
-            const catEl = document.getElementById('log-filter-category');
-            const userEl = document.getElementById('log-filter-user');
-            const opEl = document.getElementById('log-filter-operator');
-            const searchEl = document.getElementById('log-filter-search');
-            if (catEl) catEl.value = '';
-            if (userEl) userEl.value = '';
-            if (opEl) opEl.value = '';
-            if (searchEl) searchEl.value = '';
-            applyLogFilters();
+                }).join('');
+            });
         };
 
         window.downloadLogsTXT = () => {
@@ -4973,465 +4557,6 @@ function esportaLabscanSettimanale() {
         });
 
         lucide.createIcons();
-
-        // --- STATISTICHE & ANALYTICS ---
-        window.showStatistiche = async () => {
-            if (userRole === 'user') return alert('Accesso negato.');
-            switchView('view-statistiche');
-            window.piMappingCache = null; // Force reload
-            await loadPiMapping();
-            populateAnalyticsFilters();
-            loadAnalyticsData();
-        };
-
-        window.currentAnalyticsRange = '30d';
-        window.analyticsCharts = {};
-
-        window.changeAnalyticsRange = (range) => {
-            window.currentAnalyticsRange = range;
-            // Update button styles
-            document.querySelectorAll('.stat-range-btn').forEach(btn => {
-                btn.className = 'stat-range-btn px-3 py-1.5 rounded-lg text-[10px] font-bold border transition bg-white text-slate-600 border-slate-200 hover:bg-slate-50';
-            });
-            const activeBtn = document.getElementById('stat-range-' + range);
-            if (activeBtn) activeBtn.className = 'stat-range-btn px-3 py-1.5 rounded-lg text-[10px] font-bold border transition bg-violet-600 text-white border-violet-600';
-            loadAnalyticsData();
-        };
-
-        window.loadAnalyticsData = async () => {
-            if (typeof Chart === 'undefined') return;
-            const loadingEl = document.getElementById('analytics-loading');
-            const chartsEl = document.getElementById('analytics-charts-container');
-            if (loadingEl) loadingEl.classList.remove('hidden');
-            if (chartsEl) chartsEl.classList.add('opacity-50');
-
-            try {
-                const now = new Date();
-                let cutoff = null;
-                const range = window.currentAnalyticsRange || '30d';
-                if (range === '7d')  cutoff = new Date(now - 7 * 86400000);
-                if (range === '30d') cutoff = new Date(now - 30 * 86400000);
-                if (range === '3m')  cutoff = new Date(now - 90 * 86400000);
-
-                // Fetch all stock_movements
-                const movSnap = await getDocs(query(collection(db, 'artifacts', appId, 'public', 'data', 'stock_movements'), orderBy('timestamp', 'desc')));
-                let movements = [];
-                movSnap.forEach(d => movements.push({...d.data(), _id: d.id}));
-                
-                // Get all bookings for filtering and stats
-                const bookSnap = await getDocs(query(collection(db, 'artifacts', appId, 'public', 'data', 'bookings')));
-                let bookings = [];
-                bookSnap.forEach(d => bookings.push({id: d.id, ...d.data()}));
-
-                // Load PI mapping for filters
-                await loadPiMapping();
-
-                const filterPI = document.getElementById('stat-filter-pi').value;
-                const filterUser = document.getElementById('stat-filter-user').value;
-
-                // Apply date cutoff
-                if (cutoff) {
-                    movements = movements.filter(m => m.timestamp?.seconds && new Date(m.timestamp.seconds * 1000) >= cutoff);
-                    bookings = bookings.filter(b => new Date(b.startDate) >= cutoff);
-                }
-
-                // Apply PI/User Filters
-                if (filterUser) {
-                    // Filter specific user
-                    movements = movements.filter(m => normalizeUserName(m.operatorName || m.user) === filterUser);
-                    bookings = bookings.filter(b => normalizeUserName(b.email || b.userName || b.bookedBy) === filterUser);
-                } else if (filterPI) {
-                    // Filter by PI: include PI + all their students
-                    const piData = (window.piMappingCache || []).find(p => p.name === filterPI);
-                    const allowedNames = new Set();
-                    allowedNames.add(filterPI);
-                    if (piData && piData.students) piData.students.forEach(s => allowedNames.add(s));
-                    movements = movements.filter(m => allowedNames.has(normalizeUserName(m.operatorName || m.user)));
-                    bookings = bookings.filter(b => allowedNames.has(normalizeUserName(b.email || b.userName || b.bookedBy)));
-                }
-
-                // Get inventory for health & KPIs
-                const invArr = window.allInventoryCache || [];
-
-                // Update KPIs
-                updateAnalyticsKPIs(invArr, bookings, movements);
-
-                // Build charts
-                buildAnalyticsCharts(movements, bookings, invArr);
-            } catch(e) { console.error('Analytics load error:', e); }
-            finally {
-                if (loadingEl) loadingEl.classList.add('hidden');
-                if (chartsEl) chartsEl.classList.remove('opacity-50');
-            }
-        };
-
-        window.updateAnalyticsKPIs = (inventory, bookings, movements) => {
-            const now = new Date();
-            const lowStock = inventory.filter(i => i.quantity <= (i.threshold || 0)).length;
-            const activeNow = bookings.filter(b => {
-                const s = new Date(b.startDate), e = new Date(b.endDate);
-                return now >= s && now <= e;
-            }).length;
-            const bookingsPeriod = bookings.length;
-
-            const instrCounts = {};
-            bookings.forEach(b => {
-                const n = b.resourceName || b.resourceId || '?';
-                instrCounts[n] = (instrCounts[n] || 0) + 1;
-            });
-            const topInstr = Object.entries(instrCounts).sort((a,b) => b[1]-a[1])[0];
-
-            const el = (id) => document.getElementById(id);
-            if (el('kpi-total-items')) el('kpi-total-items').textContent = inventory.length;
-            if (el('kpi-low-stock')) el('kpi-low-stock').textContent = lowStock;
-            if (el('kpi-active-bookings')) el('kpi-active-bookings').textContent = activeNow;
-            if (el('kpi-bookings-month')) el('kpi-bookings-month').textContent = bookingsPeriod;
-            if (el('kpi-top-instrument')) el('kpi-top-instrument').textContent = topInstr ? topInstr[0] : '\u2014';
-            if (el('kpi-top-instrument-count')) el('kpi-top-instrument-count').textContent = topInstr ? `${topInstr[1]} prenotazioni nel periodo` : '';
-        };
-
-        window.buildAnalyticsCharts = (movements, bookings, inventory) => {
-            // Destroy existing
-            Object.values(window.analyticsCharts || {}).forEach(c => { try { c.destroy(); } catch(e) {} });
-            window.analyticsCharts = {};
-            const bgColors = ['#10b981','#3b82f6','#f59e0b','#8b5cf6','#ec4899','#64748b','#0ea5e9','#f43f5e','#84cc16','#a855f7','#14b8a6','#f97316'];
-
-            // 1. Consumption over time (line)
-            const consumCtx = document.getElementById('chart-consumption');
-            if (consumCtx) {
-                const removals = movements.filter(m => m.action === 'remove');
-                const weekBuckets = {};
-                removals.forEach(m => {
-                    if (!m.timestamp?.seconds) return;
-                    const d = new Date(m.timestamp.seconds * 1000);
-                    const ws = new Date(d); ws.setDate(d.getDate() - d.getDay());
-                    const key = ws.toLocaleDateString('it-IT', {day:'2-digit', month:'short'});
-                    weekBuckets[key] = (weekBuckets[key] || 0) + 1; // Count operations instead of mixing units
-                });
-                window.analyticsCharts.consumption = new Chart(consumCtx, {
-                    type: 'line',
-                    data: { labels: Object.keys(weekBuckets), datasets: [{ label: 'Prelievi', data: Object.values(weekBuckets), borderColor: '#ef4444', backgroundColor: 'rgba(239,68,68,0.1)', fill: true, tension: 0.4, pointRadius: 4, pointBackgroundColor: '#ef4444' }] },
-                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
-                });
-            }
-
-            // 2. Top consumed materials (horizontal bar)
-            const topCtx = document.getElementById('chart-top-consumed');
-            if (topCtx) {
-                const itemCounts = {};
-                movements.filter(m => m.action === 'remove').forEach(m => {
-                    const name = m.itemName || m.itemId || '?';
-                    itemCounts[name] = (itemCounts[name] || 0) + 1; // Count operations instead of raw quantity
-                });
-                const sorted = Object.entries(itemCounts).sort((a,b) => b[1]-a[1]).slice(0, 10);
-                window.analyticsCharts.topConsumed = new Chart(topCtx, {
-                    type: 'bar',
-                    data: { labels: sorted.map(s=>s[0]), datasets: [{ label:'N° Prelievi', data: sorted.map(s=>s[1]), backgroundColor: bgColors, borderRadius: 6 }] },
-                    options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, ticks: { stepSize: 1 } } } }
-                });
-            }
-
-            // 3. Instrument usage (bar)
-            const instrCtx = document.getElementById('chart-instrument-usage');
-            if (instrCtx) {
-                const instrCounts = {};
-                bookings.forEach(b => {
-                    const name = b.resourceName || b.resourceId || '?';
-                    instrCounts[name] = (instrCounts[name] || 0) + 1;
-                });
-                const sorted = Object.entries(instrCounts).sort((a,b) => b[1]-a[1]).slice(0, 10);
-                window.analyticsCharts.instrUsage = new Chart(instrCtx, {
-                    type: 'bar',
-                    data: { labels: sorted.map(s=>s[0]), datasets: [{ label:'Prenotazioni', data: sorted.map(s=>s[1]), backgroundColor: '#6366f1', borderRadius: 6 }] },
-                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
-                });
-            }
-
-            // 4. Bookings per day of week
-            const heatCtx = document.getElementById('chart-booking-heatmap');
-            if (heatCtx) {
-                const dayNames = ['Dom','Lun','Mar','Mer','Gio','Ven','Sab'];
-                const dayCounts = [0,0,0,0,0,0,0];
-                bookings.forEach(b => { dayCounts[new Date(b.startDate).getDay()]++; });
-                window.analyticsCharts.heatmap = new Chart(heatCtx, {
-                    type: 'bar',
-                    data: { labels: dayNames, datasets: [{ label:'Prenotazioni', data: dayCounts, backgroundColor: dayCounts.map((v,i) => i===0||i===6 ? '#94a3b8' : '#8b5cf6'), borderRadius: 6 }] },
-                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
-                });
-            }
-
-            // 5. Inventory health (doughnut)
-            const healthCtx = document.getElementById('chart-inventory-health');
-            if (healthCtx) {
-                let healthy = 0, low = 0, out = 0;
-                inventory.forEach(i => {
-                    if (i.quantity <= 0) out++;
-                    else if (i.quantity <= (i.threshold || 0)) low++;
-                    else healthy++;
-                });
-                window.analyticsCharts.health = new Chart(healthCtx, {
-                    type: 'doughnut',
-                    data: { labels: ['Disponibile','Scorta bassa','Esaurito'], datasets: [{ data: [healthy, low, out], backgroundColor: ['#10b981','#f59e0b','#ef4444'], borderWidth: 0 }] },
-                    options: { responsive: true, maintainAspectRatio: false, cutout: '65%', plugins: { legend: { position: 'bottom', labels: { font: { size: 11, weight: 'bold' }, padding: 12 } } } }
-                });
-            }
-
-            // 6. Category breakdown by total quantity (pie)
-            const catCtx = document.getElementById('chart-category-breakdown');
-            if (catCtx) {
-                const catQty = {};
-                inventory.forEach(i => {
-                    const c = i.category || 'Altro';
-                    catQty[c] = (catQty[c] || 0) + (i.quantity || 0);
-                });
-                window.analyticsCharts.catBreakdown = new Chart(catCtx, {
-                    type: 'pie',
-                    data: { labels: Object.keys(catQty), datasets: [{ data: Object.values(catQty), backgroundColor: bgColors, borderWidth: 1, borderColor: '#fff' }] },
-                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { font: { size: 10, weight: 'bold' }, padding: 8 } } } }
-                });
-            }
-
-            if (window.lucide) lucide.createIcons();
-        };
-
-        // --- BOOKING ARCHIVAL ---
-        window.archiveExpiredBookings = async () => {
-            try {
-                const bookSnap = await getDocs(query(collection(db, 'artifacts', appId, 'public', 'data', 'bookings')));
-                const now = new Date();
-                const batch = [];
-                bookSnap.forEach(d => {
-                    const b = d.data();
-                    if (new Date(b.endDate) < now && b.status !== 'archived') {
-                        batch.push(d.id);
-                    }
-                });
-                for (const id of batch) {
-                    await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'bookings', id), { status: 'archived', archivedAt: serverTimestamp() });
-                }
-                if (batch.length > 0) console.log(`Archived ${batch.length} expired bookings.`);
-            } catch(e) { console.warn('Archive bookings failed:', e); }
-        };
-
-        // --- OPERATOR DROPDOWN FOR STOCK MOVEMENTS ---
-        window.populateOperatorDropdown = async () => {
-            await loadPiMapping();
-            const sel = document.getElementById('inp-stock-user-id');
-            if (!sel) return;
-            sel.innerHTML = '<option value="" disabled selected>Seleziona operatore...</option>';
-            const pis = window.piMappingCache || [];
-            pis.forEach(pi => {
-                // PI as optgroup with their students
-                const group = document.createElement('optgroup');
-                group.label = `\ud83d\udc54 ${pi.name} (PI)`;
-                // Add PI themselves as an option
-                const piOpt = document.createElement('option');
-                piOpt.value = pi.name;
-                piOpt.textContent = pi.name;
-                group.appendChild(piOpt);
-                // Add students
-                (pi.students || []).sort().forEach(s => {
-                    const opt = document.createElement('option');
-                    opt.value = s;
-                    opt.textContent = `  ${s}`;
-                    group.appendChild(opt);
-                });
-                sel.appendChild(group);
-            });
-        };
-
-        // --- PI MAPPING: Firestore-backed name normalization ---
-        window.piMappingCache = null;
-
-        window.loadPiMapping = async () => {
-            if (window.piMappingCache !== null) return; // already loaded
-            try {
-                const snap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'pi_mapping'));
-                if (snap.exists()) {
-                    window.piMappingCache = snap.data().pis || [];
-                } else {
-                    window.piMappingCache = [];
-                }
-            } catch(e) { console.warn('PI mapping load failed:', e); window.piMappingCache = []; }
-        };
-
-        window.normalizeUserName = (input) => {
-            if (!input) return null;
-            const str = input.toLowerCase().trim();
-            
-            // Build dynamic mapping from piMappingCache
-            const mapping = {};
-            (window.piMappingCache || []).forEach(pi => {
-                // Add PI name parts as keys
-                const piParts = pi.name.toLowerCase().split(' ');
-                piParts.forEach(part => { if (part.length > 2) mapping[part] = pi.name; });
-                mapping[pi.name.toLowerCase()] = pi.name;
-                
-                // Add student name parts as keys
-                (pi.students || []).forEach(st => {
-                    const stParts = st.toLowerCase().split(' ');
-                    stParts.forEach(part => { if (part.length > 2) mapping[part] = st; });
-                    mapping[st.toLowerCase()] = st;
-                });
-            });
-
-            // Exact match first
-            if (mapping[str]) return mapping[str];
-            
-            // Substring match
-            for (const [key, canonical] of Object.entries(mapping)) {
-                if (str.includes(key) && key.length > 2) return canonical;
-            }
-            return input; // Fallback: return as-is
-        };
-
-        window.populateAnalyticsFilters = () => {
-            const piSel = document.getElementById('stat-filter-pi');
-            const userSel = document.getElementById('stat-filter-user');
-            if (!piSel || !userSel) return;
-
-            // Populate PI dropdown
-            const currentPi = piSel.value;
-            piSel.innerHTML = '<option value="">Tutti i PI</option>';
-            (window.piMappingCache || []).forEach(pi => {
-                const opt = document.createElement('option');
-                opt.value = pi.name;
-                opt.textContent = pi.name;
-                if (pi.name === currentPi) opt.selected = true;
-                piSel.appendChild(opt);
-            });
-
-            // Populate User dropdown based on PI selection
-            const currentUser = userSel.value;
-            userSel.innerHTML = '<option value="">Tutti gli Utilizzatori</option>';
-            const selectedPI = piSel.value;
-
-            if (selectedPI) {
-                // Show only students of selected PI + PI themselves
-                const piData = (window.piMappingCache || []).find(p => p.name === selectedPI);
-                if (piData) {
-                    // Add the PI themselves
-                    const piOpt = document.createElement('option');
-                    piOpt.value = piData.name;
-                    piOpt.textContent = `👔 ${piData.name} (PI)`;
-                    if (piData.name === currentUser) piOpt.selected = true;
-                    userSel.appendChild(piOpt);
-                    // Add students
-                    (piData.students || []).sort().forEach(s => {
-                        const opt = document.createElement('option');
-                        opt.value = s;
-                        opt.textContent = s;
-                        if (s === currentUser) opt.selected = true;
-                        userSel.appendChild(opt);
-                    });
-                }
-            } else {
-                // Show all known users from the mapping
-                const allUsers = new Set();
-                (window.piMappingCache || []).forEach(pi => {
-                    allUsers.add(pi.name);
-                    (pi.students || []).forEach(s => allUsers.add(s));
-                });
-                Array.from(allUsers).sort().forEach(u => {
-                    const opt = document.createElement('option');
-                    opt.value = u;
-                    const isPi = (window.piMappingCache || []).some(p => p.name === u);
-                    opt.textContent = isPi ? `👔 ${u}` : u;
-                    if (u === currentUser) opt.selected = true;
-                    userSel.appendChild(opt);
-                });
-            }
-        };
-
-        window.onPiFilterChange = () => {
-            // Reset student filter when PI changes, then repopulate
-            document.getElementById('stat-filter-user').value = '';
-            populateAnalyticsFilters();
-        };
-
-        // --- PI MAPPING ADMIN CRUD ---
-        window.savePiMapping = async () => {
-            try {
-                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'pi_mapping'), {
-                    pis: window.piMappingCache || [],
-                    updatedAt: serverTimestamp()
-                });
-            } catch(e) { alert('Errore salvataggio PI mapping: ' + e); }
-        };
-
-        window.addNewPI = async () => {
-            const name = document.getElementById('inp-new-pi-name').value.trim();
-            if (!name) return alert('Inserisci un nome.');
-            if (!window.piMappingCache) window.piMappingCache = [];
-            if (window.piMappingCache.some(p => p.name.toLowerCase() === name.toLowerCase())) return alert('PI già presente.');
-            window.piMappingCache.push({ name, students: [] });
-            await savePiMapping();
-            document.getElementById('inp-new-pi-name').value = '';
-            renderPiMappingUI();
-            logAction('UPDATE', 'SETTINGS', `Added PI: ${name}`);
-        };
-
-        window.removePI = async (piName) => {
-            if (!confirm(`Rimuovere il PI "${piName}" e tutti i suoi utilizzatori assegnati?`)) return;
-            window.piMappingCache = (window.piMappingCache || []).filter(p => p.name !== piName);
-            await savePiMapping();
-            renderPiMappingUI();
-            logAction('UPDATE', 'SETTINGS', `Removed PI: ${piName}`);
-        };
-
-        window.addStudentToPI = async (piName) => {
-            const inp = document.getElementById('inp-student-' + piName.replace(/\s/g, '_'));
-            const studentName = inp ? inp.value.trim() : '';
-            if (!studentName) return alert('Inserisci il nome dello studente.');
-            const pi = (window.piMappingCache || []).find(p => p.name === piName);
-            if (!pi) return;
-            if (pi.students.some(s => s.toLowerCase() === studentName.toLowerCase())) return alert('Utilizzatore già presente.');
-            pi.students.push(studentName);
-            await savePiMapping();
-            if (inp) inp.value = '';
-            renderPiMappingUI();
-            logAction('UPDATE', 'SETTINGS', `Added student ${studentName} to PI ${piName}`);
-        };
-
-        window.removeStudentFromPI = async (piName, studentName) => {
-            const pi = (window.piMappingCache || []).find(p => p.name === piName);
-            if (!pi) return;
-            pi.students = pi.students.filter(s => s !== studentName);
-            await savePiMapping();
-            renderPiMappingUI();
-        };
-
-        window.renderPiMappingUI = () => {
-            const container = document.getElementById('pi-mapping-ui');
-            if (!container) return;
-            const pis = window.piMappingCache || [];
-            if (pis.length === 0) {
-                container.innerHTML = '<p class="text-[10px] text-slate-400 text-center py-2">Nessun PI configurato. Aggiungine uno qui sotto.</p>';
-                return;
-            }
-            container.innerHTML = pis.map(pi => {
-                const safeId = pi.name.replace(/\s/g, '_');
-                const studentsList = (pi.students || []).map(s => 
-                    `<div class="flex items-center justify-between bg-white rounded px-2 py-1 border border-slate-100">
-                        <span class="text-[10px] text-slate-700">${s}</span>
-                        <button onclick="removeStudentFromPI('${pi.name}', '${s}')" class="text-red-400 hover:text-red-600 text-xs font-bold ml-2">&times;</button>
-                    </div>`
-                ).join('');
-                return `<div class="bg-white rounded-lg border border-violet-100 p-3 shadow-sm">
-                    <div class="flex items-center justify-between mb-2">
-                        <span class="text-xs font-bold text-violet-800 flex items-center gap-1">👔 ${pi.name}</span>
-                        <button onclick="removePI('${pi.name}')" class="text-[10px] text-red-500 font-bold hover:underline">Rimuovi PI</button>
-                    </div>
-                    <div class="space-y-1 mb-2">${studentsList || '<p class="text-[10px] text-slate-400 italic">Nessun utilizzatore assegnato</p>'}</div>
-                    <div class="flex gap-1">
-                        <input type="text" id="inp-student-${safeId}" class="flex-1 text-[10px] p-1.5 border border-slate-200 rounded" placeholder="Nome e Cognome Utilizzatore">
-                        <button onclick="addStudentToPI('${pi.name}')" class="px-2 py-1 bg-violet-600 text-white rounded text-[10px] font-bold hover:bg-violet-700">+ Aggiungi</button>
-                    </div>
-                </div>`;
-            }).join('');
-
-            if (window.lucide) lucide.createIcons();
-        };
     </script>
 </body>
 
