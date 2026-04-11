@@ -514,18 +514,27 @@
                 <button onclick="resetApp()" class="text-[10px] font-bold text-slate-400 hover:text-slate-600 flex items-center gap-1 transition"><i data-lucide="arrow-left" class="w-3 h-3"></i> Indietro</button>
             </div>
 
-            <!-- Date & User Filters -->
-            <div class="flex gap-2 flex-wrap items-center">
-                <div class="flex gap-1">
+            <!-- Date, PI & User Filters -->
+            <div class="space-y-2">
+                <div class="flex gap-1 flex-wrap">
                     <button onclick="changeAnalyticsRange('7d')" id="stat-range-7d" class="stat-range-btn px-3 py-1.5 rounded-lg text-[10px] font-bold border transition bg-white text-slate-600 border-slate-200 hover:bg-slate-50">7 Giorni</button>
                     <button onclick="changeAnalyticsRange('30d')" id="stat-range-30d" class="stat-range-btn px-3 py-1.5 rounded-lg text-[10px] font-bold border transition bg-violet-600 text-white border-violet-600">30 Giorni</button>
                     <button onclick="changeAnalyticsRange('3m')" id="stat-range-3m" class="stat-range-btn px-3 py-1.5 rounded-lg text-[10px] font-bold border transition bg-white text-slate-600 border-slate-200 hover:bg-slate-50">3 Mesi</button>
                     <button onclick="changeAnalyticsRange('all')" id="stat-range-all" class="stat-range-btn px-3 py-1.5 rounded-lg text-[10px] font-bold border transition bg-white text-slate-600 border-slate-200 hover:bg-slate-50">Tutto</button>
                 </div>
-                <div class="flex-1 min-w-[200px]">
-                    <select id="stat-filter-user" onchange="loadAnalyticsData()" class="w-full p-1.5 bg-white border border-slate-200 rounded-lg text-[10px] font-bold text-slate-600 focus:ring-2 focus:ring-violet-500 outline-none">
-                        <option value="">Tutti gli Utenti</option>
-                    </select>
+                <div class="flex gap-2 flex-wrap">
+                    <div class="flex-1 min-w-[140px]">
+                        <label class="block text-[9px] font-bold text-slate-400 uppercase mb-0.5 tracking-widest">PI / Responsabile</label>
+                        <select id="stat-filter-pi" onchange="onPiFilterChange(); loadAnalyticsData()" class="w-full p-1.5 bg-white border border-slate-200 rounded-lg text-[10px] font-bold text-slate-600 focus:ring-2 focus:ring-violet-500 outline-none">
+                            <option value="">Tutti i PI</option>
+                        </select>
+                    </div>
+                    <div class="flex-1 min-w-[140px]">
+                        <label class="block text-[9px] font-bold text-slate-400 uppercase mb-0.5 tracking-widest">Utilizzatore</label>
+                        <select id="stat-filter-user" onchange="loadAnalyticsData()" class="w-full p-1.5 bg-white border border-slate-200 rounded-lg text-[10px] font-bold text-slate-600 focus:ring-2 focus:ring-violet-500 outline-none">
+                            <option value="">Tutti gli Utilizzatori</option>
+                        </select>
+                    </div>
                 </div>
             </div>
 
@@ -926,6 +935,18 @@
                         <button onclick="addSupervisor()"
                             class="w-full py-2 bg-emerald-600 text-white rounded text-xs font-bold">AGGIUNGI
                             SUPERVISORE</button>
+                    </div>
+                </div>
+
+                <!-- Gestione PI & Utilizzatori -->
+                <div class="bg-violet-50 p-4 rounded-xl border border-violet-200 shadow-sm">
+                    <h3 class="text-sm font-bold text-violet-800 mb-1 flex items-center gap-2"><i data-lucide="users" class="w-4 h-4"></i> Gestione PI & Utilizzatori</h3>
+                    <p class="text-[10px] text-slate-500 mb-3">Configura i PI (responsabili) e assegna i rispettivi utilizzatori. Questa mappa viene usata nei filtri delle Statistiche.</p>
+                    <div id="pi-mapping-ui" class="space-y-3 mb-3"></div>
+                    <div class="border border-violet-200 rounded-lg p-3 bg-white space-y-2">
+                        <p class="text-[10px] font-bold text-violet-700 uppercase tracking-widest">Aggiungi PI</p>
+                        <input type="text" id="inp-new-pi-name" class="w-full text-xs p-2 border border-slate-200 rounded" placeholder="Nome e Cognome PI (es. Maria Teresa De Angelis)">
+                        <button onclick="addNewPI()" class="w-full py-1.5 bg-violet-600 text-white rounded text-xs font-bold hover:bg-violet-700 transition">+ AGGIUNGI PI</button>
                     </div>
                 </div>
 
@@ -2934,6 +2955,7 @@ function esportaLabscanSettimanale() {
             if (tab === 'logs') loadAdminLogs();
             if (tab === 'labels') loadLabelsList();
             if (tab === 'access') loadAccessSettings();
+            if (tab === 'settings') { loadPiMapping().then(() => renderPiMappingUI()); }
         };
 
         window.toggleDesktopMode = () => {
@@ -4952,9 +4974,12 @@ function esportaLabscanSettimanale() {
         lucide.createIcons();
 
         // --- STATISTICHE & ANALYTICS ---
-        window.showStatistiche = () => {
+        window.showStatistiche = async () => {
             if (userRole === 'user') return alert('Accesso negato.');
             switchView('view-statistiche');
+            window.piMappingCache = null; // Force reload
+            await loadPiMapping();
+            populateAnalyticsFilters();
             loadAnalyticsData();
         };
 
@@ -4997,25 +5022,31 @@ function esportaLabscanSettimanale() {
                 let bookings = [];
                 bookSnap.forEach(d => bookings.push({id: d.id, ...d.data()}));
 
-                // Populate User Filter if empty
-                populateAnalyticsUserFilter(movements, bookings);
+                // Load PI mapping for filters
+                await loadPiMapping();
 
+                const filterPI = document.getElementById('stat-filter-pi').value;
                 const filterUser = document.getElementById('stat-filter-user').value;
 
-                // Apply Filters
+                // Apply date cutoff
                 if (cutoff) {
                     movements = movements.filter(m => m.timestamp?.seconds && new Date(m.timestamp.seconds * 1000) >= cutoff);
                     bookings = bookings.filter(b => new Date(b.startDate) >= cutoff);
                 }
+
+                // Apply PI/User Filters
                 if (filterUser) {
-                    movements = movements.filter(m => {
-                        const u = normalizeUserName(m.operatorName || m.user);
-                        return u === filterUser;
-                    });
-                    bookings = bookings.filter(b => {
-                        const u = normalizeUserName(b.email || b.userName || b.bookedBy);
-                        return u === filterUser;
-                    });
+                    // Filter specific user
+                    movements = movements.filter(m => normalizeUserName(m.operatorName || m.user) === filterUser);
+                    bookings = bookings.filter(b => normalizeUserName(b.email || b.userName || b.bookedBy) === filterUser);
+                } else if (filterPI) {
+                    // Filter by PI: include PI + all their students
+                    const piData = (window.piMappingCache || []).find(p => p.name === filterPI);
+                    const allowedNames = new Set();
+                    allowedNames.add(filterPI);
+                    if (piData && piData.students) piData.students.forEach(s => allowedNames.add(s));
+                    movements = movements.filter(m => allowedNames.has(normalizeUserName(m.operatorName || m.user)));
+                    bookings = bookings.filter(b => allowedNames.has(normalizeUserName(b.email || b.userName || b.bookedBy)));
                 }
 
                 // Get inventory for health & KPIs
@@ -5181,60 +5212,197 @@ function esportaLabscanSettimanale() {
             } catch(e) { console.warn('Archive bookings failed:', e); }
         };
 
+        // --- PI MAPPING: Firestore-backed name normalization ---
+        window.piMappingCache = null;
+
+        window.loadPiMapping = async () => {
+            if (window.piMappingCache !== null) return; // already loaded
+            try {
+                const snap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'pi_mapping'));
+                if (snap.exists()) {
+                    window.piMappingCache = snap.data().pis || [];
+                } else {
+                    window.piMappingCache = [];
+                }
+            } catch(e) { console.warn('PI mapping load failed:', e); window.piMappingCache = []; }
+        };
+
         window.normalizeUserName = (input) => {
             if (!input) return null;
             const str = input.toLowerCase().trim();
-            const mapping = {
-                // PIs
-                'maria teresa': 'Maria Teresa De Angelis', 'de angelis': 'Maria Teresa De Angelis',
-                'carmela': 'Carmela de Marco', 'de marco': 'Carmela de Marco',
-                'donatella': 'Donatella Malanga', 'malanga': 'Donatella Malanga',
-                'vincenzo': 'Vincenzo Dattilo', 'dattilo': 'Vincenzo Dattilo',
-                'gianluca': 'Gianluca Santamaria', 'santamaria': 'Gianluca Santamaria',
-                'giuseppe': 'Giuseppe Viglietto', 'viglietto': 'Giuseppe Viglietto',
-                // Users
-                'maria chiara': 'Maria Chiara Sarubbi', 'sarubbi': 'Maria Chiara Sarubbi',
-                'magda': 'Magda Passafaro', 'passafaro': 'Magda Passafaro',
-                'valentina r': 'Valentina Rocca', 'rocca': 'Valentina Rocca',
-                'francesca g': 'Francesca Gualtieri', 'gualtieri': 'Francesca Gualtieri',
-                'martina': 'Martina Pallone', 'pallone': 'Martina Pallone',
-                'michela': 'Michela Reda', 'reda': 'Michela Reda',
-                'valentina l': 'Valentina Lise', 'lise': 'Valentina Lise',
-                'simona': 'Simona Severini', 'severini': 'Simona Severini',
-                'francesca r': 'Francesca Ruggiu', 'ruggiu': 'Francesca Ruggiu',
-                'alessandra': 'Alessandra Falduti', 'falduti': 'Alessandra Falduti',
-                'niccolò': 'Niccolò Vono', 'niccolo': 'Niccolò Vono', 'vono': 'Niccolò Vono'
-            };
+            
+            // Build dynamic mapping from piMappingCache
+            const mapping = {};
+            (window.piMappingCache || []).forEach(pi => {
+                // Add PI name parts as keys
+                const piParts = pi.name.toLowerCase().split(' ');
+                piParts.forEach(part => { if (part.length > 2) mapping[part] = pi.name; });
+                mapping[pi.name.toLowerCase()] = pi.name;
+                
+                // Add student name parts as keys
+                (pi.students || []).forEach(st => {
+                    const stParts = st.toLowerCase().split(' ');
+                    stParts.forEach(part => { if (part.length > 2) mapping[part] = st; });
+                    mapping[st.toLowerCase()] = st;
+                });
+            });
 
+            // Exact match first
             if (mapping[str]) return mapping[str];
             
+            // Substring match
             for (const [key, canonical] of Object.entries(mapping)) {
-                if (str.includes(key) && str.length > 3) return canonical;
+                if (str.includes(key) && key.length > 2) return canonical;
             }
-            return input; // Fallback mapping
+            return input; // Fallback: return as-is
         };
 
-        window.populateAnalyticsUserFilter = (movements, bookings) => {
-            const sel = document.getElementById('stat-filter-user');
-            if (!sel || sel.options.length > 1) return; // Already populated
+        window.populateAnalyticsFilters = () => {
+            const piSel = document.getElementById('stat-filter-pi');
+            const userSel = document.getElementById('stat-filter-user');
+            if (!piSel || !userSel) return;
 
-            const users = new Set();
-            movements.forEach(m => { 
-                const u = normalizeUserName(m.operatorName || m.user);
-                if (u) users.add(u); 
-            });
-            bookings.forEach(b => { 
-                const u = normalizeUserName(b.email || b.userName || b.bookedBy);
-                if (u) users.add(u); 
-            });
-
-            const sorted = Array.from(users).sort();
-            sorted.forEach(e => {
+            // Populate PI dropdown
+            const currentPi = piSel.value;
+            piSel.innerHTML = '<option value="">Tutti i PI</option>';
+            (window.piMappingCache || []).forEach(pi => {
                 const opt = document.createElement('option');
-                opt.value = e;
-                opt.textContent = e;
-                sel.appendChild(opt);
+                opt.value = pi.name;
+                opt.textContent = pi.name;
+                if (pi.name === currentPi) opt.selected = true;
+                piSel.appendChild(opt);
             });
+
+            // Populate User dropdown based on PI selection
+            const currentUser = userSel.value;
+            userSel.innerHTML = '<option value="">Tutti gli Utilizzatori</option>';
+            const selectedPI = piSel.value;
+
+            if (selectedPI) {
+                // Show only students of selected PI + PI themselves
+                const piData = (window.piMappingCache || []).find(p => p.name === selectedPI);
+                if (piData) {
+                    // Add the PI themselves
+                    const piOpt = document.createElement('option');
+                    piOpt.value = piData.name;
+                    piOpt.textContent = `👔 ${piData.name} (PI)`;
+                    if (piData.name === currentUser) piOpt.selected = true;
+                    userSel.appendChild(piOpt);
+                    // Add students
+                    (piData.students || []).sort().forEach(s => {
+                        const opt = document.createElement('option');
+                        opt.value = s;
+                        opt.textContent = s;
+                        if (s === currentUser) opt.selected = true;
+                        userSel.appendChild(opt);
+                    });
+                }
+            } else {
+                // Show all known users from the mapping
+                const allUsers = new Set();
+                (window.piMappingCache || []).forEach(pi => {
+                    allUsers.add(pi.name);
+                    (pi.students || []).forEach(s => allUsers.add(s));
+                });
+                Array.from(allUsers).sort().forEach(u => {
+                    const opt = document.createElement('option');
+                    opt.value = u;
+                    const isPi = (window.piMappingCache || []).some(p => p.name === u);
+                    opt.textContent = isPi ? `👔 ${u}` : u;
+                    if (u === currentUser) opt.selected = true;
+                    userSel.appendChild(opt);
+                });
+            }
+        };
+
+        window.onPiFilterChange = () => {
+            // Reset student filter when PI changes, then repopulate
+            document.getElementById('stat-filter-user').value = '';
+            populateAnalyticsFilters();
+        };
+
+        // --- PI MAPPING ADMIN CRUD ---
+        window.savePiMapping = async () => {
+            try {
+                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'pi_mapping'), {
+                    pis: window.piMappingCache || [],
+                    updatedAt: serverTimestamp()
+                });
+            } catch(e) { alert('Errore salvataggio PI mapping: ' + e); }
+        };
+
+        window.addNewPI = async () => {
+            const name = document.getElementById('inp-new-pi-name').value.trim();
+            if (!name) return alert('Inserisci un nome.');
+            if (!window.piMappingCache) window.piMappingCache = [];
+            if (window.piMappingCache.some(p => p.name.toLowerCase() === name.toLowerCase())) return alert('PI già presente.');
+            window.piMappingCache.push({ name, students: [] });
+            await savePiMapping();
+            document.getElementById('inp-new-pi-name').value = '';
+            renderPiMappingUI();
+            logAction('UPDATE', 'SETTINGS', `Added PI: ${name}`);
+        };
+
+        window.removePI = async (piName) => {
+            if (!confirm(`Rimuovere il PI "${piName}" e tutti i suoi utilizzatori assegnati?`)) return;
+            window.piMappingCache = (window.piMappingCache || []).filter(p => p.name !== piName);
+            await savePiMapping();
+            renderPiMappingUI();
+            logAction('UPDATE', 'SETTINGS', `Removed PI: ${piName}`);
+        };
+
+        window.addStudentToPI = async (piName) => {
+            const inp = document.getElementById('inp-student-' + piName.replace(/\s/g, '_'));
+            const studentName = inp ? inp.value.trim() : '';
+            if (!studentName) return alert('Inserisci il nome dello studente.');
+            const pi = (window.piMappingCache || []).find(p => p.name === piName);
+            if (!pi) return;
+            if (pi.students.some(s => s.toLowerCase() === studentName.toLowerCase())) return alert('Utilizzatore già presente.');
+            pi.students.push(studentName);
+            await savePiMapping();
+            if (inp) inp.value = '';
+            renderPiMappingUI();
+            logAction('UPDATE', 'SETTINGS', `Added student ${studentName} to PI ${piName}`);
+        };
+
+        window.removeStudentFromPI = async (piName, studentName) => {
+            const pi = (window.piMappingCache || []).find(p => p.name === piName);
+            if (!pi) return;
+            pi.students = pi.students.filter(s => s !== studentName);
+            await savePiMapping();
+            renderPiMappingUI();
+        };
+
+        window.renderPiMappingUI = () => {
+            const container = document.getElementById('pi-mapping-ui');
+            if (!container) return;
+            const pis = window.piMappingCache || [];
+            if (pis.length === 0) {
+                container.innerHTML = '<p class="text-[10px] text-slate-400 text-center py-2">Nessun PI configurato. Aggiungine uno qui sotto.</p>';
+                return;
+            }
+            container.innerHTML = pis.map(pi => {
+                const safeId = pi.name.replace(/\s/g, '_');
+                const studentsList = (pi.students || []).map(s => 
+                    `<div class="flex items-center justify-between bg-white rounded px-2 py-1 border border-slate-100">
+                        <span class="text-[10px] text-slate-700">${s}</span>
+                        <button onclick="removeStudentFromPI('${pi.name}', '${s}')" class="text-red-400 hover:text-red-600 text-xs font-bold ml-2">&times;</button>
+                    </div>`
+                ).join('');
+                return `<div class="bg-white rounded-lg border border-violet-100 p-3 shadow-sm">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xs font-bold text-violet-800 flex items-center gap-1">👔 ${pi.name}</span>
+                        <button onclick="removePI('${pi.name}')" class="text-[10px] text-red-500 font-bold hover:underline">Rimuovi PI</button>
+                    </div>
+                    <div class="space-y-1 mb-2">${studentsList || '<p class="text-[10px] text-slate-400 italic">Nessun utilizzatore assegnato</p>'}</div>
+                    <div class="flex gap-1">
+                        <input type="text" id="inp-student-${safeId}" class="flex-1 text-[10px] p-1.5 border border-slate-200 rounded" placeholder="Nome e Cognome Utilizzatore">
+                        <button onclick="addStudentToPI('${pi.name}')" class="px-2 py-1 bg-violet-600 text-white rounded text-[10px] font-bold hover:bg-violet-700">+ Aggiungi</button>
+                    </div>
+                </div>`;
+            }).join('');
+
+            if (window.lucide) lucide.createIcons();
         };
     </script>
 </body>
