@@ -878,7 +878,14 @@
                     <input type="email" id="inp-maint-email" class="w-full mb-2 text-xs p-2 border rounded"
                         placeholder="Email">
                     <button onclick="saveGlobalSettings()"
-                        class="w-full py-2 bg-amber-600 text-white rounded text-xs font-bold">AGGIORNA</button>
+                        class="w-full py-2 bg-amber-600 text-white rounded text-xs font-bold mb-3">AGGIORNA APP</button>
+                    
+                    <div class="pt-3 border-t border-amber-200">
+                        <h3 class="text-xs font-bold text-slate-700 mb-1 flex items-center gap-1.5"><i data-lucide="cloud" class="w-3 h-3 text-sky-600"></i> Auto-Backup Google Drive</h3>
+                        <p class="text-[10px] text-slate-500 mb-2">Script gratuito per esportare magazzino/prenotazioni in Excel ogni settimana.</p>
+                        <button onclick="document.getElementById('modal-backup-setup').classList.remove('hidden')"
+                            class="w-full py-1.5 bg-sky-600 text-white rounded text-xs font-bold flex items-center justify-center gap-1 hover:bg-sky-700"><i data-lucide="info" class="w-3 h-3"></i> ISTRUZIONI SETUP</button>
+                    </div>
                 </div>
 
                 <!-- Admin Management -->
@@ -1368,6 +1375,98 @@
             </form>
         </div>
     </div>
+
+    <!-- MODALE BACKUP GOOGLE DRIVE SETUP -->
+    <div id="modal-backup-setup" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-2xl rounded-3xl p-6 shadow-2xl flex flex-col max-h-[90vh]">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold flex items-center gap-2"><i data-lucide="cloud" class="w-5 h-5 text-sky-600"></i> Setup Esportazione: Google Drive</h3>
+                <button onclick="document.getElementById('modal-backup-setup').classList.add('hidden')" class="p-2"><i data-lucide="x" class="w-4 h-4 text-slate-500"></i></button>
+            </div>
+            
+            <div class="overflow-y-auto pr-2 space-y-4 text-sm text-slate-700 pb-4">
+                <p>Usa <b>Google Apps Script</b> per automatizzare l'esportazione di Giacenze e Prenotazioni sul Drive del laboratorio. È del tutto automatico e invisibile agli utenti finali.</p>
+                <div class="bg-sky-50 rounded-lg p-3 text-xs border border-sky-100">
+                    <p class="font-bold text-sky-800 mb-1">Passo 1: Nuova Cartella e Progetto Script</p>
+                    <ol class="list-decimal pl-4 space-y-1">
+                        <li>Apri <a href="https://drive.google.com" target="_blank" class="underline font-bold text-indigo-600">Google Drive</a> con <i>bioinformaticslabunicz@gmail.com</i>.</li>
+                        <li>Crea una nuova cartella per i backup ed entraci. Copia dalla barra dell'URL il suo <b>ID</b> (es: <code class="bg-white px-1 py-0.5 rounded text-red-500">1A2B3C...</code> dopo "folders/").</li>
+                        <li>Vai su <a href="https://script.google.com" target="_blank" class="underline font-bold text-indigo-600">Google Apps Script</a> e crea un "Nuovo Progetto".</li>
+                    </ol>
+                </div>
+
+                <div class="bg-slate-50 rounded-lg p-3 text-xs border border-slate-200">
+                    <p class="font-bold text-slate-800 mb-1">Passo 2: Incolla lo script</p>
+                    <p class="mb-2">Sostituisci la chiave Firebase e la password nel codice seguente, copialo, incollalo nell'editor su <i>script.google.com</i> e clicca il tasto Salva (💾).</p>
+                    <div class="relative group">
+                        <textarea readonly class="w-full h-48 bg-slate-900 border border-slate-700 text-green-400 p-3 rounded font-mono text-[10px] outline-none resize-y" onclick="this.select()">// --- CONFIGURAZIONE DA MODIFICARE ---
+var FIREBASE_API_KEY = 'COMPILA_CON_LA_TUA_API_KEY';
+var LABSCAN_EMAIL = 'bioinformaticslabunicz@gmail.com'; 
+var LABSCAN_PASSWORD = 'INSERISCI_LA_PASSWORD_DI_ACCESSO';
+var GOOGLE_DRIVE_FOLDER_ID = 'INSERISCI_ID_CARTELLA_DRIVE';
+// ------------------------------------
+
+var PROJECT_ID = 'unisca-lab';
+var APP_ID = 'lab-management';
+
+function esportaLabscanSettimanale() {
+  var authUrl = 'https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=' + FIREBASE_API_KEY;
+  var authPayload = { email: LABSCAN_EMAIL, password: LABSCAN_PASSWORD, returnSecureToken: true };
+  
+  var authRes = UrlFetchApp.fetch(authUrl, { method: 'post', contentType: 'application/json', payload: JSON.stringify(authPayload) });
+  var idToken = JSON.parse(authRes.getContentText()).idToken;
+  
+  function fetchCollection(collectionName) {
+    var url = 'https://firestore.googleapis.com/v1/projects/' + PROJECT_ID + '/databases/(default)/documents/artifacts/' + APP_ID + '/public/data/' + collectionName + '?pageSize=1000';
+    var res = UrlFetchApp.fetch(url, { headers: { 'Authorization': 'Bearer ' + idToken } });
+    return JSON.parse(res.getContentText()).documents || [];
+  }
+
+  var inventory = fetchCollection('inventory');
+  var bookings = fetchCollection('bookings');
+  var dateStr = Utilities.formatDate(new Date(), "GMT+2", "yyyy-MM-dd");
+  var spreadsheet = SpreadsheetApp.create('LABSCAN Report - ' + dateStr);
+  
+  var sheetInv = spreadsheet.getActiveSheet();
+  sheetInv.setName("Stato Magazzino");
+  sheetInv.appendRow(["Nome Articolo", "ID/Codice", "Categoria", "Quantità Attuale", "Unità", "Scadenza", "Posizione"]);
+  
+  inventory.forEach(function(doc) {
+    var fields = doc.fields || {};
+    var getStr = function(f) { return fields[f] ? (fields[f].stringValue || "") : ""; };
+    var getNum = function(f) { return fields[f] ? parseInt(fields[f].integerValue || 0) : 0; };
+    sheetInv.appendRow([ getStr('name'), getStr('id'), getStr('category'), getNum('quantity'), getStr('unit'), getStr('expiryDate'), getStr('position') ]);
+  });
+
+  var sheetBook = spreadsheet.insertSheet("Prenotazioni");
+  sheetBook.appendRow(["Strumento", "Inizio", "Fine", "Utente", "Email", "PNR", "Stato"]);
+  
+  bookings.forEach(function(doc) {
+    var fields = doc.fields || {};
+    var getStr = function(f) { return fields[f] ? (fields[f].stringValue || "") : ""; };
+    sheetBook.appendRow([ getStr('resourceName'), getStr('startDate'), getStr('endDate'), getStr('userName'), getStr('email'), getStr('pnr'), getStr('status') ]);
+  });
+  
+  var file = DriveApp.getFileById(spreadsheet.getId());
+  file.moveTo(DriveApp.getFolderById(GOOGLE_DRIVE_FOLDER_ID));
+  Logger.log("Completato");
+}</textarea>
+                    </div>
+                </div>
+
+                <div class="bg-amber-50 rounded-lg p-3 text-xs border border-amber-100">
+                    <p class="font-bold text-amber-800 mb-1">Passo 3: Metti il "Pilota Automatico" (Cron Trigger)</p>
+                    <ol class="list-decimal pl-4 space-y-1">
+                        <li>Fai una prima esecuzione premendo "Esegui" in alto su Apps Script, concedendo i permessi richiesti al tuo account Google.</li>
+                        <li>Clicca nel menù a sinistra del progetto sull'icona della Sveglia (<i>Attivatori</i>).</li>
+                        <li>Aggiungi un nuovo attivatore e imposta: <i>Funzione</i>: <code class="bg-white rounded px-1 text-slate-800">esportaLabscanSettimanale</code>, <i>Sorgente</i>: <b>Basato sul tempo</b>. Segui col <i>Timer settimanale</i> impostando il giorno e l'ora. E salva!</li>
+                    </ol>
+                </div>
+            </div>
+            <button onclick="document.getElementById('modal-backup-setup').classList.add('hidden')" class="mt-4 w-full py-3 bg-slate-800 text-white rounded-xl font-bold text-sm shadow-lg hover:bg-slate-700 transition">CHIUDI LE ISTRUZIONI</button>
+        </div>
+    </div>
+
 
     <!-- LOGIN OVERLAY -->
     <div id="view-login" class="hidden fixed inset-0 bg-slate-900 z-[300] flex items-center justify-center p-6">
@@ -5122,11 +5221,11 @@
             const users = new Set();
             movements.forEach(m => { 
                 const u = normalizeUserName(m.operatorName || m.user);
-                if (u && !u.includes('@')) users.add(u); 
+                if (u) users.add(u); 
             });
             bookings.forEach(b => { 
                 const u = normalizeUserName(b.email || b.userName || b.bookedBy);
-                if (u && !u.includes('@')) users.add(u); 
+                if (u) users.add(u); 
             });
 
             const sorted = Array.from(users).sort();
