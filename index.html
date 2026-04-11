@@ -5535,14 +5535,14 @@ DETTAGLIO MOVIMENTI MAGAZZINO:
                     if (!agg[name]) agg[name] = { add:0, sub:0 };
                     if (!userAgg[user]) userAgg[user] = { add:0, sub:0, items: new Set() };
 
-                    if (m.type === 'add') {
-                        agg[name].add += Number(m.quantity || 0);
-                        userAgg[user].add += Number(m.quantity || 0);
+                    if (m.action === 'add') {
+                        agg[name].add += Number(m.amount || 0);
+                        userAgg[user].add += Number(m.amount || 0);
                         userAgg[user].items.add(name);
                     }
-                    if (m.type === 'remove' || m.type === 'sub') {
-                        agg[name].sub += Number(m.quantity || 0);
-                        userAgg[user].sub += Number(m.quantity || 0);
+                    if (m.action === 'remove' || m.action === 'sub') {
+                        agg[name].sub += Number(m.amount || 0);
+                        userAgg[user].sub += Number(m.amount || 0);
                         userAgg[user].items.add(name);
                     }
                 });
