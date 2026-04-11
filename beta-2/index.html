@@ -4909,8 +4909,14 @@
                     bookings = bookings.filter(b => new Date(b.startDate) >= cutoff);
                 }
                 if (filterUser) {
-                    movements = movements.filter(m => (m.operatorName || m.user) === filterUser);
-                    bookings = bookings.filter(b => (b.email || b.userName || b.bookedBy) === filterUser);
+                    movements = movements.filter(m => {
+                        const u = normalizeUserName(m.operatorName || m.user);
+                        return u === filterUser;
+                    });
+                    bookings = bookings.filter(b => {
+                        const u = normalizeUserName(b.email || b.userName || b.bookedBy);
+                        return u === filterUser;
+                    });
                 }
 
                 // Get inventory for health & KPIs
@@ -5076,18 +5082,51 @@
             } catch(e) { console.warn('Archive bookings failed:', e); }
         };
 
+        window.normalizeUserName = (input) => {
+            if (!input) return null;
+            const str = input.toLowerCase().trim();
+            const mapping = {
+                // PIs
+                'maria teresa': 'Maria Teresa De Angelis', 'de angelis': 'Maria Teresa De Angelis',
+                'carmela': 'Carmela de Marco', 'de marco': 'Carmela de Marco',
+                'donatella': 'Donatella Malanga', 'malanga': 'Donatella Malanga',
+                'vincenzo': 'Vincenzo Dattilo', 'dattilo': 'Vincenzo Dattilo',
+                'gianluca': 'Gianluca Santamaria', 'santamaria': 'Gianluca Santamaria',
+                'giuseppe': 'Giuseppe Viglietto', 'viglietto': 'Giuseppe Viglietto',
+                // Users
+                'maria chiara': 'Maria Chiara Sarubbi', 'sarubbi': 'Maria Chiara Sarubbi',
+                'magda': 'Magda Passafaro', 'passafaro': 'Magda Passafaro',
+                'valentina r': 'Valentina Rocca', 'rocca': 'Valentina Rocca',
+                'francesca g': 'Francesca Gualtieri', 'gualtieri': 'Francesca Gualtieri',
+                'martina': 'Martina Pallone', 'pallone': 'Martina Pallone',
+                'michela': 'Michela Reda', 'reda': 'Michela Reda',
+                'valentina l': 'Valentina Lise', 'lise': 'Valentina Lise',
+                'simona': 'Simona Severini', 'severini': 'Simona Severini',
+                'francesca r': 'Francesca Ruggiu', 'ruggiu': 'Francesca Ruggiu',
+                'alessandra': 'Alessandra Falduti', 'falduti': 'Alessandra Falduti',
+                'niccolò': 'Niccolò Vono', 'niccolo': 'Niccolò Vono', 'vono': 'Niccolò Vono'
+            };
+
+            if (mapping[str]) return mapping[str];
+            
+            for (const [key, canonical] of Object.entries(mapping)) {
+                if (str.includes(key) && str.length > 3) return canonical;
+            }
+            return input; // Fallback mapping
+        };
+
         window.populateAnalyticsUserFilter = (movements, bookings) => {
             const sel = document.getElementById('stat-filter-user');
             if (!sel || sel.options.length > 1) return; // Already populated
 
             const users = new Set();
             movements.forEach(m => { 
-                const u = m.operatorName || m.user;
-                if (u) users.add(u); 
+                const u = normalizeUserName(m.operatorName || m.user);
+                if (u && !u.includes('@')) users.add(u); 
             });
             bookings.forEach(b => { 
-                const u = b.email || b.userName || b.bookedBy;
-                if (u) users.add(u); 
+                const u = normalizeUserName(b.email || b.userName || b.bookedBy);
+                if (u && !u.includes('@')) users.add(u); 
             });
 
             const sorted = Array.from(users).sort();
