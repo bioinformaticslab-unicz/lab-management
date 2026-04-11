@@ -1056,10 +1056,29 @@
                             <p class="text-[9px] text-slate-400 mt-1">La chiave viene salvata localmente nel tuo browser. Ottienila gratis su <a href="https://aistudio.google.com/" target="_blank" class="underline">Google AI Studio</a>.</p>
                         </div>
 
-                        <button onclick="generateAiReport()" id="btn-generate-ai" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-lg transition flex justify-center items-center gap-2">
-                            <i data-lucide="wand-2" class="w-4 h-4"></i> GENERA REPORT SETTIMANALE
+                        <div class="space-y-3 mb-4 p-3 bg-white/60 border border-indigo-100 rounded-xl relative z-20">
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Periodo di Analisi</label>
+                                <select id="ai-filter-time" class="w-full text-xs p-2 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500">
+                                    <option value="7">Ultimi 7 Giorni</option>
+                                    <option value="30">Ultimi 30 Giorni</option>
+                                    <option value="90">Ultimi 3 Mesi</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Ambito Dati</label>
+                                <select id="ai-filter-scope" class="w-full text-xs p-2 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500">
+                                    <option value="all">Generale (Magazzino & Strumenti)</option>
+                                    <option value="inventory">Solo Magazzino / Reagenti</option>
+                                    <option value="instruments">Solo Prenotazioni Strumenti</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <button onclick="generateAiReport()" id="btn-generate-ai" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-lg transition flex justify-center items-center gap-2 relative z-20">
+                            <i data-lucide="wand-2" class="w-4 h-4"></i> GENERA REPORT IA
                         </button>
-                        <p id="ai-loading-text" class="hidden text-center text-[10px] text-indigo-600 font-bold mt-2 animate-pulse">L'IA sta elaborando i dati...</p>
+                        <p id="ai-loading-text" class="hidden text-center text-[10px] text-indigo-600 font-bold mt-2 animate-pulse relative z-20">L'IA sta elaborando i dati...</p>
                     </div>
                 </div>
 
@@ -5495,80 +5514,96 @@ function esportaLabscanSettimanale() {
             document.getElementById('ai-report-container').classList.add('hidden');
 
             try {
-                // 1. Raccogli dati ultimi 7 giorni
+                // Leggere i filtri UI
+                const timeDays = parseInt(document.getElementById('ai-filter-time').value || '7');
+                const filterScope = document.getElementById('ai-filter-scope').value || 'all';
+
                 const now = new Date();
-                const cutoff = new Date(now - 7 * 86400000);
+                const cutoff = new Date(now - timeDays * 86400000);
                 
-                const movSnap = await getDocs(query(collection(db, 'artifacts', appId, 'public', 'data', 'stock_movements'), orderBy('timestamp', 'desc')));
                 let movList = [];
-                movSnap.forEach(d => {
-                    const m = d.data();
-                    if (m.timestamp?.seconds && new Date(m.timestamp.seconds*1000) >= cutoff) movList.push(m);
-                });
+                let totalBook = 0;
 
-                const bookSnap = await getDocs(query(collection(db, 'artifacts', appId, 'public', 'data', 'bookings')));
-                let objBook = 0; let totalBook = 0;
-                bookSnap.forEach(d => {
-                    const m = d.data();
-                    if (new Date(m.startDate) >= cutoff) {
-                        totalBook++;
-                        objBook++; // simplistic count
-                    }
-                });
+                // Estrazione DB condizionata
+                if (filterScope === 'all' || filterScope === 'inventory') {
+                    const movSnap = await getDocs(query(collection(db, 'artifacts', appId, 'public', 'data', 'stock_movements'), orderBy('timestamp', 'desc')));
+                    movSnap.forEach(d => {
+                        const m = d.data();
+                        if (m.timestamp?.seconds && new Date(m.timestamp.seconds*1000) >= cutoff) movList.push(m);
+                    });
+                }
 
-                let promptText = `Sei l'assistente IA del Bioinformatics Lab. Scrivi un report professionale e conciso (massimo 10-15 righe) delle attività degli ultimi 7 giorni.
+                if (filterScope === 'all' || filterScope === 'instruments') {
+                    const bookSnap = await getDocs(query(collection(db, 'artifacts', appId, 'public', 'data', 'bookings')));
+                    bookSnap.forEach(d => {
+                        const m = d.data();
+                        if (new Date(m.startDate) >= cutoff) {
+                            totalBook++;
+                        }
+                    });
+                }
+
+                let promptText = `Sei l'assistente IA del Bioinformatics Lab. Scrivi un report professionale e conciso delle attività degli ultimi ${timeDays} giorni.
 Usa elenchi puntati per facilitare la lettura. Il tono dev'essere istituzionale ma diretto. 
 
-DATI DELLA SETTIMANA:
-- Nuove Prenotazioni Strumenti: ${totalBook}
-- Totale Movimenti Magazzino Registrati: ${movList.length}
-
-DETTAGLIO MOVIMENTI MAGAZZINO:
+DATI DI RIEPILOGO:
 `;
-                // Aggregate movements by itemName and user
-                const agg = {};
-                const userAgg = {};
-                movList.forEach(m => {
-                    const name = m.itemName || 'Sconosciuto';
-                    const user = normalizeUserName(m.operatorName || m.user) || 'Anonimo';
-                    
-                    if (!agg[name]) agg[name] = { add:0, sub:0 };
-                    if (!userAgg[user]) userAgg[user] = { add:0, sub:0, items: new Set() };
-
-                    if (m.action === 'add') {
-                        agg[name].add += Number(m.amount || 0);
-                        userAgg[user].add += Number(m.amount || 0);
-                        userAgg[user].items.add(name);
-                    }
-                    if (m.action === 'remove' || m.action === 'sub') {
-                        agg[name].sub += Number(m.amount || 0);
-                        userAgg[user].sub += Number(m.amount || 0);
-                        userAgg[user].items.add(name);
-                    }
-                });
-
-                let hasMv = false;
-                promptText += `\nRIEPILOGO ARTICOLI:\n`;
-                for (const [name, qty] of Object.entries(agg)) {
-                    hasMv = true;
-                    promptText += `- ${name}: +${qty.add} aggiunti, -${qty.sub} prelevati\n`;
+                if (filterScope === 'all' || filterScope === 'instruments') {
+                    promptText += `- Nuove Prenotazioni Strumenti nel periodo: ${totalBook}\n`;
                 }
                 
-                promptText += `\nATTIVITÀ PER UTILIZZATORE:\n`;
-                for (const [u, acts] of Object.entries(userAgg)) {
-                    if (acts.sub > 0 || acts.add > 0) {
-                        const itemsArr = Array.from(acts.items).join(', ');
-                        promptText += `- ${u}: prelevate ${acts.sub} unità, aggiunte ${acts.add} unità. (Articoli movimentati: ${itemsArr})\n`;
+                if (filterScope === 'all' || filterScope === 'inventory') {
+                    promptText += `- Totale Movimenti Magazzino Registrati: ${movList.length}\n\n`;
+                    promptText += `DETTAGLIO MOVIMENTI MAGAZZINO:\n`;
+                    
+                    const agg = {};
+                    const userAgg = {};
+                    movList.forEach(m => {
+                        const name = m.itemName || 'Sconosciuto';
+                        const user = normalizeUserName(m.operatorName || m.user) || 'Anonimo';
+                        
+                        if (!agg[name]) agg[name] = { add:0, sub:0 };
+                        if (!userAgg[user]) userAgg[user] = { add:0, sub:0, items: new Set() };
+
+                        if (m.action === 'add') {
+                            agg[name].add += Number(m.amount || 0);
+                            userAgg[user].add += Number(m.amount || 0);
+                            userAgg[user].items.add(name);
+                        }
+                        if (m.action === 'remove' || m.action === 'sub') {
+                            agg[name].sub += Number(m.amount || 0);
+                            userAgg[user].sub += Number(m.amount || 0);
+                            userAgg[user].items.add(name);
+                        }
+                    });
+
+                    let hasMv = false;
+                    promptText += `\nRIEPILOGO ARTICOLI:\n`;
+                    for (const [name, qty] of Object.entries(agg)) {
+                        hasMv = true;
+                        promptText += `- ${name}: +${qty.add} aggiunti, -${qty.sub} prelevati\n`;
                     }
+                    
+                    promptText += `\nATTIVITÀ PER UTILIZZATORE:\n`;
+                    for (const [u, acts] of Object.entries(userAgg)) {
+                        if (acts.sub > 0 || acts.add > 0) {
+                            const itemsArr = Array.from(acts.items).join(', ');
+                            promptText += `- ${u}: prelevate ${acts.sub} unità, aggiunte ${acts.add} unità. (Articoli movimentati: ${itemsArr})\n`;
+                        }
+                    }
+
+                    if (!hasMv) promptText += "Nessun movimento significativo registrato.\n";
                 }
 
-                if (!hasMv) promptText += "Nessun movimento significativo registrato.\n";
-
-                promptText += `\nGenera il report in Markdown e formattalo bene (sii analitico).
+                promptText += `\nGenera il report in Markdown e formattalo in modo professionale (sii molto analitico e discorsivo, non restituirmi solo liste formattate).
 Obbligatorio:
-1. Inizia con un titolo (es. # Report Activity Lab).
-2. Fai una classifica verbale: menziona esplicitamente gli operatori/utilizzatori che hanno fatto più prelievi indicando cosa hanno prelevato maggiormente.
-3. Evidenzia quali reagenti o articoli sono stati maggiormente intaccati.`;
+1. Inizia con un titolo appropriato ai filtri richiesti (es. # Report Activity Lab [Giorni/Ambito]).`;
+
+                if (filterScope === 'all' || filterScope === 'inventory') {
+                    promptText += ` 
+2. Fai una classifica discorsiva: menziona esplicitamente gli operatori/utilizzatori che hanno fatto più prelievi indicando cosa hanno prelevato maggiormente.
+3. Evidenzia quali reagenti o articoli sono stati maggiormente intaccati (se ce ne sono).`;
+                }
 
                 // 2. Chiamata Gemini
                 const endPoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
