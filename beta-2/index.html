@@ -1076,9 +1076,10 @@
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-slate-500 mb-1">Identificativo Operatore</label>
-                    <input type="text" id="inp-stock-user-id" required
-                        class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm"
-                        placeholder="Nome, PI o Codice...">
+                    <select id="inp-stock-user-id" required
+                        class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+                        <option value="" disabled selected>Seleziona operatore...</option>
+                    </select>
                 </div>
                 <!-- Checkbox rimozione stato ordine (visibile solo se articolo ordinato e azione add) -->
                 <div id="div-remove-order"
@@ -2058,7 +2059,7 @@ function esportaLabscanSettimanale() {
                 document.getElementById('stock-modal-title').innerText = title;
                 document.getElementById('stock-modal-unit').innerText = unit || 'pz';
                 document.getElementById('inp-stock-qty').value = '';
-                document.getElementById('inp-stock-user-id').value = ''; // Reset user ID
+                populateOperatorDropdown(); // Populate with PI + students
 
                 // Gestione Checkbox rimuovi ordine
                 if (action === 'add' && window.currentInventoryData && window.currentInventoryData.isOrdered) {
@@ -5210,6 +5211,33 @@ function esportaLabscanSettimanale() {
                 }
                 if (batch.length > 0) console.log(`Archived ${batch.length} expired bookings.`);
             } catch(e) { console.warn('Archive bookings failed:', e); }
+        };
+
+        // --- OPERATOR DROPDOWN FOR STOCK MOVEMENTS ---
+        window.populateOperatorDropdown = async () => {
+            await loadPiMapping();
+            const sel = document.getElementById('inp-stock-user-id');
+            if (!sel) return;
+            sel.innerHTML = '<option value="" disabled selected>Seleziona operatore...</option>';
+            const pis = window.piMappingCache || [];
+            pis.forEach(pi => {
+                // PI as optgroup with their students
+                const group = document.createElement('optgroup');
+                group.label = `\ud83d\udc54 ${pi.name} (PI)`;
+                // Add PI themselves as an option
+                const piOpt = document.createElement('option');
+                piOpt.value = pi.name;
+                piOpt.textContent = pi.name;
+                group.appendChild(piOpt);
+                // Add students
+                (pi.students || []).sort().forEach(s => {
+                    const opt = document.createElement('option');
+                    opt.value = s;
+                    opt.textContent = `  ${s}`;
+                    group.appendChild(opt);
+                });
+                sel.appendChild(group);
+            });
         };
 
         // --- PI MAPPING: Firestore-backed name normalization ---
