@@ -10,15 +10,20 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    // Check if the auth token has an email field
+    function hasEmail() {
+      return isAuth() && request.auth.token != null && 'email' in request.auth.token;
+    }
+
     // Check if the user is the main admin
     function isMainAdmin() {
-      return isAuth() && request.auth.token.email == 'vono.niccolo@gmail.com';
+      return hasEmail() && request.auth.token.email == 'vono.niccolo@gmail.com';
     }
 
     // Check if the user is a co-admin (stored in public/data/settings/admins)
     function isCoAdmin() {
       let adminDoc = get(/databases/$(database)/documents/artifacts/unisca-lab-v1/public/data/settings/admins);
-      return isAuth() && adminDoc != null && adminDoc.data.emails != null && (request.auth.token.email in adminDoc.data.emails);
+      return hasEmail() && adminDoc != null && adminDoc.data.emails != null && (request.auth.token.email in adminDoc.data.emails);
     }
 
     // Since supervisors are stored as array of objects in public/data/settings/supervisors, 
@@ -37,12 +42,12 @@ service cloud.firestore {
     // Check if user is in restricted allowed list
     function isAllowedInRestrictedMode() {
       let accessDoc = get(/databases/$(database)/documents/artifacts/unisca-lab-v1/public/data/settings/access);
-      return accessDoc != null && accessDoc.data.allowedUsers != null && (request.auth.token.email in accessDoc.data.allowedUsers);
+      return hasEmail() && accessDoc != null && accessDoc.data.allowedUsers != null && (request.auth.token.email in accessDoc.data.allowedUsers);
     }
 
     // Determine if the user has domain access, handling restricted mode
     function isAllowedDomain() {
-      let validDomain = isAuth() && (
+      let validDomain = hasEmail() && (
          request.auth.token.email.matches('.*@unicz\\.it') ||
          request.auth.token.email.matches('.*@studenti\\.unicz\\.it') ||
          request.auth.token.email == 'vono.niccolo@gmail.com'
@@ -56,8 +61,9 @@ service cloud.firestore {
     // ─── PUBLIC APP DATA ─────────────────────────────────────────────────────────
     match /artifacts/unisca-lab-v1/public/data/{collection}/{docId} {
 
-      // Any authenticated University user (including anonymous used as bridge) can read all public data.
-      allow read: if isAllowedDomain() || request.auth != null;
+      // Anyone can read the accessCodes document to find their email for login.
+      // Other documents require full domain-authorized authentication.
+      allow read: if (collection == 'settings' && docId == 'accessCodes') || isAllowedDomain();
 
       // All users can create bookings, movements, and logs. 
       // Only admins/supervisors can create inventory items or instruments.
