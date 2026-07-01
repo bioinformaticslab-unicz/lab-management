@@ -735,8 +735,8 @@
                 }
 
                 // If in bulk mode, clicking the card checks the box. Otherwise, it edits.
-                const finalClickAction = (isAdmin && !isReorderTab && window.isBulkMode) 
-                    ? `const cb = this.querySelector('.chk-inv-bulk'); if(cb) { cb.checked = !cb.checked; window.updateBulkDeleteUI(); }` 
+                const finalClickAction = (isAdmin && !isReorderTab && window.isBulkMode)
+                    ? `var cb = document.querySelector('.chk-inv-bulk[value="${i.id}"]'); if(cb){ cb.checked = !cb.checked; window.updateBulkDeleteUI(); }`
                     : clickAction;
 
                 return `
@@ -762,7 +762,6 @@
                         </div>
                     </div>
                     ${orderBadge}
-                </div>`;
                 </div>`;
             }).join('');
             lucide.createIcons();
