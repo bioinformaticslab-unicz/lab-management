@@ -138,6 +138,15 @@
         </div>
     </header>
 
+    <!-- INACTIVITY WARNING TOAST -->
+    <div id="inactivity-toast" class="fixed bottom-5 left-1/2 -translate-x-1/2 z-[9999] hidden">
+        <div class="flex items-center gap-3 bg-slate-900 text-white text-sm px-4 py-3 rounded-xl shadow-2xl border border-slate-700">
+            <i data-lucide="clock" class="w-4 h-4 text-yellow-400 shrink-0"></i>
+            <span>Sessione in scadenza. Disconnessione automatica tra <strong id="inactivity-countdown">30</strong>s.</span>
+            <button onclick="window.resetInactivityTimer()" class="ml-2 px-3 py-1 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-xs font-bold transition shrink-0">RIMANI</button>
+        </div>
+    </div>
+
     <!-- MAIN CONTENT -->
     <main id="main-container" class="p-5 max-w-md lg:max-w-3xl mx-auto relative">
 
@@ -1841,6 +1850,7 @@ function esportaLabscanSettimanale() {
                     window._archiveInterval = setInterval(archiveExpiredBookings, 5 * 60 * 1000);
                 }
                 logAction('LOGIN', 'AUTH', `User logged in: ${user.email} Role: ${userRole}`);
+                window.resetInactivityTimer(); // start inactivity timer on login
             } else {
                 document.getElementById('view-login').classList.remove('hidden');
                 document.getElementById('btn-logout').classList.add('hidden');
@@ -1879,14 +1889,53 @@ function esportaLabscanSettimanale() {
                 errorEl.classList.remove('hidden');
             }
         };
-        window.logoutUser = async () => {
-            if (confirm('Sei sicuro di voler uscire?')) {
-                logAction('LOGOUT', 'AUTH', `User logged out: ${currentUser.email}`);
+        window.logoutUser = async (isAuto = false) => {
+            if (isAuto || confirm('Sei sicuro di voler uscire?')) {
+                clearTimeout(window._inactivityWarningTimer);
+                clearTimeout(window._inactivityLogoutTimer);
+                clearInterval(window._inactivityCountdownInterval);
+                document.getElementById('inactivity-toast')?.classList.add('hidden');
+                if (currentUser) logAction('LOGOUT', 'AUTH', `User logged out${isAuto ? ' (auto-inactivity)' : ''}: ${currentUser.email}`);
                 adminMode = false;
                 isAdmin = false;
                 await signOut(auth);
             }
         };
+
+        // --- INACTIVITY TIMER (5 min, with 30s warning toast) ---
+        window.resetInactivityTimer = () => {
+            clearTimeout(window._inactivityWarningTimer);
+            clearTimeout(window._inactivityLogoutTimer);
+            clearInterval(window._inactivityCountdownInterval);
+            const toast = document.getElementById('inactivity-toast');
+            const countdownEl = document.getElementById('inactivity-countdown');
+            if (toast) toast.classList.add('hidden');
+
+            if (!auth.currentUser) return;
+
+            // Show warning toast 30s before logout (after 4.5 min of inactivity)
+            window._inactivityWarningTimer = setTimeout(() => {
+                if (!auth.currentUser) return;
+                if (toast) toast.classList.remove('hidden');
+                lucide.createIcons();
+                let secs = 30;
+                if (countdownEl) countdownEl.innerText = secs;
+                window._inactivityCountdownInterval = setInterval(() => {
+                    secs--;
+                    if (countdownEl) countdownEl.innerText = secs;
+                    if (secs <= 0) clearInterval(window._inactivityCountdownInterval);
+                }, 1000);
+            }, 4.5 * 60 * 1000); // 4.5 minutes
+
+            // Auto logout after 5 full minutes of inactivity
+            window._inactivityLogoutTimer = setTimeout(() => {
+                window.logoutUser(true);
+            }, 5 * 60 * 1000); // 5 minutes
+        };
+
+        const _activityEvents = ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'];
+        _activityEvents.forEach(evt => document.addEventListener(evt, window.resetInactivityTimer, { passive: true }));
+
         window.toggleRegisterMode = () => {
             isRegisterMode = !isRegisterMode;
             const btn = document.getElementById('btn-toggle-register');
