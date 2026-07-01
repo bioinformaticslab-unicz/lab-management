@@ -19,6 +19,7 @@
 - Email automatica di riordino quando un articolo scende sotto soglia
 - **Foto prodotto** con URL immagine, visibile nella scheda e nei risultati di ricerca
 - **Operazioni batch (Carrello)**: modalità carico multiplo attivabile dall'admin, con scansione continua e riepilogo carrello
+- **Eliminazione multipla**: cancellazione massiva di articoli dal magazzino tramite selezione (solo admin)
 
 ### 📅 Prenotazioni Strumenti
 - Prenotazione strumenti con selezione data e **slot orari a 30 minuti** (05:00 – 21:00)
@@ -40,6 +41,7 @@
 - **Permessi granulari** per Supervisori (Prenotazioni, Magazzino, Strumenti, Log)
 - Modalità manutenzione attivabile
 - **Modalità Desktop**: ottimizzazione per PC con lettore barcode fisico, navigazione da tastiera e auto-focus
+- **Sicurezza aggiuntiva**: timeout automatico della sessione dopo 5 minuti di inattività
 
 ### 📺 Totem Dashboard
 - Dashboard a schermo intero per monitor in laboratorio

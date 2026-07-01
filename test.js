@@ -47,6 +47,27 @@
         let batchCart = [];
         let globalSettingsCache = {};
 
+        // Inactivity Timer
+        let inactivityTimer = null;
+        const INACTIVITY_LIMIT_MS = 5 * 60 * 1000; // 5 minutes
+
+        window.resetInactivityTimer = () => {
+            if (inactivityTimer) clearTimeout(inactivityTimer);
+            if (currentUser) {
+                inactivityTimer = setTimeout(() => {
+                    if (currentUser) {
+                        console.log("Inattività prolungata. Disconnessione automatica.");
+                        window.logoutUser(true);
+                    }
+                }, INACTIVITY_LIMIT_MS);
+            }
+        };
+
+        // Event listeners for user activity
+        ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'].forEach(evt => {
+            document.addEventListener(evt, window.resetInactivityTimer, { passive: true });
+        });
+
         // Setup globale tastiera
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
@@ -179,6 +200,7 @@
                 loadResourcesCache();
                 checkUrlParams();
                 logAction('LOGIN', 'AUTH', `User logged in: ${user.email} Role: ${userRole}`);
+                window.resetInactivityTimer();
             } else {
                 document.getElementById('view-login').classList.remove('hidden');
                 document.getElementById('btn-logout').classList.add('hidden');
@@ -217,9 +239,11 @@
                 errorEl.classList.remove('hidden');
             }
         };
-        window.logoutUser = async () => {
-            if (confirm('Sei sicuro di voler uscire?')) {
-                logAction('LOGOUT', 'AUTH', `User logged out: ${currentUser.email}`);
+        window.logoutUser = async (isAuto = false) => {
+            if (isAuto || confirm('Sei sicuro di voler uscire?')) {
+                if (inactivityTimer) clearTimeout(inactivityTimer);
+                if (isAuto) alert("Sessione scaduta per inattività (5 minuti).");
+                logAction('LOGOUT', 'AUTH', `User logged out: ${currentUser ? currentUser.email : 'unknown'}`);
                 adminMode = false;
                 isAdmin = false;
                 await signOut(auth);
@@ -704,10 +728,17 @@
                     </div>`;
                 }
 
+                let checkboxHtml = '';
+                if (isAdmin && !isReorderTab) {
+                    checkboxHtml = `<input type="checkbox" value="${i.id}" class="chk-inv-bulk w-4 h-4 rounded text-indigo-600 mr-3 shrink-0" onclick="event.stopPropagation(); window.updateBulkDeleteUI()">`;
+                }
+
                 return `
                 <div onclick="${clickAction}" class="bg-white p-3 rounded-lg border ${isLow ? 'border-red-300 bg-red-50' : 'border-slate-100'} flex flex-col shadow-sm cursor-pointer hover:border-indigo-300">
-                    <div class="flex justify-between items-center w-full">
-                        <div class="flex-1">
+                    <div class="flex items-center w-full">
+                        ${checkboxHtml}
+                        <div class="flex justify-between items-center w-full">
+                            <div class="flex-1">
                             <div class="flex items-center gap-2">
                                  <div class="text-xs font-bold text-slate-700">${i.name}</div>
                                  ${i.category ? `<span class="text-[8px] bg-slate-200 px-1 rounded text-slate-500 uppercase">${i.category}</span>` : ''}
@@ -722,8 +753,10 @@
                             </div>
                             ${isAdmin && !isReorderTab ? `<button onclick="event.stopPropagation(); deleteInventoryItem('${i.id}')" class="p-2 bg-red-100 text-red-600 rounded-lg"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : ''}
                         </div>
+                        </div>
                     </div>
                     ${orderBadge}
+                </div>`;
                 </div>`;
             }).join('');
             lucide.createIcons();
@@ -767,6 +800,50 @@
                 alert('Arrivo confermato! Le scorte sono state aggiornate.');
                 logAction('UPDATE', 'INVENTORY', `Arrival confirmed for ${id}: added +${orderQty} units.`);
             } catch (err) { alert("Errore: " + err); }
+        };
+
+        // --- BULK DELETE LOGIC ---
+        window.updateBulkDeleteUI = () => {
+            const checked = document.querySelectorAll('.chk-inv-bulk:checked').length;
+            const btn = document.getElementById('btn-bulk-delete');
+            if (btn) {
+                if (checked > 0) {
+                    btn.classList.remove('hidden');
+                    btn.innerHTML = `<i data-lucide="trash" class="w-3 h-3 inline"></i> ELIMINA SELEZIONATI (${checked})`;
+                    lucide.createIcons();
+                } else {
+                    btn.classList.add('hidden');
+                }
+            }
+            const selectAllChk = document.getElementById('chk-inv-select-all');
+            if (selectAllChk) {
+                const total = document.querySelectorAll('.chk-inv-bulk').length;
+                selectAllChk.checked = (total > 0 && checked === total);
+            }
+        };
+
+        window.toggleAllInventorySelection = (isChecked) => {
+            document.querySelectorAll('.chk-inv-bulk').forEach(chk => chk.checked = isChecked);
+            window.updateBulkDeleteUI();
+        };
+
+        window.bulkDeleteSelected = async () => {
+            const checkedBoxes = Array.from(document.querySelectorAll('.chk-inv-bulk:checked'));
+            const checkedIds = checkedBoxes.map(c => c.value);
+            if (checkedIds.length === 0) return;
+            if (!confirm(`Sei sicuro di voler eliminare ${checkedIds.length} articoli? Questa operazione è irreversibile.`)) return;
+            
+            try {
+                for (let id of checkedIds) {
+                    const safeId = id.replace(/\//g, '_');
+                    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'inventory', safeId));
+                    logAction('DELETE', 'INVENTORY', `Item deleted (Bulk): ${id}`);
+                }
+                alert(`${checkedIds.length} articoli eliminati con successo.`);
+                window.updateBulkDeleteUI(); // Reset UI
+            } catch (err) {
+                alert("Errore durante l'eliminazione multipla: " + err);
+            }
         };
 
         // --- ADMIN INVENTORY ---
