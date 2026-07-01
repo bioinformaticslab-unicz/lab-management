@@ -1672,7 +1672,7 @@ function esportaLabscanSettimanale() {
     <!-- LOGICA APP -->
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, signInAnonymously } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
         import { getFirestore, collection, addDoc, query, where, orderBy, onSnapshot, serverTimestamp, deleteDoc, doc, updateDoc, setDoc, getDoc, getDocs, runTransaction } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 
         // --- INSERISCI QUI LA TUA CONFIGURAZIONE FIREBASE ---
@@ -4963,24 +4963,41 @@ function esportaLabscanSettimanale() {
         };
 
         window.handleCodeInput = async (inputEl) => {
-            const val = inputEl.value.trim();
+            const val = inputEl.value.replace(/\D/g, '').slice(0, 5);
+            inputEl.value = val;
             const errorEl = document.getElementById('login-error');
             errorEl.classList.add('hidden');
             document.getElementById('code-confirm-section').classList.add('hidden');
             
             if (val.length === 5) {
                 try {
+                    // Use anonymous auth as a bridge to read Firestore before identifying the user
+                    let isAnon = false;
+                    if (!auth.currentUser) {
+                        await signInAnonymously(auth);
+                        isAnon = true;
+                    }
+
                     const codesRef = doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'accessCodes');
                     const codesSnap = await getDoc(codesRef);
+
+                    if (isAnon) {
+                        await signOut(auth); // Sign out anonymous before proceeding
+                    }
+
                     if (!codesSnap.exists()) {
                         errorEl.innerText = "Nessun codice configurato nel sistema.";
                         errorEl.classList.remove('hidden');
                         return;
                     }
                     const mappings = codesSnap.data().mappings || {};
+                    // Normalize all keys to lowercase for lookup
+                    const normalizedMappings = {};
+                    for (const k in mappings) normalizedMappings[k.toLowerCase()] = mappings[k];
+
                     let matchedEmail = null;
-                    for (const email in mappings) {
-                        if (mappings[email] === val) {
+                    for (const email in normalizedMappings) {
+                        if (normalizedMappings[email] === val) {
                             matchedEmail = email;
                             break;
                         }
@@ -4989,7 +5006,7 @@ function esportaLabscanSettimanale() {
                     if (matchedEmail) {
                         activeCodeEmail = matchedEmail;
                         const msgEl = document.getElementById('code-confirm-msg');
-                        msgEl.innerText = `Codice trovato!\nAssociare l'accesso a:\n${matchedEmail}`;
+                        msgEl.innerHTML = `<span class="text-indigo-600 text-base">✓</span> Codice trovato!<br><span class="text-slate-700 font-normal">Vuoi accedere come:</span><br><span class="text-indigo-800 font-mono text-xs break-all">${matchedEmail}</span>`;
                         document.getElementById('code-confirm-section').classList.remove('hidden');
                     } else {
                         errorEl.innerText = "Codice non valido o non assegnato.";
@@ -5011,11 +5028,15 @@ function esportaLabscanSettimanale() {
             const password = "UniscanUser_" + email.replace(/[^a-zA-Z0-9]/g, '');
 
             try {
+                // Ensure we're signed out from any anonymous session first
+                if (auth.currentUser && auth.currentUser.isAnonymous) {
+                    await signOut(auth);
+                }
                 try {
                     await signInWithEmailAndPassword(auth, email, password);
                 } catch (err) {
-                    if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password') {
-                        // User does not exist or password mismatch (e.g. from code reset), auto register/update
+                    if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-login-credentials') {
+                        // User does not exist yet — auto register
                         await createUserWithEmailAndPassword(auth, email, password);
                     } else {
                         throw err;

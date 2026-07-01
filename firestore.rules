@@ -56,9 +56,8 @@ service cloud.firestore {
     // ─── PUBLIC APP DATA ─────────────────────────────────────────────────────────
     match /artifacts/unisca-lab-v1/public/data/{collection}/{docId} {
 
-      // Any authenticated University user can read all public data
-      // Allow unauthenticated read specifically for the accessCodes settings doc.
-      allow read: if (collection == 'settings' && docId == 'accessCodes') || isAllowedDomain();
+      // Any authenticated University user (including anonymous used as bridge) can read all public data.
+      allow read: if isAllowedDomain() || request.auth != null;
 
       // All users can create bookings, movements, and logs. 
       // Only admins/supervisors can create inventory items or instruments.
