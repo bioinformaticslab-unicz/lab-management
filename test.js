@@ -830,8 +830,8 @@
                 window.toggleAllInventorySelection(false);
             }
             // Re-render list to show/hide checkboxes
-            if (document.getElementById('inp-inv-search')) {
-                window.filterInventoryLocal();
+            if (typeof window.filterInventoryList === 'function') {
+                window.filterInventoryList();
             }
         };
 
