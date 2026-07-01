@@ -4935,7 +4935,7 @@ function esportaLabscanSettimanale() {
                     `;
                 }
 
-                printWindow.document.write(\`
+                printWindow.document.write(`
                 <html>
                 <head>
                     <title>UniScan - Codici di Accesso Rapido</title>
@@ -4966,7 +4966,7 @@ function esportaLabscanSettimanale() {
                             </tr>
                         </thead>
                         <tbody>
-                            \${rowsHtml}
+                            ${rowsHtml}
                         </tbody>
                     </table>
                     <script>
@@ -4976,7 +4976,7 @@ function esportaLabscanSettimanale() {
                     <\/script>
                 </body>
                 </html>
-                \`);
+                `);
                 printWindow.document.close();
             } catch (e) { alert('Errore durante la generazione della stampa: ' + e.message); }
         };
