@@ -1794,7 +1794,11 @@ function esportaLabscanSettimanale() {
                             if (target.displayName && target.displayName !== rawUser.email) return target.displayName;
                             return realEmail.split('@')[0].split('.').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ');
                         }
-                        return target[prop];
+                        const value = target[prop];
+                        if (typeof value === 'function') {
+                            return value.bind(target);
+                        }
+                        return value;
                     }
                 });
 
