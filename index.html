@@ -1681,7 +1681,7 @@ function esportaLabscanSettimanale() {
         let supervisorPermissions = {};
         let isDesktopMode = localStorage.getItem('desktopMode') !== null
             ? localStorage.getItem('desktopMode') === 'true'
-            : (window.innerWidth >= 1024 && !('ontouchstart' in window));
+            : true; // Desktop mode ON by default; user can switch to mobile via the toggle
         let isBatchMode = false;
         let batchCart = [];
         let globalSettingsCache = {};
