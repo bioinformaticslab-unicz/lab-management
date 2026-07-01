@@ -729,12 +729,18 @@
                 }
 
                 let checkboxHtml = '';
-                if (isAdmin && !isReorderTab) {
-                    checkboxHtml = `<input type="checkbox" value="${i.id}" class="chk-inv-bulk w-4 h-4 rounded text-indigo-600 mr-3 shrink-0" onclick="event.stopPropagation(); window.updateBulkDeleteUI()">`;
+                // Only show checkbox if admin, not reorder tab, and bulk mode is active
+                if (isAdmin && !isReorderTab && window.isBulkMode) {
+                    checkboxHtml = `<input type="checkbox" value="${i.id}" class="chk-inv-bulk w-5 h-5 rounded border-slate-300 text-red-600 mr-3 shrink-0 cursor-pointer" onclick="event.stopPropagation(); window.updateBulkDeleteUI()">`;
                 }
 
+                // If in bulk mode, clicking the card checks the box. Otherwise, it edits.
+                const finalClickAction = (isAdmin && !isReorderTab && window.isBulkMode) 
+                    ? `const cb = this.querySelector('.chk-inv-bulk'); if(cb) { cb.checked = !cb.checked; window.updateBulkDeleteUI(); }` 
+                    : clickAction;
+
                 return `
-                <div onclick="${clickAction}" class="bg-white p-3 rounded-lg border ${isLow ? 'border-red-300 bg-red-50' : 'border-slate-100'} flex flex-col shadow-sm cursor-pointer hover:border-indigo-300">
+                <div onclick="${finalClickAction}" class="bg-white p-3 rounded-lg border ${isLow ? 'border-red-300 bg-red-50' : 'border-slate-100'} flex flex-col shadow-sm cursor-pointer hover:border-indigo-300 ${window.isBulkMode ? 'hover:bg-slate-50' : ''}">
                     <div class="flex items-center w-full">
                         ${checkboxHtml}
                         <div class="flex justify-between items-center w-full">
@@ -751,7 +757,7 @@
                                 <p class="text-sm font-bold ${isLow ? 'text-red-600' : 'text-slate-800'}">${quantityDisplay}</p>
                                 ${isLow ? '<p class="text-[9px] text-red-500 font-bold uppercase">SCORTA BASSA</p>' : ''}
                             </div>
-                            ${isAdmin && !isReorderTab ? `<button onclick="event.stopPropagation(); deleteInventoryItem('${i.id}')" class="p-2 bg-red-100 text-red-600 rounded-lg"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : ''}
+                            ${isAdmin && !isReorderTab && !window.isBulkMode ? `<button onclick="event.stopPropagation(); deleteInventoryItem('${i.id}')" class="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : ''}
                         </div>
                         </div>
                     </div>
@@ -803,16 +809,47 @@
         };
 
         // --- BULK DELETE LOGIC ---
+        window.isBulkMode = false;
+
+        window.toggleBulkMode = () => {
+            window.isBulkMode = !window.isBulkMode;
+            const btnToggle = document.getElementById('btn-toggle-bulk');
+            const divActions = document.getElementById('div-bulk-actions');
+            
+            if (window.isBulkMode) {
+                btnToggle.classList.replace('bg-slate-50', 'bg-red-100');
+                btnToggle.classList.replace('text-slate-600', 'text-red-700');
+                btnToggle.classList.replace('border-slate-200', 'border-red-300');
+                divActions.classList.remove('hidden');
+            } else {
+                btnToggle.classList.replace('bg-red-100', 'bg-slate-50');
+                btnToggle.classList.replace('text-red-700', 'text-slate-600');
+                btnToggle.classList.replace('border-red-300', 'border-slate-200');
+                divActions.classList.add('hidden');
+                // Deselect all when exiting
+                window.toggleAllInventorySelection(false);
+            }
+            // Re-render list to show/hide checkboxes
+            if (document.getElementById('inp-inv-search')) {
+                window.filterInventoryLocal();
+            }
+        };
+
         window.updateBulkDeleteUI = () => {
             const checked = document.querySelectorAll('.chk-inv-bulk:checked').length;
             const btn = document.getElementById('btn-bulk-delete');
-            if (btn) {
+            const countSpan = document.getElementById('bulk-delete-count');
+            
+            if (btn && countSpan) {
+                countSpan.innerText = checked;
                 if (checked > 0) {
-                    btn.classList.remove('hidden');
-                    btn.innerHTML = `<i data-lucide="trash" class="w-3 h-3 inline"></i> ELIMINA SELEZIONATI (${checked})`;
-                    lucide.createIcons();
+                    btn.disabled = false;
+                    btn.classList.remove('opacity-50', 'cursor-not-allowed');
+                    btn.classList.add('hover:bg-red-700');
                 } else {
-                    btn.classList.add('hidden');
+                    btn.disabled = true;
+                    btn.classList.add('opacity-50', 'cursor-not-allowed');
+                    btn.classList.remove('hover:bg-red-700');
                 }
             }
             const selectAllChk = document.getElementById('chk-inv-select-all');

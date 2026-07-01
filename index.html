@@ -796,11 +796,14 @@
 
                 <div class="flex justify-between items-center px-1 mb-2">
                     <h3 class="text-xs font-bold text-slate-500 uppercase">Giacenze Attuali</h3>
-                    <button onclick="bulkDeleteSelected()" id="btn-bulk-delete" class="hidden text-[10px] text-red-600 font-bold border border-red-200 bg-red-50 px-2 py-1 rounded hover:bg-red-100 transition shadow-sm"><i data-lucide="trash" class="w-3 h-3 inline"></i> ELIMINA SELEZIONATI</button>
+                    <button onclick="toggleBulkMode()" id="btn-toggle-bulk" class="text-[10px] text-slate-600 font-bold border border-slate-200 bg-slate-50 px-2 py-1 rounded hover:bg-slate-100 transition shadow-sm"><i data-lucide="list-checks" class="w-3 h-3 inline"></i> SELEZIONE MULTIPLA</button>
                 </div>
-                <div class="flex items-center gap-2 mb-2 px-2" id="div-inv-bulk-select">
-                    <input type="checkbox" id="chk-inv-select-all" onchange="toggleAllInventorySelection(this.checked)" class="w-4 h-4 rounded text-indigo-600 border-slate-300">
-                    <label class="text-[10px] font-bold text-slate-500 uppercase cursor-pointer" for="chk-inv-select-all">Seleziona Tutti (Vista Corrente)</label>
+                <div id="div-bulk-actions" class="hidden bg-red-50 border border-red-200 rounded-lg p-2 mb-3 flex justify-between items-center shadow-sm">
+                    <div class="flex items-center gap-2">
+                        <input type="checkbox" id="chk-inv-select-all" onchange="toggleAllInventorySelection(this.checked)" class="w-4 h-4 rounded text-red-600 border-red-300 focus:ring-red-500 cursor-pointer">
+                        <label class="text-[10px] font-bold text-red-800 uppercase cursor-pointer" for="chk-inv-select-all">Seleziona Tutti</label>
+                    </div>
+                    <button onclick="bulkDeleteSelected()" id="btn-bulk-delete" class="opacity-50 cursor-not-allowed text-[10px] text-white font-bold bg-red-600 px-3 py-1.5 rounded transition shadow-sm flex items-center gap-1" disabled><i data-lucide="trash" class="w-3 h-3"></i> ELIMINA (<span id="bulk-delete-count">0</span>)</button>
                 </div>
                 <div id="inventory-list" class="space-y-2"></div>
             </div>
