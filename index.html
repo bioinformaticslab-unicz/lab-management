@@ -1773,14 +1773,29 @@ function esportaLabscanSettimanale() {
         };
 
         // AUTH
-        onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                // Determine Role
-                const uEmail = user.email.toLowerCase();
+        onAuthStateChanged(auth, async (rawUser) => {
+            if (rawUser) {
+                // Determine Real Email (mapping code-based user email back to real one)
+                let realEmail = rawUser.email || '';
+                if (realEmail.toLowerCase().includes('+code@')) {
+                    realEmail = realEmail.replace('+code@', '@');
+                }
+                const uEmail = realEmail.toLowerCase();
                 const MAIN_ADMINS = ['vono.niccolo@gmail.com'];
                 userRole = 'user';
                 supervisorPermissions = {};
                 isAdmin = false;
+
+                const proxyUser = new Proxy(rawUser, {
+                    get(target, prop) {
+                        if (prop === 'email') return realEmail;
+                        if (prop === 'displayName') {
+                            if (target.displayName && target.displayName !== rawUser.email) return target.displayName;
+                            return realEmail.split('@')[0].split('.').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ');
+                        }
+                        return target[prop];
+                    }
+                });
 
                 if (MAIN_ADMINS.includes(uEmail)) {
                     userRole = 'main_admin';
@@ -1850,12 +1865,12 @@ function esportaLabscanSettimanale() {
                     window.currentUserPermissions = { instruments: true, inventory: true };
                 }
 
-                currentUser = user;
+                currentUser = proxyUser;
                 document.getElementById('view-login').classList.add('hidden');
                 document.getElementById('user-status').classList.remove('bg-red-500', 'animate-pulse');
                 document.getElementById('user-status').classList.add('bg-green-500');
                 document.getElementById('btn-logout').classList.remove('hidden');
-                const displayName = user.displayName || user.email || user.uid.slice(0, 8);
+                const displayName = proxyUser.displayName || proxyUser.email || proxyUser.uid.slice(0, 8);
                 const nameEl = document.getElementById('user-display-name');
                 nameEl.innerText = displayName;
                 nameEl.classList.remove('hidden');
@@ -5014,15 +5029,16 @@ function esportaLabscanSettimanale() {
             errorEl.classList.add('hidden');
             
             const email = activeCodeEmail;
+            const mappedEmail = email.replace('@', '+code@');
             const password = "UniscanUser_" + email.replace(/[^a-zA-Z0-9]/g, '');
 
             try {
                 try {
-                    await signInWithEmailAndPassword(auth, email, password);
+                    await signInWithEmailAndPassword(auth, mappedEmail, password);
                 } catch (err) {
                     if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-login-credentials') {
                         // User does not exist yet — auto register
-                        await createUserWithEmailAndPassword(auth, email, password);
+                        await createUserWithEmailAndPassword(auth, mappedEmail, password);
                     } else {
                         throw err;
                     }
