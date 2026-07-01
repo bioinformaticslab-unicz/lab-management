@@ -2507,6 +2507,73 @@ function esportaLabscanSettimanale() {
             lucide.createIcons();
         }
 
+        // --- BULK DELETE ---
+        window.isBulkMode = false;
+
+        window.toggleBulkMode = () => {
+            window.isBulkMode = !window.isBulkMode;
+            const btnToggle = document.getElementById('btn-toggle-bulk');
+            const divActions = document.getElementById('div-bulk-actions');
+            if (window.isBulkMode) {
+                btnToggle.classList.add('bg-red-100', 'text-red-700', 'border-red-300');
+                btnToggle.classList.remove('bg-slate-50', 'text-slate-600', 'border-slate-200');
+                divActions.classList.remove('hidden');
+            } else {
+                btnToggle.classList.remove('bg-red-100', 'text-red-700', 'border-red-300');
+                btnToggle.classList.add('bg-slate-50', 'text-slate-600', 'border-slate-200');
+                divActions.classList.add('hidden');
+            }
+            filterInventoryList();
+        };
+
+        window.updateBulkDeleteUI = () => {
+            const checked = document.querySelectorAll('.chk-inv-bulk:checked').length;
+            const btn = document.getElementById('btn-bulk-delete');
+            const countSpan = document.getElementById('bulk-delete-count');
+            if (countSpan) countSpan.innerText = checked;
+            if (btn) {
+                if (checked > 0) {
+                    btn.disabled = false;
+                    btn.classList.remove('opacity-50', 'cursor-not-allowed');
+                } else {
+                    btn.disabled = true;
+                    btn.classList.add('opacity-50', 'cursor-not-allowed');
+                }
+            }
+            const selectAllChk = document.getElementById('chk-inv-select-all');
+            if (selectAllChk) {
+                const total = document.querySelectorAll('.chk-inv-bulk').length;
+                selectAllChk.checked = (total > 0 && checked === total);
+                selectAllChk.indeterminate = (checked > 0 && checked < total);
+            }
+        };
+
+        window.toggleAllInventorySelection = (isChecked) => {
+            document.querySelectorAll('.chk-inv-bulk').forEach(c => c.checked = isChecked);
+            window.updateBulkDeleteUI();
+        };
+
+        window.bulkDeleteSelected = async () => {
+            const ids = Array.from(document.querySelectorAll('.chk-inv-bulk:checked')).map(c => c.value);
+            if (ids.length === 0) return;
+            if (!confirm(`Sei sicuro di voler eliminare ${ids.length} articoli? Questa azione è irreversibile.`)) return;
+            try {
+                for (const id of ids) {
+                    const safeId = id.replace(/\//g, '_');
+                    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'inventory', safeId));
+                    logAction('DELETE', 'INVENTORY', `Bulk deleted: ${id}`);
+                }
+                alert(`${ids.length} articoli eliminati.`);
+                window.isBulkMode = false;
+                document.getElementById('btn-toggle-bulk')?.classList.remove('bg-red-100','text-red-700','border-red-300');
+                document.getElementById('btn-toggle-bulk')?.classList.add('bg-slate-50','text-slate-600','border-slate-200');
+                document.getElementById('div-bulk-actions')?.classList.add('hidden');
+                filterInventoryList();
+            } catch(err) {
+                alert("Errore durante l'eliminazione: " + err);
+            }
+        };
+
         // --- RIORDINO CONFIRMATION ALGORITHM ---
         window.confirmArrival = async (id, orderQty) => {
             if (!confirm(`Confermare l'arrivo di in magazzino di +${orderQty} unità per l'articolo ${id}?`)) return;
