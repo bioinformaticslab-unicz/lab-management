@@ -1640,7 +1640,7 @@ function esportaLabscanSettimanale() {
                 <div id="code-confirm-section" class="hidden p-4 bg-indigo-50 border border-indigo-150 rounded-2xl text-center space-y-3">
                     <p class="text-xs text-indigo-950 font-bold" id="code-confirm-msg"></p>
                     <button onclick="confirmCodeLogin()"
-                        class="w-full py-2.5 bg-indigo-650 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-md transition">SÌ, ACCEDI</button>
+                        class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-md transition">SÌ, ACCEDI</button>
                 </div>
                 <button onclick="showStandardLogin()"
                     class="w-full py-2 text-slate-500 text-xs font-bold hover:underline">Torna al Login Standard</button>
@@ -5066,6 +5066,9 @@ function esportaLabscanSettimanale() {
             document.getElementById('code-confirm-section').classList.add('hidden');
             document.getElementById('login-error').classList.add('hidden');
             activeCodeEmail = null;
+            
+            // Auto-focus the input so the barcode scanner can inject text immediately
+            setTimeout(() => document.getElementById('inp-login-code').focus(), 50);
         };
 
         window.showStandardLogin = () => {
@@ -5108,7 +5111,7 @@ function esportaLabscanSettimanale() {
                     if (matchedEmail) {
                         activeCodeEmail = matchedEmail;
                         const msgEl = document.getElementById('code-confirm-msg');
-                        msgEl.innerHTML = `<span class="text-indigo-600 text-base">✓</span> Codice trovato!<br><span class="text-slate-700 font-normal">Vuoi accedere come:</span><br><span class="text-indigo-800 font-mono text-xs break-all">${matchedEmail}</span>`;
+                        msgEl.innerHTML = `<span class="text-indigo-600 text-base">✓</span> Codice trovato!<br><span class="text-slate-700 font-normal">Confermi di accedere come:</span><br><span class="text-indigo-800 font-mono text-xs break-all">${matchedEmail}</span>`;
                         document.getElementById('code-confirm-section').classList.remove('hidden');
                     } else {
                         errorEl.innerText = "Codice non valido o non assegnato.";
