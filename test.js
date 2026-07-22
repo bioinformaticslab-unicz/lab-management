@@ -1,7 +1,7 @@
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
-        import { getFirestore, collection, addDoc, query, where, orderBy, onSnapshot, serverTimestamp, deleteDoc, doc, updateDoc, setDoc, getDoc, getDocs, runTransaction } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+        import { getFirestore, collection, addDoc, query, where, orderBy, onSnapshot, serverTimestamp, deleteDoc, doc, updateDoc, setDoc, getDoc, getDocs, runTransaction, writeBatch } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 
         // --- INSERISCI QUI LA TUA CONFIGURAZIONE FIREBASE ---
         const firebaseConfig = {
@@ -303,6 +303,21 @@
         };
         // MAKE GLOBAL FOR CLICK EVENTS
         window.handleScannedCode = async function (code) {
+            if (!code) return;
+            let actualCode = code.trim();
+            const lowerCode = actualCode.toLowerCase();
+
+            // Fix case sensitivity by looking up the exact case in caches
+            const instMatch = window.allInstrumentsCache?.find(i => i.id.toLowerCase() === lowerCode);
+            if (instMatch) {
+                actualCode = instMatch.id;
+            } else {
+                const invMatch = window.allInventoryCache?.find(i => i.id.toLowerCase() === lowerCode);
+                if (invMatch) {
+                    actualCode = invMatch.id;
+                }
+            }
+            code = actualCode;
 
             // --- BATCH MODE ---
             if (isBatchMode) {
@@ -1212,7 +1227,7 @@
                 if (tab === 'instruments' && !supervisorPermissions.instruments) return alert("Non hai accesso agli Strumenti.");
                 if (tab === 'logs' && !supervisorPermissions.logs) return alert("Non hai accesso ai Log.");
                 if (tab === 'labels' && !supervisorPermissions.instruments && !supervisorPermissions.inventory) return alert("Non hai accesso alle Etichette.");
-                if (tab === 'settings' || tab === 'access') return alert("Non hai accesso a questa sezione.");
+                if (tab === 'settings' || tab === 'access' || tab === 'backup') return alert("Non hai accesso a questa sezione.");
             }
             if (userRole === 'user') return alert('Accesso negato.');
 
@@ -1222,7 +1237,7 @@
             });
             document.getElementById('tab-btn-' + tab).classList.add('bg-white', 'text-indigo-700', 'shadow-sm');
 
-            ['bookings', 'instruments', 'labels', 'settings', 'access', 'inventory', 'logs'].forEach(t => {
+            ['bookings', 'instruments', 'labels', 'settings', 'access', 'inventory', 'logs', 'ai', 'backup'].forEach(t => {
                 const el = document.getElementById('admin-content-' + t);
                 if (el) el.classList.add('hidden');
             });
@@ -2824,6 +2839,120 @@
             const input = document.getElementById('inp-manual-code');
             input.focus();
         });
+
+        window.exportDatabaseBackup = async () => {
+            if (!confirm("Sei sicuro di voler esportare tutto il database? L'operazione potrebbe richiedere qualche secondo.")) return;
+            
+            try {
+                const settingsSnap = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'settings'));
+                const settingsCache = [];
+                settingsSnap.forEach(d => settingsCache.push({ id: d.id, ...d.data() }));
+
+                const backupData = {
+                    version: "1.0",
+                    timestamp: new Date().toISOString(),
+                    inventory: window.allInventoryCache || [],
+                    instruments: window.allInstrumentsCache || [],
+                    bookings: window.adminBookingsCache || [],
+                    logs: window.allLogsCache || [],
+                    settings: settingsCache
+                };
+
+                const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `LabScan_Backup_${new Date().toISOString().split('T')[0]}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+                alert("Backup esportato con successo!");
+            } catch (err) {
+                console.error(err);
+                alert("Errore durante l'esportazione del backup: " + err.message);
+            }
+        };
+
+        window.handleBackupFileUpload = async (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const confirmation = prompt("⚠️ ATTENZIONE ⚠️\nQuesta operazione SOVRASCRIVERÀ tutto il database attuale con i dati del backup.\n\nPer procedere, digita esattamente: CONFERMO");
+            
+            if (confirmation !== "CONFERMO") {
+                alert("Operazione annullata.");
+                event.target.value = '';
+                return;
+            }
+
+            try {
+                const text = await file.text();
+                const data = JSON.parse(text);
+
+                if (!data.inventory || !data.instruments || !data.bookings) {
+                    throw new Error("Il file JSON non sembra un backup valido di LabScan.");
+                }
+
+                alert("Ripristino in corso, attendere prego... NON chiudere la pagina.");
+
+                let batch = writeBatch(db);
+                let writeCount = 0;
+                let batchPromises = [];
+
+                const addWriteToBatch = (docRef, docData) => {
+                    batch.set(docRef, docData);
+                    writeCount++;
+                    if (writeCount === 500) {
+                        batchPromises.push(batch.commit());
+                        batch = writeBatch(db);
+                        writeCount = 0;
+                    }
+                };
+
+                for (const item of data.inventory) {
+                    const { id, ...rest } = item;
+                    if (id) addWriteToBatch(doc(db, 'artifacts', appId, 'public', 'data', 'inventory', id), rest);
+                }
+                
+                for (const item of data.instruments) {
+                    const { id, ...rest } = item;
+                    if (id) addWriteToBatch(doc(db, 'artifacts', appId, 'public', 'data', 'resources', id), rest);
+                }
+
+                for (const item of data.bookings) {
+                    const { id, ...rest } = item;
+                    if (id) addWriteToBatch(doc(db, 'artifacts', appId, 'public', 'data', 'bookings', id), rest);
+                }
+
+                if (data.logs) {
+                    for (const item of data.logs) {
+                        const { id, ...rest } = item;
+                        if (id) addWriteToBatch(doc(db, 'artifacts', appId, 'public', 'data', 'logs', id), rest);
+                    }
+                }
+
+                if (data.settings) {
+                    for (const item of data.settings) {
+                        const { id, ...rest } = item;
+                        if (id) addWriteToBatch(doc(db, 'artifacts', appId, 'public', 'data', 'settings', id), rest);
+                    }
+                }
+
+                if (writeCount > 0) {
+                    batchPromises.push(batch.commit());
+                }
+
+                await Promise.all(batchPromises);
+
+                alert("Ripristino completato con successo! La pagina verrà ora ricaricata.");
+                window.location.reload();
+
+            } catch (err) {
+                console.error(err);
+                alert("Errore durante il ripristino: " + err.message);
+            } finally {
+                event.target.value = '';
+            }
+        };
 
         lucide.createIcons();
     </script>
