@@ -3520,12 +3520,24 @@ function esportaLabscanSettimanale() {
                             ${ipLink}
                         </div>
                         <div class="flex gap-2">
+                            <button onclick="event.stopPropagation(); deleteInstrument('${item.id}')" class="p-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                             <button onclick="event.stopPropagation(); openCalendarForInstrument('${item.id}', '${item.description}')" class="p-2 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition"><i data-lucide="calendar" class="w-4 h-4"></i></button>
                         </div>
                     </div>`;
                 }).join('');
                 if (window.lucide) lucide.createIcons();
             });
+        };
+
+        window.deleteInstrument = async (id) => {
+            if (!confirm(`Sei sicuro di voler eliminare lo strumento ${id}? Questa operazione è irreversibile.`)) return;
+            try {
+                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'resources', id.replace(/\//g, '_')));
+                logAction('DELETE', 'INSTRUMENT', `Instrument deleted: ${id}`);
+                clearInstrumentForm();
+            } catch (e) {
+                alert("Errore durante l'eliminazione: " + e.message);
+            }
         };
 
         window.saveInstrument = async (e) => {
